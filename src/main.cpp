@@ -1,7 +1,5 @@
-#include "mainwindow.h"
+import app;
 
 int main() {
-    auto mainWindow = MainWindow::create();
-    mainWindow->run();
-    return 0;
+  return pcm::Application().run();
 }

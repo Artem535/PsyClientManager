@@ -1,0 +1,46 @@
+export component Calendar inherits GridLayout {
+    spacing: 2px;
+    property <bool> use_short_names: false;
+
+    // Days of week;
+    property <[{full: string, short: string}]> label_dow: [
+        { full: "Monday", short: "Mon" },
+        { full: "Tuesday", short: "Tue" },
+        { full: "Wednesday", short: "Wed" },
+        { full: "Thursday", short: "Thu" },
+        { full: "Friday", short: "Fri" },
+        { full: "Saturday", short: "Sat" },
+        { full: "Sunday", short: "Sun" }
+    ];
+
+    // Header, day of week;
+    Row {
+        Text {
+            text: use_short_names ? label_dow[0].short : label_dow[0].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[1].short : label_dow[1].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[2].short : label_dow[2].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[3].short : label_dow[3].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[4].short : label_dow[4].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[5].short : label_dow[5].full;
+        }
+
+        Text {
+            text: use_short_names ? label_dow[6].short : label_dow[6].full;
+        }
+    }
+}

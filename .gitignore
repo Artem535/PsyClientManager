@@ -5,6 +5,8 @@
 #Build dir
 build
 
+.vscode
+
 
 # Prerequisites
 *.d
@@ -38,3 +40,6 @@ build
 *.exe
 *.out
 *.app
+
+# Clang exstension cache
+.cache
