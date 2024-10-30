@@ -5,7 +5,9 @@
 #Build dir
 build
 
-.vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 
 # Prerequisites

@@ -1,8 +1,39 @@
-export component Calendar inherits GridLayout {
-    spacing: 2px;
-    property <bool> use_short_names: false;
+import {Button} from "std-widgets.slint";
+
+export struct CalendarItem {
+    week_num: int,
+    day: int,
+    visible: bool,
+}
+
+export component CalendarComponent inherits Rectangle {
+    in property <CalendarItem> item: { week_num: 1, day: 1, visible: true };
+    // Visible of rectangle
+    visible: item.visible;
+    // Border
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: grey;
+    // Label with day info
+    Text {
+        text: item.day;
+        visible: item.visible;
+    }
+}
+
+export component Calendar inherits Rectangle {
+    property <bool> use_short_names: true;
+    property <int> count_weeks: 5;
+
+    property <length> col_space: 5px;
+    property <length> row_space: 5px;
+
+    property <int> year: 2024;
+    property <int> month: 1;
+    property <int> day: 1;
 
     // Days of week;
+    // TODO: Check how made this readonly.
     property <[{full: string, short: string}]> label_dow: [
         { full: "Monday", short: "Mon" },
         { full: "Tuesday", short: "Tue" },
@@ -13,34 +44,38 @@ export component Calendar inherits GridLayout {
         { full: "Sunday", short: "Sun" }
     ];
 
-    // Header, day of week;
-    Row {
-        Text {
-            text: use_short_names ? label_dow[0].short : label_dow[0].full;
+    VerticalLayout {
+    
+        // Button space
+        HorizontalLayout {
+            Button { }
+
+            Text {
+                text: "Year";
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            Button { }
         }
 
-        Text {
-            text: use_short_names ? label_dow[1].short : label_dow[1].full;
-        }
+        // Main calendar
+        HorizontalLayout {
+            spacing: col_space;
 
-        Text {
-            text: use_short_names ? label_dow[2].short : label_dow[2].full;
-        }
+            for day in label_dow: VerticalLayout {
+                width: 30px;
+                spacing: row_space;
+                alignment: center;
+                Text {
+                    text: use_short_names ? day.short : day.full;
+                }
 
-        Text {
-            text: use_short_names ? label_dow[3].short : label_dow[3].full;
-        }
-
-        Text {
-            text: use_short_names ? label_dow[4].short : label_dow[4].full;
-        }
-
-        Text {
-            text: use_short_names ? label_dow[5].short : label_dow[5].full;
-        }
-
-        Text {
-            text: use_short_names ? label_dow[6].short : label_dow[6].full;
+                for num_week in count_weeks: CalendarComponent {
+                    item: { week_num: num_week, day: 1, visible: true };
+                    height: parent.width;
+                }
+            }
         }
     }
 }
