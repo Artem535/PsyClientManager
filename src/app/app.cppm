@@ -5,11 +5,16 @@ module;
 
 export module app;
 
-export namespace pcm {
+import widgets.calendar;
 
+namespace pcm_calc = pcm::widgets::calendar;
+
+export namespace pcm {
 class Application {
 public:
-  Application() = default;
+  Application() {
+    pcm_calc::connect_logic(m_window->global<pcm_calc::CalendarLogic>());
+  };
 
   int run() {
     m_window->run();

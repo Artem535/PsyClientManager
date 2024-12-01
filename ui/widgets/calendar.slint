@@ -1,9 +1,16 @@
 import {Button} from "std-widgets.slint";
 
 export struct CalendarItem {
-    week_num: int,
-    day: int,
     visible: bool,
+    week_num: int,
+    
+    day: int,
+    month: int,
+    year: int,
+}
+
+export struct CalendarWeek {
+    week_data: [CalendarItem]
 }
 
 export component CalendarComponent inherits Rectangle {
@@ -21,18 +28,32 @@ export component CalendarComponent inherits Rectangle {
     }
 }
 
+export global CalendarLogic {
+    pure callback get_current_date() -> CalendarItem;
+    // update_month_data get: year, month
+    pure callback get_month_data(int, int) -> [CalendarWeek];
+}
+
 export component Calendar inherits Rectangle {
-    property <bool> use_short_names: true;
-    property <int> count_weeks: 5;
+    in-out property <bool> use_short_names: true;
+    in-out property <int> count_weeks: 5;
 
-    property <length> col_space: 5px;
-    property <length> row_space: 5px;
+    in-out property <length> col_space: 5px;
+    in-out property <length> row_space: 5px;
 
-    property <int> year: 2024;
-    property <int> month: 1;
-    property <int> day: 1;
+    in-out property <CalendarItem> displayed;
+    in-out property <CalendarItem> selected_item;
+    property <[CalendarWeek]> month_data_demo: [
+        { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
+        { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
+        { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
+        { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
+        { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] }
+    ];
 
-    // Days of week;
+    in-out property <[CalendarWeek]> month_data;
+
+    // DOW - Days of week;
     // TODO: Check how made this readonly.
     property <[{full: string, short: string}]> label_dow: [
         { full: "Monday", short: "Mon" },
@@ -48,10 +69,15 @@ export component Calendar inherits Rectangle {
     
         // Button space
         HorizontalLayout {
-            Button { }
+            Button {
+                clicked => {
+                    debug("Selected data: ", displayed);
+                    debug("Month data: ", month_data[0].week_data[0]);
+                }
+            }
 
             Text {
-                text: "Year";
+                text: "Year:" + displayed.year;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -60,20 +86,15 @@ export component Calendar inherits Rectangle {
         }
 
         // Main calendar
-        HorizontalLayout {
+        VerticalLayout {
             spacing: col_space;
-
-            for day in label_dow: VerticalLayout {
-                width: 30px;
-                spacing: row_space;
-                alignment: center;
-                Text {
-                    text: use_short_names ? day.short : day.full;
-                }
-
-                for num_week in count_weeks: CalendarComponent {
-                    item: { week_num: num_week, day: 1, visible: true };
-                    height: parent.width;
+            for week in month_data: HorizontalLayout {
+                // width: 50% * root.width;
+                property <length> cell_width: self.width / 7;
+                for day in week.week_data: CalendarComponent {
+                    item: { day: day.day, visible: day.visible };
+                    width: cell_width;
+                    height: cell_width;
                 }
             }
         }

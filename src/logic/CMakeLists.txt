@@ -13,4 +13,4 @@ target_sources(${TARGET_NAME}
 )
 
 # Link Slint to the module
-target_link_libraries(${TARGET_NAME} PUBLIC Slint::Slint)
+# target_link_libraries(${TARGET_NAME} PUBLIC Slint::Slint)

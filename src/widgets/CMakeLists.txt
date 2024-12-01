@@ -18,7 +18,7 @@ target_sources(${TARGET_NAME}
   PUBLIC
   FILE_SET widgets_modules
   TYPE CXX_MODULES
-  FILES calendar.cppm
+  FILES calendar_widget_logic.cppm
 )
 
 # add_dependencies(${TARGET_NAME} widgets_ui_generated)
