@@ -15,7 +15,7 @@ namespace ch = std::chrono;
 namespace pcm::widgets::calendar {
 
 // Export classes created by slint
-export using ::CalendarLogic;
+export using ::ICalendarLogic;
 export using ::CalendarItem;
 export using ::CalendarWeek;
 
@@ -100,7 +100,7 @@ export auto get_month_data(const int &year, const int &month) {
   return month_data;
 };
 
-export void connect_logic(const CalendarLogic &item) {
+export void connect_logic(const ICalendarLogic &item) {
   item.on_get_current_date(get_current_date);
   item.on_get_month_data(get_month_data);
 }

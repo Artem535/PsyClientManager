@@ -8,14 +8,14 @@ set(CMAKE_CXX_STANDARD 20)
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
 
 # Find or fetch Slint
-find_package(Slint 1.8 QUIET)
+find_package(Slint QUIET)
 if(NOT Slint_FOUND)
   message(STATUS "Slint could not be located in the CMake module search path. Downloading it from Git and building it locally.")
   include(FetchContent)
   FetchContent_Declare(
     Slint
     GIT_REPOSITORY https://github.com/slint-ui/slint.git
-    GIT_TAG release/1.8
+    GIT_TAG release/1
     SOURCE_SUBDIR api/cpp
   )
   FetchContent_MakeAvailable(Slint)

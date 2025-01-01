@@ -1,15 +1,11 @@
-import { Calendar, CalendarLogic } from "@widgets/calendar.slint";
+import { Calendar, ICalendarLogic } from "@widgets/calendar.slint";
 
-export {CalendarLogic}
+export {ICalendarLogic}
 
 export component MainWindow inherits Window {
     width: 548px;
     height: 600px;
     in-out property <int> test;
 
-    calendar := Calendar {
-        selected_item: CalendarLogic.get_current_date();
-        displayed: CalendarLogic.get_current_date();
-        month_data: CalendarLogic.get_month_data(self.displayed.year, self.displayed.month);
-    }
+    calendar := Calendar { }
 }

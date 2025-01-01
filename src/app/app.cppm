@@ -13,7 +13,7 @@ export namespace pcm {
 class Application {
 public:
   Application() {
-    pcm_calc::connect_logic(m_window->global<pcm_calc::CalendarLogic>());
+    pcm_calc::connect_logic(m_window->global<pcm_calc::ICalendarLogic>());
   };
 
   int run() {

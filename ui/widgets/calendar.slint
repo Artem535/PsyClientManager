@@ -28,10 +28,9 @@ export component CalendarComponent inherits Rectangle {
     }
 }
 
-export global CalendarLogic {
+export global ICalendarLogic {
     pure callback get_current_date() -> CalendarItem;
-    // update_month_data get: year, month
-    pure callback get_month_data(int, int) -> [CalendarWeek];
+    pure callback get_month_data(year: int, month: int) -> [CalendarWeek];
 }
 
 export component Calendar inherits Rectangle {
@@ -41,8 +40,8 @@ export component Calendar inherits Rectangle {
     in-out property <length> col_space: 5px;
     in-out property <length> row_space: 5px;
 
-    in-out property <CalendarItem> displayed;
-    in-out property <CalendarItem> selected_item;
+    in-out property <CalendarItem> displayed: ICalendarLogic.get_current_date();
+    in-out property <CalendarItem> selected_item: ICalendarLogic.get_current_date();
     property <[CalendarWeek]> month_data_demo: [
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
@@ -51,7 +50,7 @@ export component Calendar inherits Rectangle {
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] }
     ];
 
-    in-out property <[CalendarWeek]> month_data;
+    in-out property <[CalendarWeek]> month_data: ICalendarLogic.get_month_data(displayed.year, displayed.month);
 
     // DOW - Days of week;
     // TODO: Check how made this readonly.
