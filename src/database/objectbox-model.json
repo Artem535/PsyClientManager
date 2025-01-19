@@ -1,0 +1,140 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:3468521987803626616",
+      "lastPropertyId": "6:8023984134330051196",
+      "name": "Client",
+      "properties": [
+        {
+          "id": "1:1790679519265224047",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1834366785167723635",
+          "name": "full_name",
+          "type": 9
+        },
+        {
+          "id": "3:5339940091679734866",
+          "name": "additional_info",
+          "type": 9
+        },
+        {
+          "id": "4:3385632752934828738",
+          "name": "diagnosis",
+          "type": 9
+        },
+        {
+          "id": "5:7344132765916830536",
+          "name": "birthday_date",
+          "type": 10
+        },
+        {
+          "id": "6:8023984134330051196",
+          "name": "age",
+          "type": 5
+        }
+      ]
+    },
+    {
+      "id": "2:1528752484958038216",
+      "lastPropertyId": "2:1771188334721838481",
+      "name": "EventStatus",
+      "properties": [
+        {
+          "id": "1:703642202298429365",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1771188334721838481",
+          "name": "name",
+          "type": 9
+        }
+      ]
+    },
+    {
+      "id": "3:5617031195646798220",
+      "lastPropertyId": "7:3097153108871809618",
+      "name": "Events",
+      "properties": [
+        {
+          "id": "1:2231682210231775940",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:966502212980722938",
+          "name": "event_stat_id",
+          "indexId": "1:9143853469194821369",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "EventStatus"
+        },
+        {
+          "id": "3:7993219737988037306",
+          "name": "payment_stat_id",
+          "indexId": "2:7862524356960001388",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "PaymentStatus"
+        },
+        {
+          "id": "4:2512418019838792398",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "5:2794995860751103996",
+          "name": "start_date",
+          "type": 10
+        },
+        {
+          "id": "6:4468308897966105856",
+          "name": "end_date",
+          "type": 10
+        },
+        {
+          "id": "7:3097153108871809618",
+          "name": "duration",
+          "type": 6
+        }
+      ]
+    },
+    {
+      "id": "4:8836732327389694623",
+      "lastPropertyId": "2:538677520308685345",
+      "name": "PaymentStatus",
+      "properties": [
+        {
+          "id": "1:669587545881935907",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:538677520308685345",
+          "name": "name",
+          "type": 9
+        }
+      ]
+    }
+  ],
+  "lastEntityId": "4:8836732327389694623",
+  "lastIndexId": "2:7862524356960001388",
+  "lastRelationId": "",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

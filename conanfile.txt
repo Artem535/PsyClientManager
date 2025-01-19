@@ -1,0 +1,7 @@
+[requires]
+reflect-cpp/0.17.0
+[generators]
+CMakeDeps
+CMakeToolchain
+[layout]
+cmake_layout

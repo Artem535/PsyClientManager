@@ -1,0 +1,38 @@
+
+table Client {
+    id: ulong;
+    full_name: string;
+    additional_info: string;
+    diagnosis: string;
+    /// objectbox: date
+    birthday_date: int64;
+    age: int;
+}
+
+table Events {
+    id: ulong;
+    /// objectbox: relation=EventStatus
+    event_stat_id: ulong;
+    /// objectbox: relation=PaymentStatus
+    payment_stat_id: ulong;
+    
+    description: string;
+
+    /// objectbox: date
+    start_date: int64;
+    /// objectbox: date
+    end_date: int64;
+    duration: int64;
+}
+
+table PaymentStatus {
+    id: ulong;
+    name: string;
+}
+
+table EventStatus {
+    id: ulong;
+    name: string;
+}
+
+

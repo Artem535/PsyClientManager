@@ -21,16 +21,19 @@ if(NOT Slint_FOUND)
   FetchContent_MakeAvailable(Slint)
 endif()
 
-# Add the main executable
-add_executable(PsyClientManager src/main.cpp)
+
 
 # Include subdirectories for modules
+add_subdirectory(src/database)
 add_subdirectory(src/widgets)
 add_subdirectory(src/logic)
 add_subdirectory(src/app)
+
+# Add the main executable
+add_executable(PsyClientManager src/main.cpp)
 
 # Set Slint style
 set_property(TARGET PsyClientManager PROPERTY SLINT_STYLE native)
 
 # Link with modules
-target_link_libraries(PsyClientManager PUBLIC PsyClientManager_app )
+target_link_libraries(PsyClientManager PUBLIC PsyClientManager_app)
