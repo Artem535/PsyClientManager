@@ -24,6 +24,7 @@ endif()
 
 
 # Include subdirectories for modules
+add_subdirectory(src/config)
 add_subdirectory(src/database)
 add_subdirectory(src/widgets)
 add_subdirectory(src/logic)

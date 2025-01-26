@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(TARGET_NAME ${PROJECT_NAME}_config)
 
+find_package(reflectcpp REQUIRED)
+find_package(Poco REQUIRED)
 
 # Add the library for the app module
 add_library(${TARGET_NAME} STATIC)
@@ -15,5 +17,9 @@ target_sources(${TARGET_NAME}
 PUBLIC
 FILE_SET config_module
 TYPE CXX_MODULES
-FILES config.cppm
+FILES 
+config.cppm
+rfl_path.cppm
 )
+
+target_link_libraries(${TARGET_NAME} PRIVATE reflectcpp::reflectcpp Poco::Poco)
