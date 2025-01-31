@@ -1,5 +1,6 @@
 module;
 
+#define OBX_CPP_FILE // Put this define in one file only before including
 #include "objectbox-model.h"
 #include "objectbox.hpp"
 #include "scheme.obx.hpp"
@@ -27,8 +28,8 @@ public:
 
     auto options = obx::Options(create_obx_model());
     options.directory(db_pth.toString());
+    
     m_store = std::make_unique<obx::Store>(options);
-
     m_events_box = std::make_unique<obx::Box<Events>>(*m_store.get());
   }
 
