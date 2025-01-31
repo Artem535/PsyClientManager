@@ -1,6 +1,7 @@
 [requires]
 poco/1.13.3
 reflect-cpp/0.17.0
+gtest/1.15.0
 
 [generators]
 CMakeDeps

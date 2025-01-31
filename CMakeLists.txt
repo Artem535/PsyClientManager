@@ -23,12 +23,19 @@ endif()
 
 
 
+
 # Include subdirectories for modules
 add_subdirectory(src/config)
 add_subdirectory(src/database)
 add_subdirectory(src/widgets)
 add_subdirectory(src/logic)
 add_subdirectory(src/app)
+
+# Enabling tests 
+enable_testing()
+add_subdirectory(test)
+add_test(NAME TestConfig COMMAND PsyClientManager_config_tests)
+add_test(NAME TestDatabase COMMAND PsyClientManager_database_tests)
 
 # Add the main executable
 add_executable(PsyClientManager src/main.cpp)

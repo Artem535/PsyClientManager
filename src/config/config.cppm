@@ -6,6 +6,7 @@ module;
 #include <rfl/Skip.hpp>
 #include <rfl/default.hpp>
 #include <rfl/yaml.hpp>
+#include <rfl/yaml/load.hpp>
 #include <rfl/yaml/save.hpp>
 
 export module config;
@@ -31,7 +32,11 @@ struct Config {
     rfl::yaml::save(conf.config_pth.value().toString(), conf);
   }
 
-  static Config read_config(const Poco::Path &pth) { return Config(); }
+  // TODO: Made this function inline?
+  static Config read_config() {
+    const auto default_pth = Config().config_pth.value();
+    return rfl::yaml::load<Config>(default_pth.toString()).value();
+  }
 };
 
 } // namespace pcm::config
