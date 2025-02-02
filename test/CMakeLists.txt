@@ -8,6 +8,10 @@ enable_testing()
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
+# Find Poco
+find_package(Poco REQUIRED)
+
+
 add_executable(PsyClientManager_config_tests config_tests.cpp)
 target_link_libraries(PsyClientManager_config_tests PRIVATE
     GTest::gtest
@@ -21,7 +25,8 @@ target_link_libraries(PsyClientManager_database_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     PsyClientManager_config
-    PsyClientManager_app_db
+    PsyClientManager_app_database
+    Poco::Poco
 )
 gtest_discover_tests(PsyClientManager_database_tests)
 
