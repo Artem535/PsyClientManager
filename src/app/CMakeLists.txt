@@ -21,7 +21,7 @@ FILES app.cppm
 add_dependencies(${TARGET_NAME} 
     ${PROJECT_NAME}_config
     ${PROJECT_NAME}_widgets 
-    ${PROJECT_NAME}_app_db 
+    ${PROJECT_NAME}_app_database 
 )
 
 # Link the Slint UI files to this module
@@ -36,6 +36,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     Slint::Slint
     ${PROJECT_NAME}_config
     ${PROJECT_NAME}_widgets 
-    ${PROJECT_NAME}_app_db
+    ${PROJECT_NAME}_app_database
     ${PROJECT_NAME}_logic
 )
