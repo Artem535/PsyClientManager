@@ -21,6 +21,7 @@ target_sources(${TARGET_NAME}
     FILE_SET database_module
     TYPE CXX_MODULES
     FILES database.cppm
+          constance.cppm
 )
 
 target_sources(${TARGET_NAME}
