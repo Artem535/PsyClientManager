@@ -1,7 +1,8 @@
 
 table Client {
     id: ulong;
-    full_name: string;
+    name: string;
+    last_name: string;
     additional_info: string;
     diagnosis: string;
     /// objectbox: date

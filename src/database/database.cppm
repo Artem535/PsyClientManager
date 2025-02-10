@@ -9,6 +9,7 @@ module;
 
 #include <memory>
 #include <vector>
+#include <iostream>
 
 export module app_database;
 
@@ -46,6 +47,7 @@ public:
     if (it_first_init) {
       init_payment_status_table();
       init_event_status_table();
+      add_demo_data();
     }
   }
 
@@ -56,11 +58,20 @@ public:
   // Client
   obx_id add_client(const Client &client) { return m_clinet_box->put(client); }
   bool remove_client(const obx_id &id) { return m_clinet_box->remove(id); }
+  std::unique_ptr<Client> get_client(const obx_id &id) {
+    return m_clinet_box->get(id);
+  }
   std::vector<std::unique_ptr<Client>> get_clients() {
     return m_clinet_box->getAll();
   }
 
 private:
+  void add_demo_data() {
+    const auto id = m_clinet_box->put(Client{.name = "John", .last_name = "Doe", .additional_info = "Some add info"});
+    std::cout << id << std::endl;
+  }
+
+
   // PaymentStatus
   void init_payment_status_table() {
     for (const auto &status : constance::payment_statuses)

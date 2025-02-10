@@ -3,24 +3,27 @@
 #include "scheme.obx.hpp"
 
 const obx::Property<Client, OBXPropertyType_Long> Client_::id(1);
-const obx::Property<Client, OBXPropertyType_String> Client_::full_name(2);
-const obx::Property<Client, OBXPropertyType_String> Client_::additional_info(3);
-const obx::Property<Client, OBXPropertyType_String> Client_::diagnosis(4);
-const obx::Property<Client, OBXPropertyType_Date> Client_::birthday_date(5);
-const obx::Property<Client, OBXPropertyType_Int> Client_::age(6);
+const obx::Property<Client, OBXPropertyType_String> Client_::name(2);
+const obx::Property<Client, OBXPropertyType_String> Client_::last_name(3);
+const obx::Property<Client, OBXPropertyType_String> Client_::additional_info(4);
+const obx::Property<Client, OBXPropertyType_String> Client_::diagnosis(5);
+const obx::Property<Client, OBXPropertyType_Date> Client_::birthday_date(6);
+const obx::Property<Client, OBXPropertyType_Int> Client_::age(7);
 
 void Client::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Client& object) {
     fbb.Clear();
-    auto offsetfull_name = fbb.CreateString(object.full_name);
+    auto offsetname = fbb.CreateString(object.name);
+    auto offsetlast_name = fbb.CreateString(object.last_name);
     auto offsetadditional_info = fbb.CreateString(object.additional_info);
     auto offsetdiagnosis = fbb.CreateString(object.diagnosis);
     flatbuffers::uoffset_t fbStart = fbb.StartTable();
     fbb.AddElement(4, object.id);
-    fbb.AddOffset(6, offsetfull_name);
-    fbb.AddOffset(8, offsetadditional_info);
-    fbb.AddOffset(10, offsetdiagnosis);
-    fbb.AddElement(12, object.birthday_date);
-    fbb.AddElement(14, object.age);
+    fbb.AddOffset(6, offsetname);
+    fbb.AddOffset(8, offsetlast_name);
+    fbb.AddOffset(10, offsetadditional_info);
+    fbb.AddOffset(12, offsetdiagnosis);
+    fbb.AddElement(14, object.birthday_date);
+    fbb.AddElement(16, object.age);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -45,13 +48,21 @@ void Client::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Client& out
     {
         auto* ptr = table->GetPointer<const flatbuffers::String*>(6);
         if (ptr) {
-            outObject.full_name.assign(ptr->c_str(), ptr->size());
+            outObject.name.assign(ptr->c_str(), ptr->size());
         } else {
-            outObject.full_name.clear();
+            outObject.name.clear();
         }
     }
     {
         auto* ptr = table->GetPointer<const flatbuffers::String*>(8);
+        if (ptr) {
+            outObject.last_name.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.last_name.clear();
+        }
+    }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(10);
         if (ptr) {
             outObject.additional_info.assign(ptr->c_str(), ptr->size());
         } else {
@@ -59,15 +70,15 @@ void Client::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Client& out
         }
     }
     {
-        auto* ptr = table->GetPointer<const flatbuffers::String*>(10);
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(12);
         if (ptr) {
             outObject.diagnosis.assign(ptr->c_str(), ptr->size());
         } else {
             outObject.diagnosis.clear();
         }
     }
-    outObject.birthday_date = table->GetField<int64_t>(12, 0);
-    outObject.age = table->GetField<int32_t>(14, 0);
+    outObject.birthday_date = table->GetField<int64_t>(14, 0);
+    outObject.age = table->GetField<int32_t>(16, 0);
 }
 
 const obx::Property<EventStatus, OBXPropertyType_Long> EventStatus_::id(1);

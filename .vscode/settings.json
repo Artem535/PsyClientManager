@@ -5,7 +5,8 @@
     },
     "slint.libraryPaths": {
         "widgets": "ui/widgets/",
+        "pages": "ui/pages/"
     },
-    "sonarlint.pathToCompileCommands": "${workspaceFolder}/compile_commands.json"
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
 
 }

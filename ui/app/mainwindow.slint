@@ -1,11 +1,17 @@
 import { Calendar, ICalendarLogic } from "@widgets/calendar.slint";
+import { ClientInfo, IClientInfoLogic,ClientInfoSlint } from "@pages/client_info.slint";
 
-export {ICalendarLogic}
+export {IClientInfoLogic}
+// export {ICalendarLogic}
 
 export component MainWindow inherits Window {
     width: 548px;
     height: 600px;
     in-out property <int> test;
 
-    calendar := Calendar { }
+    // calendar := Calendar { }
+    // in-out property client_id <=> IClientInfoLogic.current_client_id;
+    // in-out property client <=> IClientInfoLogic.current_client;
+    // pure callback get_user_info <=> IClientInfoLogic.get_user_info;
+    ClientInfo { }
 }

@@ -14,7 +14,8 @@ struct Client_;
 
 struct Client {
     obx_id id;
-    std::string full_name;
+    std::string name;
+    std::string last_name;
     std::string additional_info;
     std::string diagnosis;
     int64_t birthday_date;
@@ -41,7 +42,8 @@ struct Client {
 
 struct Client_ {
     static const obx::Property<Client, OBXPropertyType_Long> id;
-    static const obx::Property<Client, OBXPropertyType_String> full_name;
+    static const obx::Property<Client, OBXPropertyType_String> name;
+    static const obx::Property<Client, OBXPropertyType_String> last_name;
     static const obx::Property<Client, OBXPropertyType_String> additional_info;
     static const obx::Property<Client, OBXPropertyType_String> diagnosis;
     static const obx::Property<Client, OBXPropertyType_Date> birthday_date;

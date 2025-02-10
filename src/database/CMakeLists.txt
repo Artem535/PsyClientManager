@@ -15,13 +15,13 @@ find_package(Poco REQUIRED)
 add_library(${TARGET_NAME} STATIC scheme.obx.cpp)
 
 
-
 target_sources(${TARGET_NAME}
     PUBLIC
     FILE_SET database_module
     TYPE CXX_MODULES
     FILES database.cppm
           constance.cppm
+          slint_adapter.cppm
 )
 
 target_sources(${TARGET_NAME}
@@ -33,7 +33,6 @@ target_sources(${TARGET_NAME}
 )
 
 
-
 add_dependencies(${TARGET_NAME} ${PROJECT_NAME}_config objectbox)
 
 add_obx_schema(
@@ -42,4 +41,8 @@ add_obx_schema(
     INSOURCE # Opt-in: Generate in source directory
 )
 
-target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Poco)
+slint_target_sources(${TARGET_NAME}
+  ${CMAKE_SOURCE_DIR}/ui/pages/client_info.slint
+)
+
+target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Poco Slint::Slint)

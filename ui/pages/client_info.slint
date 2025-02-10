@@ -1,0 +1,115 @@
+import { AboutSlint, VerticalBox, Button, LineEdit, Switch } from "std-widgets.slint";
+
+
+export struct ClientInfoSlint {
+    name: string,
+    last_name: string,
+    additional_info: string,
+    age: int,
+    birthday_date: string}
+
+
+export global IClientInfoLogic {
+    in-out property <string> current_client_id: "1";
+    in-out property <ClientInfoSlint> current_client;
+
+    pure callback get_user_info(id: string) -> ClientInfoSlint;
+    // pure callback add_user(client: ClientInfoSlint);
+}
+
+export component ClientInfo inherits Window {
+    in-out property <string> current_client_id: IClientInfoLogic.current_client_id;
+    in-out property <ClientInfoSlint> client_info: IClientInfoLogic.get_user_info(current_client_id);
+
+    width: 400px;
+    height: 400px;
+
+    property <bool> is_read_only: true;
+    property <length> margin: 10px;
+    VerticalLayout {
+        x: 0px;
+        y: 0px;
+        alignment: start;
+        padding: margin;
+        spacing: margin;
+
+        HorizontalLayout {
+            spacing: 10px;
+
+            Text {
+                horizontal-alignment: TextHorizontalAlignment.left;
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Name";
+            }
+
+            LineEdit {
+                text: client_info.name;
+                read-only: is_read_only;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                horizontal-alignment: TextHorizontalAlignment.left;
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Last Name";
+            }
+
+            LineEdit {
+                text: client_info.last-name;
+                read-only: is_read_only;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                horizontal-alignment: TextHorizontalAlignment.left;
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Birthday:";
+            }
+
+            Text {
+                horizontal-alignment: TextHorizontalAlignment.center;
+                vertical-alignment: TextVerticalAlignment.center;
+
+                text: client_info.birthday-date;
+            }
+
+            Button {
+                text: "select date";
+            }
+
+            age_label := Text {
+                horizontal-alignment: TextHorizontalAlignment.center;
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Age";
+            }
+
+            LineEdit {
+                accessible-role: AccessibleRole.none;
+                horizontal-alignment: TextHorizontalAlignment.center;
+                input-type: InputType.number;
+                read-only: true;
+                text: client_info.age;
+                width: 40px;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+
+            Button {
+                text: "add user to db";
+            }
+
+            Switch {
+                text: "Start edit";
+                toggled() => {
+                    is_read_only = !is_read_only;
+                }
+            }
+        }
+    }
+}
