@@ -1,9 +1,8 @@
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <gtest/gtest.h>
-
-import config;
-import app_database;
+#include "config.h"
+#include "database.h"
 
 TEST(DatabaseTest, InitDatabase) {
   pcm::config::Config conf{

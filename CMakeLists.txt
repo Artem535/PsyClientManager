@@ -3,45 +3,29 @@ cmake_minimum_required(VERSION 3.28)
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Define the project
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-# Find or fetch Slint
-find_package(Slint QUIET)
-if(NOT Slint_FOUND)
-  message(STATUS "Slint could not be located in the CMake module search path. Downloading it from Git and building it locally.")
-  include(FetchContent)
-  FetchContent_Declare(
-    Slint
-    GIT_REPOSITORY https://github.com/slint-ui/slint.git
-    GIT_TAG release/1.9
-    SOURCE_SUBDIR api/cpp
-  )
-  FetchContent_MakeAvailable(Slint)
-endif()
-
-
-
+qt_standard_project_setup()
 
 # Include subdirectories for modules
 add_subdirectory(src/config)
 add_subdirectory(src/database)
-add_subdirectory(src/widgets)
-add_subdirectory(src/logic)
 add_subdirectory(src/app)
+
+include_directories(src/app)
 
 # Enabling tests 
 enable_testing()
 add_subdirectory(test)
-add_test(NAME TestConfig COMMAND PsyClientManager_config_tests)
-add_test(NAME TestDatabase COMMAND PsyClientManager_database_tests)
 
 # Add the main executable
-add_executable(PsyClientManager src/main.cpp)
+qt_add_executable(PsyClientManager src/main.cpp)
 
-# Set Slint style
-set_property(TARGET PsyClientManager PROPERTY SLINT_STYLE native)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
-# Link with modules
-target_link_libraries(PsyClientManager PUBLIC PsyClientManager_app)
+# Link with libs
+target_link_libraries(PsyClientManager PUBLIC ${PROJECT_NAME}_app Qt6::Widgets)

@@ -6,20 +6,22 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(TARGET_NAME ${PROJECT_NAME}_config)
 
-find_package(reflectcpp REQUIRED)
-find_package(Poco REQUIRED)
+find_package(reflectcpp CONFIG REQUIRED)
+find_package(Poco REQUIRED COMPONENTS Foundation)
 
-# Add the library for the app module
-add_library(${TARGET_NAME} STATIC)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Poco DEFAULT_MSG Poco_FOUND)
+find_package_handle_standard_args(reflectcpp DEFAULT_MSG reflectcpp_FOUND)
 
-# Add app.cppm as a C++20 module
-target_sources(${TARGET_NAME}
-PUBLIC
-FILE_SET config_module
-TYPE CXX_MODULES
-FILES 
-config.cppm
-rfl_path.cppm
+
+# Add the library for the config module
+qt_add_library(${TARGET_NAME} STATIC
+    config.cpp
+    rfl_path.hpp
 )
 
-target_link_libraries(${TARGET_NAME} PRIVATE reflectcpp::reflectcpp Poco::Poco)
+# Include directories
+target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Link necessary libraries
+target_link_libraries(${TARGET_NAME} PRIVATE reflectcpp::reflectcpp Poco::Foundation)

@@ -1,11 +1,9 @@
-module;
+#pragma once
 
 #include <array>
 #include <scheme.obx.hpp>
 
-export module database_constance;
-
-export namespace pcm::database::constance {
+namespace pcm::database::constance {
 
 constexpr std::array<EventStatus, 3> event_statuses = {
     EventStatus{.name = "pending"}, EventStatus{.name = "completed"},

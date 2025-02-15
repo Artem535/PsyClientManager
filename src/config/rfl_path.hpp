@@ -1,13 +1,11 @@
-module;
+#pragma once
 
 #include <Poco/Path.h>
 #include <rfl/default.hpp>
 #include <rfl/yaml.hpp>
 #include <string>
 
-export module rfl_path;
-
-export namespace rfl {
+namespace rfl {
 template <> struct Reflector<Poco::Path> {
   using ReflType = std::string;
 

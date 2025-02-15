@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "poco",
+    {
+      "name": "reflectcpp",
+      "features": [
+        "yaml"
+      ]
+    },
+    "gtest"
+  ]
+}

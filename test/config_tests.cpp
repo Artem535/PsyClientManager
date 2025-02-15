@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-
-import config;
+#include "config.h"
 
 TEST(ConfigTest, Initialize) {
     EXPECT_NO_THROW(pcm::config::Config());

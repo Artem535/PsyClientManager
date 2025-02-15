@@ -1,9 +1,12 @@
 {
     "version": 4,
-    "vendor": {
-        "conan": {}
-    },
-    "include": [
-        "build/Debug/generators/CMakePresets.json"
+    "configurePresets": [
+        {
+            "name": "default",
+            "inherits": "vcpkg",
+            "environment": {
+                "VCPKG_ROOT": "/home/artem/Soft/vcpkg/"
+            }
+        }
     ]
 }
