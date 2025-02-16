@@ -14,6 +14,7 @@ qt_standard_project_setup()
 # Include subdirectories for modules
 add_subdirectory(src/config)
 add_subdirectory(src/database)
+add_subdirectory(src/pages/client_info_page)
 add_subdirectory(src/app)
 
 include_directories(src/app)

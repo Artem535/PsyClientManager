@@ -1,4 +1,4 @@
-set(TARGET_NAME ${PROJECT_NAME}_app_database)
+set(TARGET_NAME ${PROJECT_NAME}_database)
 
 include(FetchContent)
 FetchContent_Declare(

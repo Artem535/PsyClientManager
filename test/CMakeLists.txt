@@ -23,7 +23,7 @@ target_link_libraries(PsyClientManager_database_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     PsyClientManager_config
-    PsyClientManager_app_database
+    PsyClientManager_database
     Poco::Foundation
 )
 gtest_discover_tests(PsyClientManager_database_tests)
