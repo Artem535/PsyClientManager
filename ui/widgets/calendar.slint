@@ -28,20 +28,7 @@ export component CalendarComponent inherits Rectangle {
     }
 }
 
-export global ICalendarLogic {
-    pure callback get_current_date() -> CalendarItem;
-    pure callback get_month_data(year: int, month: int) -> [CalendarWeek];
-}
-
-export component Calendar inherits Rectangle {
-    in-out property <bool> use_short_names: true;
-    in-out property <int> count_weeks: 5;
-
-    in-out property <length> col_space: 5px;
-    in-out property <length> row_space: 5px;
-
-    in-out property <CalendarItem> displayed: ICalendarLogic.get_current_date();
-    in-out property <CalendarItem> selected_item: ICalendarLogic.get_current_date();
+component Demo {
     property <[CalendarWeek]> month_data_demo: [
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
@@ -49,9 +36,19 @@ export component Calendar inherits Rectangle {
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] },
         { week_data: [{ day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }] }
     ];
+}
 
-    in-out property <[CalendarWeek]> month_data: ICalendarLogic.get_month_data(displayed.year, displayed.month);
+export component Calendar inherits Window {
+    in-out property <bool> use_short_names: true;
+    in-out property <int> count_weeks: 5;
 
+    in-out property <length> col_space: 5px;
+    in-out property <length> row_space: 5px;
+
+    in-out property <CalendarItem> displayed;
+    in-out property <CalendarItem> selected_item;
+    in-out property <[CalendarWeek]> month_data;
+    
     // DOW - Days of week;
     // TODO: Check how made this readonly.
     property <[{full: string, short: string}]> label_dow: [

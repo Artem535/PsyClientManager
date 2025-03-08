@@ -22,6 +22,7 @@ add_dependencies(${TARGET_NAME}
     ${PROJECT_NAME}_config
     ${PROJECT_NAME}_widgets 
     ${PROJECT_NAME}_app_database 
+    ${PROJECT_NAME}_logic
 )
 
 # Link the Slint UI files to this module
@@ -29,6 +30,7 @@ slint_target_sources(${TARGET_NAME}
   ${CMAKE_SOURCE_DIR}/ui/app/mainwindow.slint
   LIBRARY_PATHS widgets=${CMAKE_SOURCE_DIR}/ui/widgets
                 pages=${CMAKE_SOURCE_DIR}/ui/pages
+                logic=${CMAKE_SOURCE_DIR}/ui/logic
 )
 
 

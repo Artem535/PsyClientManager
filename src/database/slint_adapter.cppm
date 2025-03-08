@@ -16,26 +16,19 @@ import app_database;
 namespace ch = std::chrono;
 
 export namespace pcm::database::adapters {
-
-using ::IClientInfoLogic;
-
 class SlintDbAdapter {
 
 public:
   explicit SlintDbAdapter(std::shared_ptr<database::Database> db) : m_db(db) {}
 
-  void connect_logic(const IClientInfoLogic &item) {
-    item.on_get_user_info(
-        [this](slint::SharedString id) { return this->get_user_info(id); });
-  }
-
-  ClientInfoSlint get_user_info(slint::SharedString id) {
+  ClientInfoSlint get_user_info(slint::SharedString id) const {
     const auto std_string = std::string(id.data());
-    return std_string.empty() ? ClientInfoSlint()
-                              : get_user_info(stol(std_string));
+    const auto res = std_string.empty() ? ClientInfoSlint()
+                                        : get_user_info(stol(std_string));
+    return res;
   }
 
-  ClientInfoSlint get_user_info(obx_id id) {
+  ClientInfoSlint get_user_info(obx_id id) const {
     std::cout << id << std::endl;
     const auto client = m_db->get_client(id);
     return {.name = slint::SharedString(client->name),
@@ -47,7 +40,7 @@ public:
   }
 
 private:
-  [[nodiscard]] std::string date_to_string(int64_t date) {
+  [[nodiscard]] std::string date_to_string(int64_t date) const {
     const auto clock = ch::system_clock::from_time_t(date);
     return std::format("{:%D}", clock);
   }

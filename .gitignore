@@ -45,3 +45,4 @@ build
 
 # Clang exstension cache
 .cache
+CMakeLists.txt.user

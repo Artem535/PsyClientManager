@@ -1,6 +1,7 @@
 module;
 
 #include "mainwindow.h"
+#include <iostream>
 #include <memory>
 #include <slint.h>
 
@@ -10,6 +11,7 @@ import widgets.calendar;
 import app_database;
 import slint_database_adapter;
 import config;
+import logic;
 
 namespace pcm_calc = pcm::widgets::calendar;
 namespace pcm_db_adapter = pcm::database::adapters;
@@ -19,13 +21,11 @@ class Application {
 public:
   Application() {
     m_db = std::make_shared<database::Database>(m_conf);
-    m_adapter = std::make_unique<database::adapters::SlintDbAdapter>(m_db);
+    m_adapter = std::make_unique<pcm_db_adapter::SlintDbAdapter>(m_db);
   };
 
   int run() {
-    // pcm_calc::connect_logic(m_window->global<pcm_calc::ICalendarLogic>());
-    m_adapter->connect_logic(
-        m_window->global<pcm_db_adapter::IClientInfoLogic>());
+    pcm::logic::connect_db(m_window->global<pcm::logic::IClientInfoLogic>(), *m_adapter);
     m_window->run();
     return 0;
   }

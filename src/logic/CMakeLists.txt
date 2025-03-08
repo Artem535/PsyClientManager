@@ -12,5 +12,20 @@ target_sources(${TARGET_NAME}
   logic.cppm
 )
 
+add_dependencies(${TARGET_NAME}
+  ${PROJECT_NAME}_widgets
+  ${PROJECT_NAME}_app_database
+)
+
 # Link Slint to the module
-# target_link_libraries(${TARGET_NAME} PUBLIC Slint::Slint)
+target_link_libraries(${TARGET_NAME}
+  PUBLIC
+  Slint::Slint
+  ${PROJECT_NAME}_widgets
+  ${PROJECT_NAME}_app_database)
+
+slint_target_sources(${TARGET_NAME}
+  ${CMAKE_SOURCE_DIR}/ui/logic/logic.slint
+  LIBRARY_PATHS widgets=${CMAKE_SOURCE_DIR}/ui/widgets
+  pages=${CMAKE_SOURCE_DIR}/ui/pages
+)

@@ -1,0 +1,15 @@
+import { Calendar, CalendarWeek, CalendarItem  } from "@widgets/calendar.slint";
+import { ClientInfoSlint } from "@pages/client_info.slint";
+
+export global IClientInfoLogic {
+    in-out property <string> current_client_id: "1";
+    in-out property <ClientInfoSlint> current_client;
+
+    pure callback get_user_info(id: string) -> ClientInfoSlint;
+    // pure callback add_user(client: ClientInfoSlint);
+}
+
+export global ICalendarLogic {
+    pure callback get_current_date() -> CalendarItem;
+    pure callback get_month_data(year: int, month: int) -> [CalendarWeek];
+}
