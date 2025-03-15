@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>581</width>
-    <height>583</height>
+    <width>634</width>
+    <height>534</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,6 +32,13 @@
       <string>Information</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QCheckBox" name="add_update_checkbox">
+        <property name="text">
+         <string>Add/Chnage client</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QFrame" name="frame">
         <property name="frameShape">
@@ -58,7 +65,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="lineEdit_2"/>
+            <widget class="QLineEdit" name="last_name_input"/>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_2">
@@ -70,7 +77,7 @@
            <item row="2" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
-              <widget class="QLineEdit" name="lineEdit_3"/>
+              <widget class="QDateEdit" name="birthdate_input"/>
              </item>
              <item>
               <widget class="QLabel" name="label_5">
@@ -80,12 +87,12 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit_4"/>
+              <widget class="QLineEdit" name="age_input"/>
              </item>
             </layout>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="lineEdit"/>
+            <widget class="QLineEdit" name="name_input"/>
            </item>
           </layout>
          </item>
@@ -100,9 +107,23 @@
           <widget class="QPlainTextEdit" name="plainTextEdit"/>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QPushButton" name="add_new_client_button">
            <property name="text">
-            <string>PushButton</string>
+            <string>Add new client</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="update_button">
+           <property name="text">
+            <string>Update client</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="clear_button">
+           <property name="text">
+            <string>Clear all</string>
            </property>
           </widget>
          </item>

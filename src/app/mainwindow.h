@@ -15,11 +15,13 @@ class MainWindow : public QMainWindow {
   Q_OBJECT
 
 public:
-  explicit MainWindow(std::shared_ptr<pcm::database::Database> db,
-                      QWidget *parent = nullptr);
-
+  explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow() override;
 
+  void setDatabase(std::shared_ptr<pcm::database::Database> db);
+  void addClientInfoPage(std::shared_ptr<ClientModel> model);
+  
 private:
   std::unique_ptr<Ui::MainWindow> m_ui;
+  std::shared_ptr<std::shared_ptr<pcm::database::Database>> m_db{nullptr};
 };

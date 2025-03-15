@@ -2,7 +2,8 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <iostream>
+#include <ranges>
+
 
 #include "objectbox.hpp"
 #include "objectbox-model.h"
@@ -23,6 +24,8 @@ public:
     bool remove_client(const obx_id &id);
     std::unique_ptr<Client> get_client(const obx_id &id);
     std::vector<std::unique_ptr<Client>> get_clients();
+
+    std::vector<obx_id> get_client_ids();
 
 private:
     void add_demo_data();
