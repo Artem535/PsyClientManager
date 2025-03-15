@@ -25,6 +25,8 @@ void ClientInfo::change_edit_fields_mode(bool edit) {
   m_ui->last_name_input->setEnabled(edit);
   m_ui->birthdate_input->setEnabled(edit);
   m_ui->age_input->setEnabled(edit);
+  m_ui->add_new_client_button->setVisible(edit);
+  m_ui->update_button->setVisible(edit);
 }
 
 void ClientInfo::connect_widgets() {
@@ -33,20 +35,26 @@ void ClientInfo::connect_widgets() {
   connect(m_ui->add_update_checkbox, &QCheckBox::checkStateChanged,
           [this](const Qt::CheckState &state) {
             in_edit_mode = state == Qt::Unchecked ? false : true;
-
             change_edit_fields_mode(in_edit_mode);
-            m_ui->add_new_client_button->setVisible(in_edit_mode);
-            m_ui->update_button->setVisible(in_edit_mode);
           });
-
   connect(m_ui->clear_button, &QPushButton::clicked, this,
           &ClientInfo::clear_client_preview);
+
   connect(m_ui->update_button, &QPushButton::clicked, [this]() {
     const auto current_index = m_ui->listView->currentIndex();
     update_client_info(current_index);
   });
+
   connect(m_ui->add_new_client_button, &QPushButton::clicked, this,
           &ClientInfo::add_new_client);
+
+  connect(this, &ClientInfo::end_edit, [this]() {
+    in_edit_mode = false;
+    change_edit_fields_mode(in_edit_mode);
+  });
+
+  connect(this, &ClientInfo::end_edit,
+          [this]() { m_ui->add_update_checkbox->setChecked(false); });
 }
 
 void ClientInfo::clear_client_preview() {
@@ -67,9 +75,21 @@ void ClientInfo::update_client_preview(const QModelIndex &index) {
   m_ui->birthdate_input->setDate(birthdate.date());
 
   // Calc age from birthday
-  const QDateTime current_date = QDateTime::currentDateTime();
-  const auto age = birthdate.daysTo(current_date) / 365;
+  const auto age = count_age(birthdate.date());
   m_ui->age_input->setText(QString::number(age));
+}
+
+int ClientInfo::count_age(const QDate &birthdate) const {
+  const QDate current_date = QDateTime::currentDateTime().date();
+  int age{current_date.year() - birthdate.year()};
+
+  const bool is_month_less = current_date.month() < birthdate.month();
+
+  bool is_before_birthday_day = current_date.month() < birthdate.month();
+  is_before_birthday_day &= current_date.day() < birthdate.day();
+
+  age = is_month_less || is_before_birthday_day ? age - 1 : age;
+  return age;
 }
 
 void ClientInfo::update_client_info(const QModelIndex &index) {
@@ -79,6 +99,8 @@ void ClientInfo::update_client_info(const QModelIndex &index) {
   client.id = id;
 
   m_client_model->setData(index, QVariant::fromValue(client));
+
+  emit end_edit();
 }
 
 Client ClientInfo::get_client_from_ui() const {
@@ -97,7 +119,10 @@ void ClientInfo::add_new_client() {
   auto client = get_client_from_ui();
   client.id = 0;
   m_client_model->add_new_client(client);
+
   clear_client_preview();
+
+  emit end_edit();
 }
 
 ClientInfo::~ClientInfo() = default;
