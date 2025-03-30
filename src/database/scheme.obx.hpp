@@ -19,7 +19,6 @@ struct Client {
     std::string additional_info;
     std::string diagnosis;
     int64_t birthday_date;
-    int32_t age;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 1; }
@@ -47,7 +46,6 @@ struct Client_ {
     static const obx::Property<Client, OBXPropertyType_String> additional_info;
     static const obx::Property<Client, OBXPropertyType_String> diagnosis;
     static const obx::Property<Client, OBXPropertyType_Date> birthday_date;
-    static const obx::Property<Client, OBXPropertyType_Int> age;
 };
 
 
@@ -81,49 +79,6 @@ struct EventStatus_ {
     static const obx::Property<EventStatus, OBXPropertyType_String> name;
 };
 
-struct EventStatus; 
-struct PaymentStatus; 
-
-struct Events_;
-
-struct Events {
-    obx_id id;
-    obx_id event_stat_id;
-    obx_id payment_stat_id;
-    std::string description;
-    int64_t start_date;
-    int64_t end_date;
-    int64_t duration;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 3; }
-    
-        static void setObjectId(Events& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Events& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static Events fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<Events> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, Events& outObject);
-    };
-};
-
-struct Events_ {
-    static const obx::Property<Events, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<Events, EventStatus> event_stat_id;
-    static const obx::RelationProperty<Events, PaymentStatus> payment_stat_id;
-    static const obx::Property<Events, OBXPropertyType_String> description;
-    static const obx::Property<Events, OBXPropertyType_Date> start_date;
-    static const obx::Property<Events, OBXPropertyType_Date> end_date;
-    static const obx::Property<Events, OBXPropertyType_Long> duration;
-};
-
 
 struct PaymentStatus_;
 
@@ -153,5 +108,52 @@ struct PaymentStatus {
 struct PaymentStatus_ {
     static const obx::Property<PaymentStatus, OBXPropertyType_Long> id;
     static const obx::Property<PaymentStatus, OBXPropertyType_String> name;
+};
+
+struct EventStatus; 
+struct PaymentStatus; 
+
+struct Event_;
+
+struct Event {
+    obx_id id;
+    std::string name;
+    std::string description;
+    bool is_work_event;
+    obx_id event_stat_id;
+    obx_id payment_stat_id;
+    int64_t start_date;
+    int64_t end_date;
+    int64_t duration;
+
+    struct _OBX_MetaInfo {
+        static constexpr obx_schema_id entityId() { return 5; }
+    
+        static void setObjectId(Event& object, obx_id newId) { object.id = newId; }
+    
+        /// Write given object to the FlatBufferBuilder
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Event& object);
+    
+        /// Read an object from a valid FlatBuffer
+        static Event fromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static std::unique_ptr<Event> newFromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static void fromFlatBuffer(const void* data, size_t size, Event& outObject);
+    };
+};
+
+struct Event_ {
+    static const obx::Property<Event, OBXPropertyType_Long> id;
+    static const obx::Property<Event, OBXPropertyType_String> name;
+    static const obx::Property<Event, OBXPropertyType_String> description;
+    static const obx::Property<Event, OBXPropertyType_Bool> is_work_event;
+    static const obx::RelationProperty<Event, EventStatus> event_stat_id;
+    static const obx::RelationProperty<Event, PaymentStatus> payment_stat_id;
+    static const obx::Property<Event, OBXPropertyType_Date> start_date;
+    static const obx::Property<Event, OBXPropertyType_Date> end_date;
+    static const obx::Property<Event, OBXPropertyType_Long> duration;
 };
 

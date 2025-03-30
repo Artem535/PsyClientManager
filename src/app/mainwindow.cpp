@@ -8,7 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
   m_ui->setupUi(this);
 }
 
-void MainWindow::addClientInfoPage(std::shared_ptr<ClientModel> model) {
+void MainWindow::add_client_info_page(std::shared_ptr<ClientModel> model) {
+  m_ui->tab_widget->addTab(new EventInfo(this), "Event info");
   m_ui->tab_widget->addTab(new ClientInfo(model, this), "Client info");
 }
 

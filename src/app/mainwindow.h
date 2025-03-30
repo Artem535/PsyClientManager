@@ -1,6 +1,7 @@
 #pragma once
 
 #include "clientinfo.h"
+#include "eventinfo.h"
 #include "database.h"
 #include <QMainWindow>
 #include <memory>
@@ -19,9 +20,9 @@ public:
   ~MainWindow() override;
 
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
-  void addClientInfoPage(std::shared_ptr<ClientModel> model);
+  void add_client_info_page(std::shared_ptr<ClientModel> model);
   
 private:
   std::unique_ptr<Ui::MainWindow> m_ui;
-  std::shared_ptr<std::shared_ptr<pcm::database::Database>> m_db{nullptr};
+  std::shared_ptr<pcm::database::Database> m_db{nullptr};
 };

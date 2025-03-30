@@ -38,11 +38,6 @@
           "id": "6:3200790165446494807",
           "name": "birthday_date",
           "type": 10
-        },
-        {
-          "id": "7:6437078930246871991",
-          "name": "age",
-          "type": 5
         }
       ]
     },
@@ -130,16 +125,77 @@
           "type": 9
         }
       ]
+    },
+    {
+      "id": "5:2275087930255141894",
+      "lastPropertyId": "9:5716146653668202541",
+      "name": "Event",
+      "properties": [
+        {
+          "id": "1:4202322800725384350",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6174680980825670351",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "3:2685668261718824971",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "4:7332813401351768790",
+          "name": "is_work_event",
+          "type": 1
+        },
+        {
+          "id": "5:6756516191170196090",
+          "name": "event_stat_id",
+          "indexId": "3:8539627464916298022",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "EventStatus"
+        },
+        {
+          "id": "6:156741055834734281",
+          "name": "payment_stat_id",
+          "indexId": "4:6077000883603522273",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "PaymentStatus"
+        },
+        {
+          "id": "7:8620128003167801451",
+          "name": "start_date",
+          "type": 10
+        },
+        {
+          "id": "8:5610333834680675135",
+          "name": "end_date",
+          "type": 10
+        },
+        {
+          "id": "9:5716146653668202541",
+          "name": "duration",
+          "type": 6
+        }
+      ]
     }
   ],
-  "lastEntityId": "4:7128285385869012364",
-  "lastIndexId": "2:6234586313957568125",
+  "lastEntityId": "5:2275087930255141894",
+  "lastIndexId": "4:6077000883603522273",
   "lastRelationId": "",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    6437078930246871991
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

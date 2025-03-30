@@ -8,7 +8,6 @@ const obx::Property<Client, OBXPropertyType_String> Client_::last_name(3);
 const obx::Property<Client, OBXPropertyType_String> Client_::additional_info(4);
 const obx::Property<Client, OBXPropertyType_String> Client_::diagnosis(5);
 const obx::Property<Client, OBXPropertyType_Date> Client_::birthday_date(6);
-const obx::Property<Client, OBXPropertyType_Int> Client_::age(7);
 
 void Client::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Client& object) {
     fbb.Clear();
@@ -23,7 +22,6 @@ void Client::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, co
     fbb.AddOffset(10, offsetadditional_info);
     fbb.AddOffset(12, offsetdiagnosis);
     fbb.AddElement(14, object.birthday_date);
-    fbb.AddElement(16, object.age);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -78,7 +76,6 @@ void Client::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Client& out
         }
     }
     outObject.birthday_date = table->GetField<int64_t>(14, 0);
-    outObject.age = table->GetField<int32_t>(16, 0);
 }
 
 const obx::Property<EventStatus, OBXPropertyType_Long> EventStatus_::id(1);
@@ -121,61 +118,6 @@ void EventStatus::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, EventS
     }
 }
 
-const obx::Property<Events, OBXPropertyType_Long> Events_::id(1);
-const obx::RelationProperty<Events, EventStatus> Events_::event_stat_id(2);
-const obx::RelationProperty<Events, PaymentStatus> Events_::payment_stat_id(3);
-const obx::Property<Events, OBXPropertyType_String> Events_::description(4);
-const obx::Property<Events, OBXPropertyType_Date> Events_::start_date(5);
-const obx::Property<Events, OBXPropertyType_Date> Events_::end_date(6);
-const obx::Property<Events, OBXPropertyType_Long> Events_::duration(7);
-
-void Events::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Events& object) {
-    fbb.Clear();
-    auto offsetdescription = fbb.CreateString(object.description);
-    flatbuffers::uoffset_t fbStart = fbb.StartTable();
-    fbb.AddElement(4, object.id);
-    fbb.AddElement(6, object.event_stat_id);
-    fbb.AddElement(8, object.payment_stat_id);
-    fbb.AddOffset(10, offsetdescription);
-    fbb.AddElement(12, object.start_date);
-    fbb.AddElement(14, object.end_date);
-    fbb.AddElement(16, object.duration);
-    flatbuffers::Offset<flatbuffers::Table> offset;
-    offset.o = fbb.EndTable(fbStart);
-    fbb.Finish(offset);
-}
-
-Events Events::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t size) {
-    Events object;
-    fromFlatBuffer(data, size, object);
-    return object;
-}
-
-std::unique_ptr<Events> Events::_OBX_MetaInfo::newFromFlatBuffer(const void* data, size_t size) {
-    auto object = std::make_unique<Events>();
-    fromFlatBuffer(data, size, *object);
-    return object;
-}
-
-void Events::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Events& outObject) {
-    const auto* table = flatbuffers::GetRoot<flatbuffers::Table>(data);
-    assert(table);
-    outObject.id = table->GetField<obx_id>(4, 0);
-    outObject.event_stat_id = table->GetField<obx_id>(6, 0);
-    outObject.payment_stat_id = table->GetField<obx_id>(8, 0);
-    {
-        auto* ptr = table->GetPointer<const flatbuffers::String*>(10);
-        if (ptr) {
-            outObject.description.assign(ptr->c_str(), ptr->size());
-        } else {
-            outObject.description.clear();
-        }
-    }
-    outObject.start_date = table->GetField<int64_t>(12, 0);
-    outObject.end_date = table->GetField<int64_t>(14, 0);
-    outObject.duration = table->GetField<int64_t>(16, 0);
-}
-
 const obx::Property<PaymentStatus, OBXPropertyType_Long> PaymentStatus_::id(1);
 const obx::Property<PaymentStatus, OBXPropertyType_String> PaymentStatus_::name(2);
 
@@ -214,5 +156,74 @@ void PaymentStatus::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Paym
             outObject.name.clear();
         }
     }
+}
+
+const obx::Property<Event, OBXPropertyType_Long> Event_::id(1);
+const obx::Property<Event, OBXPropertyType_String> Event_::name(2);
+const obx::Property<Event, OBXPropertyType_String> Event_::description(3);
+const obx::Property<Event, OBXPropertyType_Bool> Event_::is_work_event(4);
+const obx::RelationProperty<Event, EventStatus> Event_::event_stat_id(5);
+const obx::RelationProperty<Event, PaymentStatus> Event_::payment_stat_id(6);
+const obx::Property<Event, OBXPropertyType_Date> Event_::start_date(7);
+const obx::Property<Event, OBXPropertyType_Date> Event_::end_date(8);
+const obx::Property<Event, OBXPropertyType_Long> Event_::duration(9);
+
+void Event::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Event& object) {
+    fbb.Clear();
+    auto offsetname = fbb.CreateString(object.name);
+    auto offsetdescription = fbb.CreateString(object.description);
+    flatbuffers::uoffset_t fbStart = fbb.StartTable();
+    fbb.AddElement(4, object.id);
+    fbb.AddOffset(6, offsetname);
+    fbb.AddOffset(8, offsetdescription);
+    fbb.AddElement(10, object.is_work_event ? 1 : 0);
+    fbb.AddElement(12, object.event_stat_id);
+    fbb.AddElement(14, object.payment_stat_id);
+    fbb.AddElement(16, object.start_date);
+    fbb.AddElement(18, object.end_date);
+    fbb.AddElement(20, object.duration);
+    flatbuffers::Offset<flatbuffers::Table> offset;
+    offset.o = fbb.EndTable(fbStart);
+    fbb.Finish(offset);
+}
+
+Event Event::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t size) {
+    Event object;
+    fromFlatBuffer(data, size, object);
+    return object;
+}
+
+std::unique_ptr<Event> Event::_OBX_MetaInfo::newFromFlatBuffer(const void* data, size_t size) {
+    auto object = std::make_unique<Event>();
+    fromFlatBuffer(data, size, *object);
+    return object;
+}
+
+void Event::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Event& outObject) {
+    const auto* table = flatbuffers::GetRoot<flatbuffers::Table>(data);
+    assert(table);
+    outObject.id = table->GetField<obx_id>(4, 0);
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(6);
+        if (ptr) {
+            outObject.name.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.name.clear();
+        }
+    }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(8);
+        if (ptr) {
+            outObject.description.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.description.clear();
+        }
+    }
+    outObject.is_work_event = table->GetField<uint8_t>(10, 0) != 0;
+    outObject.event_stat_id = table->GetField<obx_id>(12, 0);
+    outObject.payment_stat_id = table->GetField<obx_id>(14, 0);
+    outObject.start_date = table->GetField<int64_t>(16, 0);
+    outObject.end_date = table->GetField<int64_t>(18, 0);
+    outObject.duration = table->GetField<int64_t>(20, 0);
 }
 

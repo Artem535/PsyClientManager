@@ -7,22 +7,26 @@ table Client {
     diagnosis: string;
     /// objectbox: date
     birthday_date: int64;
-    age: int;
 }
 
-table Events {
+table Event {
     id: ulong;
+    
+    name: string;
+    description: string;
+
+    is_work_event: bool;
+
     /// objectbox: relation=EventStatus
     event_stat_id: ulong;
     /// objectbox: relation=PaymentStatus
     payment_stat_id: ulong;
     
-    description: string;
-
     /// objectbox: date
     start_date: int64;
     /// objectbox: date
     end_date: int64;
+    
     duration: int64;
 }
 

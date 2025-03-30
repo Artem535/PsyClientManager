@@ -11,7 +11,7 @@ int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   MainWindow window;
 
-  window.addClientInfoPage(std::make_shared<ClientModel>(m_db));
+  window.add_client_info_page(std::make_shared<ClientModel>(m_db));
 
   window.show();
 
