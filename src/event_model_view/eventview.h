@@ -20,6 +20,7 @@ protected:
 
 private:
   QGraphicsScene *mScene;
+  int64_t mSelectedDay
   qreal mPixelPerMin = 1;
 
   QVector<EventItem*> mEvents;

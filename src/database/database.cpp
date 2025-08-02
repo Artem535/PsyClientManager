@@ -1,4 +1,6 @@
+#include <Poco/Timestamp.h>
 #include <utility>
+#include <vector>
 #define OBX_CPP_FILE
 #include "database.h"
 
@@ -91,6 +93,27 @@ std::vector<obx_id> Database::get_event_ids(const int64_t date) {
   const auto ids = results | std::views::transform(
                                  [](const auto &event) { return event.id; });
   return std::vector<obx_id>{ids.begin(), ids.end()};
+}
+
+bool Database::has_conflict(const Event &event) {
+  auto query =
+      m_events_box
+          ->query(Event_::start_date.lessThan(event.end_date)
+                      .and_(Event_::end_date.greaterThan(event.start_date)))
+          .build();
+  return query.count() > 0;
+}
+
+std::vector<Event> Database::get_day_events(const int64_t date) {
+  const auto [start, end] = get_time_range(Poco::Timestamp{date});
+
+  auto query = m_events_box
+                   ->query(Event_::start_date.lessThan(end).and_(
+                       Event_::end_date.greaterThan(start)))
+                   .build();
+
+  const auto result = query.find();
+  return result;
 }
 
 } // namespace pcm::database

@@ -5,15 +5,18 @@
 #include <objectbox.h>
 #include <vector>
 #include <ranges>
+#include <chrono>
 
 
 #include "objectbox.hpp"
 #include "objectbox-model.h"
 #include "scheme.obx.hpp"
+#include "datetime.hpp"
 
 #include "config.h"
 #include "constance.hpp"
 #include <Poco/File.h>
+#include <Poco/Timestamp.h>
 
 namespace pcm::database {
 
@@ -33,6 +36,11 @@ public:
 
     std::vector<obx_id> get_client_ids();
     std::vector<obx_id> get_event_ids(const int64_t date);
+
+    bool has_conflict(const Event &event);
+    std::vector<Event> get_day_events(const int64_t date); 
+
+
 
 private:
     void add_demo_data();

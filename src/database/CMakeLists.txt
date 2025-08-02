@@ -16,6 +16,7 @@ add_library(${TARGET_NAME} STATIC
     database.cpp
     constance.hpp
     scheme.obx.cpp
+    datetime.hpp
 )
 
 # Include directories
