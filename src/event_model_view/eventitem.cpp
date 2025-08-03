@@ -1,5 +1,7 @@
 #include "eventitem.h"
+#include "eventview.h"
 #include <qdatetime.h>
+#include <qgraphicsitem.h>
 #include <qgraphicsscene.h>
 #include <qlogging.h>
 #include <qnamespace.h>
@@ -55,6 +57,13 @@ QVariant EventItem::itemChange(GraphicsItemChange change,
 
 QDateTime EventItem::getStartTime() const { return mStartTime; }
 QDateTime EventItem::getEndTime() const { return mEndTime; }
+QString EventItem::getTitle() const { return mTitle; }
+
+void EventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+  emit itemSelected();
+  qInfo() << "EventItem::mousePressEvent| Item selected: " << mTitle;
+  QGraphicsItem::mousePressEvent(event);
+}
 
 void EventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget) {

@@ -1,4 +1,5 @@
 #include "eventinfo.h"
+#include "eventitem.h"
 #include "eventview.h"
 #include "timelinewidget.h"
 #include "ui/pages/ui_eventinfo.h"
@@ -7,7 +8,21 @@
 EventInfo::EventInfo(QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
-  mUi->list_view_v_layout->addWidget(new TimelineWidget(this));
+  mTimelineWidget = new TimelineWidget(this);
+  mUi->list_view_v_layout->addWidget(mTimelineWidget);
+
+  // Connect the timeline widget to the event view, for update information about event.
+  connect(mTimelineWidget, &TimelineWidget::eventSelected, this,
+          &EventInfo::onEventClicked);
+  
+}
+
+void EventInfo::onEventClicked(EventItem *event) {
+  if (event != nullptr) {
+    mUi->mTitle->setText(event->getTitle());
+    mUi->mTimeFrom->setDateTime(event->getStartTime());
+    mUi->mTimeTo->setDateTime(event->getEndTime());
+  }
 }
 
 EventInfo::~EventInfo() = default;

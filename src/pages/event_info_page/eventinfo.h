@@ -1,10 +1,8 @@
 #pragma once
 #include "config.h"
 #include "database.h"
+#include "eventitem.h"
 #include "timelinewidget.h"
-#include <KDGanttConstraintModel>
-#include <KDGanttDateTimeGrid>
-#include <KDGanttView>
 #include <QAbstractItemModel>
 #include <QCheckBox>
 #include <QDateTime>
@@ -27,4 +25,8 @@ public:
 
 private:
   std::unique_ptr<Ui::EventInfo> mUi;
+  TimelineWidget *mTimelineWidget;
+
+private slots:
+  void onEventClicked(EventItem *event);
 };

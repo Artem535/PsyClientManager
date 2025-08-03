@@ -15,19 +15,30 @@ class EventView : public QGraphicsView {
 public:
   explicit EventView(QWidget *parent = nullptr);
 
+
+signals:
+  void eventSelected(EventItem *item);
+
 protected:
   void resizeEvent(QResizeEvent *event) override;
 
+
 private:
   QGraphicsScene *mScene;
-  int64_t mSelectedDay
+  int64_t mSelectedDay;
   qreal mPixelPerMin = 1;
 
   QVector<EventItem*> mEvents;
+
+  // TODO: We need this?
+  EventItem *mSelectedEvent = nullptr;
 
   void drawBackground(QPainter *painter, const QRectF &rect) override;
   void updateSceneSize();
   void addDemoItems();
   void updateItemsSize();
   void updateItemsCords();
+
+private slots:
+  void onEventSelected();
 };
