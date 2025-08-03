@@ -1,3 +1,5 @@
+#include <QGraphicsScene>
+#include <qgraphicsscene.h>
 #include "timelinewidget.h"
 #include "eventview.h"
 #include <memory>

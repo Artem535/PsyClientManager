@@ -20,13 +20,16 @@ class EventInfo : public QWidget {
 
 public:
   explicit EventInfo(QWidget *parent = nullptr);
-
   ~EventInfo() override;
+
+signals:
+  void changedEditMode();
+
+private slots:
+  void onEventClicked(EventItem *event);
 
 private:
   std::unique_ptr<Ui::EventInfo> mUi;
   TimelineWidget *mTimelineWidget;
-
-private slots:
-  void onEventClicked(EventItem *event);
+  bool mInEditMode = false;
 };
