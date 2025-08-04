@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.28)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 20)
 
-set(TARGET_NAME ${PROJECT_NAME}_event_model_view)
+set(TARGET_NAME ${PROJECT_NAME}_event_view)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
@@ -12,18 +12,15 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 qt_add_library(${TARGET_NAME} STATIC
     eventview.cpp
     eventitem.cpp
-    timelinewidget.cpp
 )
 
 add_dependencies(${TARGET_NAME}
     ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
     ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
     Qt6::Widgets
     Qt6::Gui
 )

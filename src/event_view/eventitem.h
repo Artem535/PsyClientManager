@@ -34,9 +34,9 @@ public:
    * @param isWorkItem A flag indicating whether this is a work-related event
    * item.
    */
-  EventItem(const QString &title, const QDateTime &startTime,
-            const QDateTime &endTime, QSize size = {20, 20},
-            bool isWorkItem = false);
+  EventItem(long long id, const QString &title, const QDateTime &startTime,
+            const QDateTime &endTime, bool isWorkItem = false,
+            QSize size = {20, 20});
 
   /**
    * @brief Returns the bounding rectangle of the item.
@@ -112,5 +112,7 @@ private:
   QDateTime mStartTime;
   /**< The end time of the event. */
   QDateTime mEndTime;
+
+  long long mId;
 };
 ;

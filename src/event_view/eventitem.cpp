@@ -1,5 +1,4 @@
 #include "eventitem.h"
-#include "eventview.h"
 #include <qdatetime.h>
 #include <qgraphicsitem.h>
 #include <qgraphicsscene.h>
@@ -9,10 +8,11 @@
 #include <qpoint.h>
 #include <qvariant.h>
 
-EventItem::EventItem(const QString &title, const QDateTime &startTime,
-                     const QDateTime &endTime, QSize size, bool isWorkItem)
+EventItem::EventItem(long long id, const QString &title,
+                     const QDateTime &startTime, const QDateTime &endTime,
+                     bool isWorkItem, QSize size)
     : mIsWorkItem(isWorkItem), mSize(size), mTitle(title),
-      mStartTime(startTime), mEndTime(endTime) {
+      mStartTime(startTime), mEndTime(endTime), mId(id) {
   qInfo() << "Created event: " << title << " (" << startTime.toString() << " - "
           << endTime.toString() << ")";
   setFlag(QGraphicsItem::ItemIsMovable);
@@ -21,7 +21,7 @@ EventItem::EventItem(const QString &title, const QDateTime &startTime,
 }
 
 QRectF EventItem::boundingRect() const {
-  const qreal penWidth = 1;
+  const qreal penWidth{1};
   const auto xOffset = mIsWorkItem ? 0 : mSize.width();
   return QRectF(xOffset + penWidth, penWidth, mSize.width() + penWidth,
                 mSize.height() + penWidth);

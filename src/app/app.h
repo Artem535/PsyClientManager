@@ -14,8 +14,8 @@ public:
   int run(int argc, char *argv[]);
 
 private:
-  std::shared_ptr<database::Database> m_db;
-  config::Config m_conf;
+  std::shared_ptr<database::Database> mDb;
+  config::Config mConf;
 };
 
 } // namespace pcm

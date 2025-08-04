@@ -1,8 +1,8 @@
 #include "eventview.h"
+#include "constants.hpp"
 #include "eventitem.h"
-#include "timelinewidgetconstants.hpp"
-#include <ctime>
 #include <qdatetime.h>
+#include <qgraphicsscene.h>
 #include <qline.h>
 #include <qlogging.h>
 #include <qminmax.h>
@@ -19,8 +19,9 @@ EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
   updateSceneSize();
-  addDemoItems();
 }
+
+QGraphicsScene *EventView::getScene() { return mScene; }
 
 void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
@@ -46,21 +47,6 @@ void EventView::updateSceneSize() {
   mPixelPerMin = qBound(0.5, mPixelPerMin, 5.0);
 
   scene()->setSceneRect(0, 0, viewportSize.width(), sceneHeight);
-}
-
-void EventView::addDemoItems() {
-  const int itemWidth = viewport()->width() / 2 - 10; // Ширина с отступом
-  const QDateTime now = QDateTime::currentDateTime();
-
-  mEvents.push_back(new EventItem{"Meeting", now, now.addSecs(3600),
-                                  QSize(itemWidth, 100), true});
-  mEvents.push_back(new EventItem{"Lunch", now.addSecs(7200), now.addSecs(9000),
-                                  QSize(itemWidth, 80), false});
-
-  for (const auto event : mEvents) {
-    scene()->addItem(event);
-    connect(event, &EventItem::itemSelected, this, &EventView::onEventSelected);
-  }
 }
 
 void EventView::onEventSelected() {

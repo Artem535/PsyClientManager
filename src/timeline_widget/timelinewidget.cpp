@@ -1,14 +1,19 @@
-#include <QGraphicsScene>
-#include <qgraphicsscene.h>
 #include "timelinewidget.h"
+#include "eventdatamanager.h"
 #include "eventview.h"
-#include <memory>
+#include <QGraphicsScene>
 #include <qboxlayout.h>
+#include <qgraphicsscene.h>
 
-TimelineWidget::TimelineWidget(QWidget *parent) : QWidget(parent) {
+TimelineWidget::TimelineWidget(std::shared_ptr<pcm::database::Database> db,
+                               QWidget *parent)
+    : QWidget(parent) {
   mLayout = new QVBoxLayout(this);
   setLayout(mLayout);
+
   mEventView = new EventView(this);
+  mDataManager = new EventDataManager(db, mEventView->getScene(), this);
+
   mLayout->addWidget(mEventView);
 
   connect(mEventView, &EventView::eventSelected, this,

@@ -7,16 +7,19 @@
 #include <qdialogbuttonbox.h>
 #include <qpushbutton.h>
 
-EventInfo::EventInfo(QWidget *parent)
+EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
+                     QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
-  mTimelineWidget = new TimelineWidget(this);
+
+  mTimelineWidget = new TimelineWidget(db, this);
+  // TODO: rename layout name
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
   // Connect the timeline widget to the event view, for update information about
   // event.
   connect(mTimelineWidget, &TimelineWidget::eventSelected, this,
-          &EventInfo::onEventClicked);
+          &EventInfoPage::onEventClicked);
 
   // Connect the buttons.
   connect(mUi->mChangeButton, &QPushButton::clicked, [&]() {
@@ -25,7 +28,7 @@ EventInfo::EventInfo(QWidget *parent)
   });
 
   // In edit we display only buttons with apply and cancel.
-  connect(this, &EventInfo::changedEditMode, [&]() {
+  connect(this, &EventInfoPage::changedEditMode, [&]() {
     mUi->mButtonBox->setVisible(mInEditMode);
     mUi->mChangeButton->setVisible(!mInEditMode);
   });
@@ -45,7 +48,7 @@ EventInfo::EventInfo(QWidget *parent)
   emit changedEditMode();
 }
 
-void EventInfo::onEventClicked(EventItem *event) {
+void EventInfoPage::onEventClicked(EventItem *event) {
   if (event != nullptr) {
     mUi->mTitle->setText(event->getTitle());
     mUi->mTimeFrom->setDateTime(event->getStartTime());
@@ -53,4 +56,4 @@ void EventInfo::onEventClicked(EventItem *event) {
   }
 }
 
-EventInfo::~EventInfo() = default;
+EventInfoPage::~EventInfoPage() = default;

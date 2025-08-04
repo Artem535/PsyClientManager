@@ -1,5 +1,4 @@
 #pragma once
-#include "config.h"
 #include "database.h"
 #include "eventitem.h"
 #include "timelinewidget.h"
@@ -15,12 +14,13 @@ namespace Ui {
 class EventInfo;
 }
 
-class EventInfo : public QWidget {
+class EventInfoPage : public QWidget {
   Q_OBJECT
 
 public:
-  explicit EventInfo(QWidget *parent = nullptr);
-  ~EventInfo() override;
+  explicit EventInfoPage(std::shared_ptr<pcm::database::Database> db,
+                     QWidget *parent = nullptr);
+  ~EventInfoPage() override;
 
 signals:
   void changedEditMode();

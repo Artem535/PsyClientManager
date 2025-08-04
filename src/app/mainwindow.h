@@ -21,8 +21,9 @@ public:
 
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
   void add_client_info_page(std::shared_ptr<ClientModel> model);
+  void add_event_info_page(std::shared_ptr<pcm::database::Database> db);
   
 private:
-  std::unique_ptr<Ui::MainWindow> m_ui;
-  std::shared_ptr<pcm::database::Database> m_db{nullptr};
+  std::unique_ptr<Ui::MainWindow> mUi;
+  std::shared_ptr<pcm::database::Database> mDb{nullptr};
 };

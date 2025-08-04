@@ -1,4 +1,5 @@
 #pragma once
+#include "eventdatamanager.h"
 #include "eventitem.h"
 #include "eventview.h"
 #include <QObject>
@@ -11,7 +12,8 @@
 class TimelineWidget : public QWidget {
   Q_OBJECT
 public:
-  TimelineWidget(QWidget *parent = nullptr);
+  TimelineWidget(std::shared_ptr<pcm::database::Database> db,
+                 QWidget *parent = nullptr);
   ~TimelineWidget();
 
 signals:
@@ -23,4 +25,5 @@ private slots:
 private:
   QVBoxLayout *mLayout;
   EventView *mEventView;
+  EventDataManager *mDataManager;
 };
