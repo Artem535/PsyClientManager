@@ -5,8 +5,12 @@
 #include <qgraphicsscene.h>
 #include <qline.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qminmax.h>
 #include <qnamespace.h>
+
+Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
+
 
 EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   mScene = new QGraphicsScene(this);
@@ -51,7 +55,9 @@ void EventView::updateSceneSize() {
 
 void EventView::onEventSelected() {
   EventItem *item = qobject_cast<EventItem *>(sender());
-  qInfo() << "EventView::onEventSelected| " << item;
+  
+  qCDebug(logEventView) << "EventView::onEventSelected| " << item;
+  
   if (item != nullptr) {
     emit eventSelected(item);
   }

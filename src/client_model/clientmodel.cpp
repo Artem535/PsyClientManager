@@ -1,6 +1,9 @@
 #include "clientmodel.h"
 #include <qabstractitemmodel.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
+
+Q_LOGGING_CATEGORY(logClientModel, "pcm.ClientModel")
 
 ClientModel::ClientModel(std::shared_ptr<pcm::database::Database> db,
                          QObject *parent)
@@ -15,12 +18,12 @@ int ClientModel::rowCount(const QModelIndex &parent) const {
 
 QVariant ClientModel::data(const QModelIndex &index, int role) const {
   if (!index.isValid()) {
-    qWarning() << "ClientModel::data: index is invalid";
+    qCWarning(logClientModel) << "ClientModel::data: index is invalid";
     return QVariant();
   }
 
   if (index.row() >= m_client_ids.size()) {
-    qWarning() << "ClientModel::data: index is out of range";
+    qCWarning(logClientModel) << "ClientModel::data: index is out of range";
     return QVariant();
   }
 
@@ -39,7 +42,7 @@ QVariant ClientModel::data(const QModelIndex &index, int role) const {
     result = QVariant::fromValue(*client);
     break;
   default:
-    qWarning() << "ClientModel::data: wrong role, selected role = " << role;
+    qCWarning(logClientModel) << "ClientModel::data: wrong role, selected role = " << role;
     break;
   }
 
@@ -49,17 +52,17 @@ QVariant ClientModel::data(const QModelIndex &index, int role) const {
 bool ClientModel::setData(const QModelIndex &index, const QVariant &value,
                           int role) {
   if (!index.isValid()) {
-    qWarning() << "ClientModel::updateClient: index is invalid";
+    qCWarning(logClientModel) << "ClientModel::updateClient: index is invalid";
     return false;
   }
 
   if (index.row() >= m_client_ids.size()) {
-    qWarning() << "ClientModel::updateClient: index is out of range";
+    qCWarning(logClientModel) << "ClientModel::updateClient: index is out of range";
     return false;
   }
 
   if (role != Qt::EditRole) {
-    qWarning() << "ClientModel::updateClient: wrong role";
+    qCWarning(logClientModel) << "ClientModel::updateClient: wrong role";
     return false;
   }
 

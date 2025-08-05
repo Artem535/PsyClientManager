@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <qgraphicsscene.h>
 #include <qgraphicsview.h>
+#include <QLoggingCategory>
 
 class EventView : public QGraphicsView {
   Q_OBJECT

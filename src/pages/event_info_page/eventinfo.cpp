@@ -8,13 +8,18 @@
 #include <qpushbutton.h>
 
 EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
-                     QWidget *parent)
+                             QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
   mTimelineWidget = new TimelineWidget(db, this);
   // TODO: rename layout name
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
+
+  connect(mUi->calendar_widget, &QCalendarWidget::selectionChanged, [&]() {
+    const auto selectedDate = mUi->calendar_widget->selectedDate();
+    mTimelineWidget->onSelectedDayChanged(selectedDate);
+  });
 
   // Connect the timeline widget to the event view, for update information about
   // event.

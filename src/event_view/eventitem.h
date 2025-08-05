@@ -11,6 +11,7 @@
 #include <qobject.h>
 #include <qsize.h>
 #include <qvariant.h>
+#include <QLoggingCategory>
 
 /**
  * @brief The EventItem class represents a graphical item for displaying an

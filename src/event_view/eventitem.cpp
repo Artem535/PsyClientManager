@@ -3,19 +3,24 @@
 #include <qgraphicsitem.h>
 #include <qgraphicsscene.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
 #include <qpainter.h>
 #include <qpoint.h>
 #include <qvariant.h>
+
+Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
 EventItem::EventItem(long long id, const QString &title,
                      const QDateTime &startTime, const QDateTime &endTime,
                      bool isWorkItem, QSize size)
     : mIsWorkItem(isWorkItem), mSize(size), mTitle(title),
       mStartTime(startTime), mEndTime(endTime), mId(id) {
-  qInfo() << "Created event: " << title << " (" << startTime.toString() << " - "
+
+  qCInfo(logPcmEventItem) << "Created event: " << title << " (" << startTime.toString() << " - "
           << endTime.toString() << ")";
-  setFlag(QGraphicsItem::ItemIsMovable);
+
+          setFlag(QGraphicsItem::ItemIsMovable);
   setFlag(QGraphicsItem::ItemIsSelectable);
   setFlag(QGraphicsItem::ItemSendsGeometryChanges);
 }
@@ -61,7 +66,8 @@ QString EventItem::getTitle() const { return mTitle; }
 
 void EventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
   emit itemSelected();
-  qInfo() << "EventItem::mousePressEvent| Item selected: " << mTitle;
+  qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected: "
+                          << mTitle;
   QGraphicsItem::mousePressEvent(event);
 }
 

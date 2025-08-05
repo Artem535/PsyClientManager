@@ -7,6 +7,7 @@
 #include <memory>
 #include <qnamespace.h>
 #include <qvariant.h>
+#include <QLoggingCategory>
 
 Q_DECLARE_METATYPE(Client)
 

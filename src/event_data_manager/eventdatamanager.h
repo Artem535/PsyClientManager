@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QObject>
 #include <memory>
+#include <QLoggingCategory>
 
 class EventDataManager : public QObject {
   Q_OBJECT

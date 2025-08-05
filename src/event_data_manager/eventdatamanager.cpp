@@ -1,5 +1,8 @@
 #include "eventdatamanager.h"
 #include "eventitem.h"
+#include <qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(logEventDataManager, "pcm.event_data_manager")
 
 EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
                                    QGraphicsScene *scene, QObject *parent)
@@ -14,6 +17,7 @@ EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
 }
 
 void EventDataManager::selectDay(const long long int &day) {
+  qCDebug(logEventDataManager) << "EventDataManager::selectDay| Selected day changed" << day;
   mSelectedDay = day;
   emit selectedDayChanged();
 }
@@ -34,7 +38,7 @@ void EventDataManager::loadEvents() {
 
 void EventDataManager::onEventSelected() {
   EventItem *item = qobject_cast<EventItem *>(sender());
-  qInfo() << "EventDataManager::onEventSelected| " << item;
+  qCInfo(logEventDataManager) << "EventDataManager::onEventSelected| " << item;
   if (item != nullptr) {
     emit eventSelected(item);
   }
