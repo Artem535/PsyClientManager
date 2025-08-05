@@ -13,44 +13,14 @@ EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
   mUi->setupUi(this);
 
   mTimelineWidget = new TimelineWidget(db, this);
-  // TODO: rename layout name
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
-  connect(mUi->calendar_widget, &QCalendarWidget::selectionChanged, [&]() {
-    const auto selectedDate = mUi->calendar_widget->selectedDate();
-    mTimelineWidget->onSelectedDayChanged(selectedDate);
-  });
+  connectCalendar();
+  connectTimeline();
+  connectButtons();
+  connectButtonBox();
 
-  // Connect the timeline widget to the event view, for update information about
-  // event.
-  connect(mTimelineWidget, &TimelineWidget::eventSelected, this,
-          &EventInfoPage::onEventClicked);
-
-  // Connect the buttons.
-  connect(mUi->mChangeButton, &QPushButton::clicked, [&]() {
-    mInEditMode = true;
-    emit changedEditMode();
-  });
-
-  // In edit we display only buttons with apply and cancel.
-  connect(this, &EventInfoPage::changedEditMode, [&]() {
-    mUi->mButtonBox->setVisible(mInEditMode);
-    mUi->mChangeButton->setVisible(!mInEditMode);
-  });
-
-  connect(mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel),
-          &QPushButton::clicked, [&]() {
-            mInEditMode = false;
-            emit changedEditMode();
-          });
-
-  connect(mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply),
-          &QPushButton::clicked, [&]() {
-            mInEditMode = false;
-            emit changedEditMode();
-          });
-
-  emit changedEditMode();
+  emit changedEditMode(); // Инициализация видимости кнопок
 }
 
 void EventInfoPage::onEventClicked(EventItem *event) {
@@ -59,6 +29,46 @@ void EventInfoPage::onEventClicked(EventItem *event) {
     mUi->mTimeFrom->setDateTime(event->getStartTime());
     mUi->mTimeTo->setDateTime(event->getEndTime());
   }
+}
+
+void EventInfoPage::connectCalendar() {
+  connect(mUi->calendar_widget, &QCalendarWidget::selectionChanged, [this]() {
+    const auto selectedDate = mUi->calendar_widget->selectedDate();
+    mTimelineWidget->onSelectedDayChanged(selectedDate);
+  });
+}
+
+void EventInfoPage::connectTimeline() {
+  connect(mTimelineWidget, &TimelineWidget::eventSelected, this,
+          &EventInfoPage::onEventClicked);
+}
+
+void EventInfoPage::connectButtons() {
+  connect(mUi->mChangeButton, &QPushButton::clicked, [this]() {
+    mInEditMode = true;
+    emit changedEditMode();
+  });
+}
+
+void EventInfoPage::connectButtonBox() {
+  auto cancelButton = mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel);
+  auto applyButton = mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply);
+
+  connect(cancelButton, &QPushButton::clicked, [this]() {
+    mInEditMode = false;
+    emit changedEditMode();
+  });
+
+  connect(applyButton, &QPushButton::clicked, [this]() {
+    mInEditMode = false;
+    emit changedEditMode();
+  });
+
+  // Подключаем изменение режима для управления видимостью элементов
+  connect(this, &EventInfoPage::changedEditMode, [this]() {
+    mUi->mButtonBox->setVisible(mInEditMode);
+    mUi->mChangeButton->setVisible(!mInEditMode);
+  });
 }
 
 EventInfoPage::~EventInfoPage() = default;

@@ -1,5 +1,4 @@
 #include "app.h"
-#include "clientmodel.h"
 
 namespace pcm {
 

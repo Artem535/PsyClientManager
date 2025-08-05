@@ -2,6 +2,7 @@
 #include "eventdatamanager.h"
 #include "eventitem.h"
 #include "eventview.h"
+#include <QLoggingCategory>
 #include <QObject>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -10,8 +11,6 @@
 #include <qlogging.h>
 #include <qloggingcategory.h>
 #include <qtmetamacros.h>
-#include <QLoggingCategory>
-
 
 class TimelineWidget : public QWidget {
   Q_OBJECT
@@ -28,6 +27,7 @@ signals:
 
 private slots:
   void onEventSelected(EventItem *event);
+  void addEvent(const Event &event);
 
 private:
   QVBoxLayout *mLayout;

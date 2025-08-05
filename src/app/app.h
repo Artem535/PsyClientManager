@@ -1,9 +1,10 @@
 #pragma once
 
+#include "clientmodel.h"
 #include "config.h"
 #include "database.h"
-#include <QApplication>
 #include "mainwindow.h"
+#include <QApplication>
 #include <memory>
 
 namespace pcm {

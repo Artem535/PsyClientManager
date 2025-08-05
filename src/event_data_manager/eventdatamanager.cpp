@@ -17,20 +17,34 @@ EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
 }
 
 void EventDataManager::selectDay(const long long int &day) {
-  qCDebug(logEventDataManager) << "EventDataManager::selectDay| Selected day changed" << day;
+  qCDebug(logEventDataManager)
+      << "EventDataManager::selectDay| Selected day changed" << day;
   mSelectedDay = day;
   emit selectedDayChanged();
 }
 
+void EventDataManager::addEvent(const Event &event) {
+  mDb->add_event(event);
+  const auto eventItem = toEventItem(event);
+  addEventItemToScene(eventItem);
+}
+
+void EventDataManager::addEventItemToScene(EventItem *item) {
+  if (mScene == nullptr)
+    return;
+
+  mScene->addItem(item);
+  connect(item, &EventItem::itemSelected, this,
+          &EventDataManager::onEventSelected);
+}
+
 void EventDataManager::loadEvents() {
   auto events = mDb->get_day_events(mSelectedDay);
+  mScene->clear();
 
   for (const auto &event : events) {
     EventItem *item = toEventItem(event);
-    connect(item, &EventItem::itemSelected, this,
-            &EventDataManager::onEventSelected);
-
-    mScene->addItem(item);
+    addEventItemToScene(item);
   }
 
   emit eventsLoaded();

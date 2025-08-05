@@ -8,7 +8,6 @@
 
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 
-
 TimelineWidget::TimelineWidget(std::shared_ptr<pcm::database::Database> db,
                                QWidget *parent)
     : QWidget(parent) {
@@ -24,11 +23,21 @@ TimelineWidget::TimelineWidget(std::shared_ptr<pcm::database::Database> db,
           &TimelineWidget::onEventSelected);
 }
 
+void TimelineWidget::addEvent(const Event &event) {
+  if (mDataManager == nullptr)
+    return;
+
+  qCDebug(logTimelineWidget)
+      << "TimelineWidget::addEvent| Adding event:" << event.id;
+  mDataManager->addEvent(event);
+}
+
 void TimelineWidget::onSelectedDayChanged(const QDate &date) {
   if (mDataManager == nullptr)
     return;
 
-  qCDebug(logTimelineWidget) << "TimelineWidget::onSelectedDayChanged| Date changed:" << date;
+  qCDebug(logTimelineWidget)
+      << "TimelineWidget::onSelectedDayChanged| Date changed:" << date;
   const auto currentTime = QTime::currentTime();
   const auto daySec = QDateTime(date, currentTime).toSecsSinceEpoch();
   mDataManager->selectDay(daySec);

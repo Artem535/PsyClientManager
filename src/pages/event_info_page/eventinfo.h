@@ -32,4 +32,9 @@ private:
   std::unique_ptr<Ui::EventInfo> mUi;
   TimelineWidget *mTimelineWidget;
   bool mInEditMode = false;
+
+  void connectCalendar();
+  void connectTimeline();
+  void connectButtons();
+  void connectButtonBox();
 };

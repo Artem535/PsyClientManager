@@ -36,9 +36,9 @@ private slots:
 
 private:
   std::shared_ptr<pcm::database::Database> mDb;
-  std::unordered_map<obx_id, EventItem *> mEventItems;
   QGraphicsScene *mScene;
   long long int mSelectedDay = -1;
 
   EventItem *toEventItem(const Event &event);
+  void addEventItemToScene(EventItem *item);
 };
