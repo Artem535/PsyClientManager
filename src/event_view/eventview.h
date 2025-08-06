@@ -9,6 +9,7 @@
 #include <qgraphicsscene.h>
 #include <qgraphicsview.h>
 #include <QLoggingCategory>
+#include <memory>
 
 class EventView : public QGraphicsView {
   Q_OBJECT
@@ -18,7 +19,7 @@ public:
   QGraphicsScene *getScene();
 
 signals:
-  void eventSelected(EventItem *item);
+  void eventSelected(std::shared_ptr<EventItem> item);
 
 protected:
   void resizeEvent(QResizeEvent *event) override;

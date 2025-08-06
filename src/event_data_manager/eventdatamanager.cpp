@@ -1,5 +1,6 @@
 #include "eventdatamanager.h"
 #include "eventitem.h"
+#include <memory>
 #include <qloggingcategory.h>
 
 Q_LOGGING_CATEGORY(logEventDataManager, "pcm.event_data_manager")
@@ -29,12 +30,21 @@ void EventDataManager::addEvent(const Event &event) {
   addEventItemToScene(eventItem);
 }
 
-void EventDataManager::addEventItemToScene(EventItem *item) {
+void EventDataManager::addEvent(std::shared_ptr<EventItem> item) {
+
+  const Event event = toEvent(item);
+  const obx_id id = mDb->add_event(event);
+  item->setId(id);
+  addEventItemToScene(item);
+}
+
+void EventDataManager::addEventItemToScene(std::shared_ptr<EventItem> item) {
   if (mScene == nullptr)
     return;
 
-  mScene->addItem(item);
-  connect(item, &EventItem::itemSelected, this,
+  mScene->addItem(item.get());
+  mEvents.insertOrAssign(item->getId(), item);
+  connect(item.get(), &EventItem::itemSelected, this,
           &EventDataManager::onEventSelected);
 }
 
@@ -43,7 +53,7 @@ void EventDataManager::loadEvents() {
   mScene->clear();
 
   for (const auto &event : events) {
-    EventItem *item = toEventItem(event);
+    auto item = toEventItem(event);
     addEventItemToScene(item);
   }
 
@@ -51,17 +61,32 @@ void EventDataManager::loadEvents() {
 }
 
 void EventDataManager::onEventSelected() {
-  EventItem *item = qobject_cast<EventItem *>(sender());
-  qCInfo(logEventDataManager) << "EventDataManager::onEventSelected| " << item;
+  EventItem *item_tmp = qobject_cast<EventItem *>(sender());
+  auto item = mEvents[item_tmp->getId()];
+
+  qCInfo(logEventDataManager)
+      << "EventDataManager::onEventSelected| " << item->getId();
   if (item != nullptr) {
     emit eventSelected(item);
   }
 }
 
-EventItem *EventDataManager::toEventItem(const Event &event) {
+std::shared_ptr<EventItem> EventDataManager::toEventItem(const Event &event) {
   const auto start = QDateTime::fromSecsSinceEpoch(event.start_date);
   const auto end = QDateTime::fromSecsSinceEpoch(event.end_date);
   const auto title = QString::fromStdString(event.name);
-  auto res = new EventItem(event.id, title, start, end, event.is_work_event);
+  auto res = std::make_shared<EventItem>(event.id, title, start, end,
+                                         event.is_work_event);
+  return res;
+}
+
+Event EventDataManager::toEvent(std::shared_ptr<EventItem> item) {
+  Event res{};
+  res.id = item->getId();
+  res.is_work_event = item->isWorkItem();
+  res.start_date = item->getStartTime().toSecsSinceEpoch();
+  res.end_date = item->getEndTime().toSecsSinceEpoch();
+  res.name = item->getTitle().toStdString();
+
   return res;
 }

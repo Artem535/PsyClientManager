@@ -1,4 +1,3 @@
-
 #pragma once
 #include "database.h"
 #include "eventitem.h"
@@ -6,6 +5,8 @@
 #include <QObject>
 #include <memory>
 #include <QLoggingCategory>
+#include <QHash>
+#include <qhash.h>
 
 class EventDataManager : public QObject {
   Q_OBJECT
@@ -18,7 +19,7 @@ public:
   void loadEvents();
 
   void addEvent(const Event &event);
-  void addEvent(const EventItem &event);
+  void addEvent(std::shared_ptr<EventItem> event);
 
   void updateEvent(obx_id eventId, const Event &newData);
   void removeEvent(obx_id eventId);
@@ -28,7 +29,7 @@ signals:
   void eventAdded(obx_id id);
   void eventUpdated(obx_id id);
   void eventRemoved(obx_id id);
-  void eventSelected(EventItem *item);
+  void eventSelected(std::shared_ptr<EventItem> item);
   void selectedDayChanged();
 
 private slots:
@@ -36,9 +37,11 @@ private slots:
 
 private:
   std::shared_ptr<pcm::database::Database> mDb;
+  QHash<obx_id, std::shared_ptr<EventItem>> mEvents;
   QGraphicsScene *mScene;
   long long int mSelectedDay = -1;
 
-  EventItem *toEventItem(const Event &event);
-  void addEventItemToScene(EventItem *item);
+  std::shared_ptr<EventItem> toEventItem(const Event &event);
+  Event toEvent(std::shared_ptr<EventItem> item);
+  void addEventItemToScene(std::shared_ptr<EventItem> item);
 };

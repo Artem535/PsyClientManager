@@ -1,11 +1,6 @@
 #include "eventinfo.h"
-#include "eventitem.h"
-#include "eventview.h"
-#include "timelinewidget.h"
-#include "ui/pages/ui_eventinfo.h"
+#include "ui/pages/ui_eventinfo.h" // <-- UI-заголовок теперь здесь
 #include <memory>
-#include <qdialogbuttonbox.h>
-#include <qpushbutton.h>
 
 EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
                              QWidget *parent)
@@ -23,12 +18,20 @@ EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
   emit changedEditMode(); // Инициализация видимости кнопок
 }
 
-void EventInfoPage::onEventClicked(EventItem *event) {
+void EventInfoPage::onEventClicked(std::shared_ptr<EventItem> event) {
   if (event != nullptr) {
     mUi->mTitle->setText(event->getTitle());
     mUi->mTimeFrom->setDateTime(event->getStartTime());
     mUi->mTimeTo->setDateTime(event->getEndTime());
+    mCurrentEvent = event;
   }
+}
+
+void EventInfoPage::clearUi() {
+  mUi->mTitle->clear();
+  mUi->mTimeFrom->clear();
+  mUi->mTimeTo->clear();
+  mUi->mEventType->setCheckState(Qt::CheckState::Unchecked);
 }
 
 void EventInfoPage::connectCalendar() {
@@ -48,11 +51,23 @@ void EventInfoPage::connectButtons() {
     mInEditMode = true;
     emit changedEditMode();
   });
+
+  connect(mUi->mAddButton, &QPushButton::clicked, [this]() {
+    mInEditMode = true;
+
+    const auto crtDateTime = QDateTime::currentDateTime();
+    mCurrentEvent =
+        std::make_shared<EventItem>(-1, "", crtDateTime, crtDateTime);
+    emit onEventClicked(mCurrentEvent);
+    emit changedEditMode();
+  });
 }
 
 void EventInfoPage::connectButtonBox() {
-  auto cancelButton = mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel);
-  auto applyButton = mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply);
+  auto cancelButton =
+      mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel);
+  auto applyButton =
+      mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply);
 
   connect(cancelButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
@@ -62,13 +77,29 @@ void EventInfoPage::connectButtonBox() {
   connect(applyButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
     emit changedEditMode();
+    emit needAddNewEvent(mCurrentEvent);
   });
 
   // Подключаем изменение режима для управления видимостью элементов
   connect(this, &EventInfoPage::changedEditMode, [this]() {
     mUi->mButtonBox->setVisible(mInEditMode);
     mUi->mChangeButton->setVisible(!mInEditMode);
+    mUi->mAddButton->setVisible(!mInEditMode);
   });
+
+  connect(this, &EventInfoPage::needAddNewEvent, this,
+          &EventInfoPage::addEvent);
+}
+
+void EventInfoPage::addEvent(std::shared_ptr<EventItem> event) {
+  if (event != nullptr) {
+    event->setTitle(mUi->mTitle->text());
+    event->setStartTime(mUi->mTimeFrom->dateTime());
+    event->setEndTime(mUi->mTimeTo->dateTime());
+    event->setIsWorkItem(mUi->mEventType->checkState() ==
+                         Qt::CheckState::Checked);
+    mTimelineWidget->addEvent(event);
+  }
 }
 
 EventInfoPage::~EventInfoPage() = default;
