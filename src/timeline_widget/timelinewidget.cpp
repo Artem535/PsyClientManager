@@ -45,7 +45,7 @@ void TimelineWidget::onSelectedDayChanged(const QDate &date) {
   mDataManager->selectDay(daySec);
 }
 
-void TimelineWidget::onEventSelected(std::shared_ptr<EventItem> event) {
+void TimelineWidget::onEventSelected(EventItem *event) {
   qCInfo(logTimelineWidget)
       << "TimelineWidget::onEventSelected| " << event->getId();
   if (event != nullptr) {
@@ -53,7 +53,7 @@ void TimelineWidget::onEventSelected(std::shared_ptr<EventItem> event) {
   }
 }
 
-void TimelineWidget::addEvent(std::shared_ptr<EventItem> item) {
+void TimelineWidget::addEvent(EventItem *item) {
   if (item != nullptr) {
     mDataManager->addEvent(item);
   }

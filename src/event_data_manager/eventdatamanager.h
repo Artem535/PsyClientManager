@@ -2,10 +2,10 @@
 #include "database.h"
 #include "eventitem.h"
 #include <QGraphicsScene>
+#include <QHash>
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
-#include <QLoggingCategory>
-#include <QHash>
 #include <qhash.h>
 
 class EventDataManager : public QObject {
@@ -19,7 +19,7 @@ public:
   void loadEvents();
 
   void addEvent(const Event &event);
-  void addEvent(std::shared_ptr<EventItem> event);
+  void addEvent(EventItem *event);
 
   void updateEvent(obx_id eventId, const Event &newData);
   void removeEvent(obx_id eventId);
@@ -29,7 +29,7 @@ signals:
   void eventAdded(obx_id id);
   void eventUpdated(obx_id id);
   void eventRemoved(obx_id id);
-  void eventSelected(std::shared_ptr<EventItem> item);
+  void eventSelected(EventItem *item);
   void selectedDayChanged();
 
 private slots:
@@ -37,11 +37,11 @@ private slots:
 
 private:
   std::shared_ptr<pcm::database::Database> mDb;
-  QHash<obx_id, std::shared_ptr<EventItem>> mEvents;
+  QHash<obx_id, EventItem *> mEvents;
   QGraphicsScene *mScene;
   long long int mSelectedDay = -1;
 
-  std::shared_ptr<EventItem> toEventItem(const Event &event);
-  Event toEvent(std::shared_ptr<EventItem> item);
-  void addEventItemToScene(std::shared_ptr<EventItem> item);
+  EventItem *toEventItem(const Event &event);
+  Event toEvent(EventItem *item);
+  void addEventItemToScene(EventItem *item);
 };

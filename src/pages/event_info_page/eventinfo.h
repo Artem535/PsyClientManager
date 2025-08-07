@@ -34,18 +34,18 @@ public:
 signals:
   void changedEditMode();
   void cleanUi();
-  void needAddNewEvent(std::shared_ptr<EventItem> event);
-
+  void needAddNewEvent(EventItem *event);
 
 private slots:
-  void onEventClicked(std::shared_ptr<EventItem> event);
-  void addEvent(std::shared_ptr<EventItem> event);
+  void onEventClicked(EventItem *event);
+  void addEvent(EventItem *event);
   void clearUi();
 
 private:
   std::unique_ptr<Ui::EventInfo> mUi;
-  std::shared_ptr<EventItem> mCurrentEvent = nullptr;
+  EventItem *mCurrentEvent = nullptr;
   TimelineWidget *mTimelineWidget;
+  bool mCreatedNewEvent = false;
   bool mInEditMode = false;
 
   void connectCalendar();

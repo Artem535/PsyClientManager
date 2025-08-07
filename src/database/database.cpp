@@ -33,6 +33,7 @@ Database::Database(const pcm::config::Config &conf) {
 
 obx_id Database::add_event(const Event &event) {
   const obx_id id_inserted_item{m_events_box->put(event)};
+  
   return id_inserted_item;
 }
 

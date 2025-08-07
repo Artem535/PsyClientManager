@@ -54,8 +54,7 @@ void EventView::updateSceneSize() {
 }
 
 void EventView::onEventSelected() {
-  EventItem *item_tmp = qobject_cast<EventItem *>(sender());
-  auto item = std::shared_ptr<EventItem>(item_tmp);
+  EventItem *item = qobject_cast<EventItem *>(sender());
   qCInfo(logEventView) << "EventDataManager::onEventSelected| " << item->getId();
   if (item != nullptr) {
     emit eventSelected(item);

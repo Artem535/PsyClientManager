@@ -3,13 +3,13 @@
 #include "eventitem.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QLoggingCategory>
 #include <QPainter>
 #include <QVector>
 #include <QWidget>
+#include <memory>
 #include <qgraphicsscene.h>
 #include <qgraphicsview.h>
-#include <QLoggingCategory>
-#include <memory>
 
 class EventView : public QGraphicsView {
   Q_OBJECT
@@ -19,7 +19,7 @@ public:
   QGraphicsScene *getScene();
 
 signals:
-  void eventSelected(std::shared_ptr<EventItem> item);
+  void eventSelected(EventItem *item);
 
 protected:
   void resizeEvent(QResizeEvent *event) override;

@@ -18,7 +18,7 @@ EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
   emit changedEditMode(); // Инициализация видимости кнопок
 }
 
-void EventInfoPage::onEventClicked(std::shared_ptr<EventItem> event) {
+void EventInfoPage::onEventClicked(EventItem *event) {
   if (event != nullptr) {
     mUi->mTitle->setText(event->getTitle());
     mUi->mTimeFrom->setDateTime(event->getStartTime());
@@ -56,8 +56,7 @@ void EventInfoPage::connectButtons() {
     mInEditMode = true;
 
     const auto crtDateTime = QDateTime::currentDateTime();
-    mCurrentEvent =
-        std::make_shared<EventItem>(-1, "", crtDateTime, crtDateTime);
+    mCurrentEvent = new EventItem(-1, "", crtDateTime, crtDateTime);
     emit onEventClicked(mCurrentEvent);
     emit changedEditMode();
   });
@@ -71,11 +70,19 @@ void EventInfoPage::connectButtonBox() {
 
   connect(cancelButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
+
+    if (mCreatedNewEvent && mCurrentEvent != nullptr) {
+      delete mCurrentEvent;
+      mCurrentEvent = nullptr;
+    }
+
+    mCreatedNewEvent = false;
     emit changedEditMode();
   });
 
   connect(applyButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
+    mCreatedNewEvent = false;
     emit changedEditMode();
     emit needAddNewEvent(mCurrentEvent);
   });
@@ -91,7 +98,7 @@ void EventInfoPage::connectButtonBox() {
           &EventInfoPage::addEvent);
 }
 
-void EventInfoPage::addEvent(std::shared_ptr<EventItem> event) {
+void EventInfoPage::addEvent(EventItem *event) {
   if (event != nullptr) {
     event->setTitle(mUi->mTitle->text());
     event->setStartTime(mUi->mTimeFrom->dateTime());

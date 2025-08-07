@@ -21,13 +21,13 @@ public:
 
 public slots:
   void onSelectedDayChanged(const QDate &date);
-  void addEvent(std::shared_ptr<EventItem> item);
+  void addEvent(EventItem *item);
 
 signals:
-  void eventSelected(std::shared_ptr<EventItem> event);
+  void eventSelected(EventItem *event);
 
 private slots:
-  void onEventSelected(std::shared_ptr<EventItem> event);
+  void onEventSelected(EventItem *event);
   void addEvent(const Event &event);
 
 private:

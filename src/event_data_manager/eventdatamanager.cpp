@@ -30,7 +30,7 @@ void EventDataManager::addEvent(const Event &event) {
   addEventItemToScene(eventItem);
 }
 
-void EventDataManager::addEvent(std::shared_ptr<EventItem> item) {
+void EventDataManager::addEvent(EventItem *item) {
 
   const Event event = toEvent(item);
   const obx_id id = mDb->add_event(event);
@@ -38,13 +38,13 @@ void EventDataManager::addEvent(std::shared_ptr<EventItem> item) {
   addEventItemToScene(item);
 }
 
-void EventDataManager::addEventItemToScene(std::shared_ptr<EventItem> item) {
+void EventDataManager::addEventItemToScene(EventItem *item) {
   if (mScene == nullptr)
     return;
 
-  mScene->addItem(item.get());
+  mScene->addItem(item);
   mEvents.insertOrAssign(item->getId(), item);
-  connect(item.get(), &EventItem::itemSelected, this,
+  connect(item, &EventItem::itemSelected, this,
           &EventDataManager::onEventSelected);
 }
 
@@ -71,16 +71,15 @@ void EventDataManager::onEventSelected() {
   }
 }
 
-std::shared_ptr<EventItem> EventDataManager::toEventItem(const Event &event) {
+EventItem *EventDataManager::toEventItem(const Event &event) {
   const auto start = QDateTime::fromSecsSinceEpoch(event.start_date);
   const auto end = QDateTime::fromSecsSinceEpoch(event.end_date);
   const auto title = QString::fromStdString(event.name);
-  auto res = std::make_shared<EventItem>(event.id, title, start, end,
-                                         event.is_work_event);
+  auto res = new EventItem(event.id, title, start, end, event.is_work_event);
   return res;
 }
 
-Event EventDataManager::toEvent(std::shared_ptr<EventItem> item) {
+Event EventDataManager::toEvent(EventItem *item) {
   Event res{};
   res.id = item->getId();
   res.is_work_event = item->isWorkItem();
