@@ -21,6 +21,9 @@ public:
 signals:
   void eventSelected(EventItem *item);
 
+public slots:
+  void updateScene();
+
 protected:
   void resizeEvent(QResizeEvent *event) override;
 

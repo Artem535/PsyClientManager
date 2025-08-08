@@ -23,6 +23,9 @@ TimelineWidget::TimelineWidget(std::shared_ptr<pcm::database::Database> db,
 
   connect(mDataManager, &EventDataManager::eventSelected, this,
           &TimelineWidget::onEventSelected);
+
+  connect(mDataManager, &EventDataManager::eventsLoaded, mEventView,
+          &EventView::updateScene);
 }
 
 void TimelineWidget::addEvent(const Event &event) {
@@ -35,13 +38,14 @@ void TimelineWidget::addEvent(const Event &event) {
 }
 
 void TimelineWidget::onSelectedDayChanged(const QDate &date) {
-  if (mDataManager == nullptr)
-    return;
-
   qCDebug(logTimelineWidget)
       << "TimelineWidget::onSelectedDayChanged| Date changed:" << date;
+
+  throw  std::runtime_error("Not implemented");
+
+  
   const auto currentTime = QTime::currentTime();
-  const auto daySec = QDateTime(date, currentTime).toSecsSinceEpoch();
+  const auto daySec = QDateTime(date, currentTime).toMSecsSinceEpoch();
   mDataManager->selectDay(daySec);
 }
 

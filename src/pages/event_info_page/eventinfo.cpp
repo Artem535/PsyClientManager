@@ -1,4 +1,5 @@
 #include "eventinfo.h"
+#include "timelinewidget.h"
 #include "ui/pages/ui_eventinfo.h" // <-- UI-заголовок теперь здесь
 #include <memory>
 
@@ -35,10 +36,8 @@ void EventInfoPage::clearUi() {
 }
 
 void EventInfoPage::connectCalendar() {
-  connect(mUi->calendar_widget, &QCalendarWidget::selectionChanged, [this]() {
-    const auto selectedDate = mUi->calendar_widget->selectedDate();
-    mTimelineWidget->onSelectedDayChanged(selectedDate);
-  });
+  connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
+          &TimelineWidget::onSelectedDayChanged);
 }
 
 void EventInfoPage::connectTimeline() {

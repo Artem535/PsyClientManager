@@ -50,6 +50,7 @@ void EventDataManager::addEventItemToScene(EventItem *item) {
 
 void EventDataManager::loadEvents() {
   auto events = mDb->get_day_events(mSelectedDay);
+  mEvents.clear();
   mScene->clear();
 
   for (const auto &event : events) {

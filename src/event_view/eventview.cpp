@@ -11,7 +11,6 @@
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 
-
 EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   mScene = new QGraphicsScene(this);
   setScene(mScene);
@@ -55,7 +54,8 @@ void EventView::updateSceneSize() {
 
 void EventView::onEventSelected() {
   EventItem *item = qobject_cast<EventItem *>(sender());
-  qCInfo(logEventView) << "EventDataManager::onEventSelected| " << item->getId();
+  qCInfo(logEventView) << "EventDataManager::onEventSelected| "
+                       << item->getId();
   if (item != nullptr) {
     emit eventSelected(item);
   }
@@ -94,6 +94,10 @@ void EventView::updateItemsCords() {
 
 void EventView::resizeEvent(QResizeEvent *event) {
   QGraphicsView::resizeEvent(event);
+  updateScene();
+}
+
+void EventView::updateScene() {
   updateSceneSize();
   updateItemsSize();
   updateItemsCords();
