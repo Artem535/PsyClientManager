@@ -39,13 +39,14 @@ void TimelineWidget::addEvent(const Event &event) {
 
 void TimelineWidget::onSelectedDayChanged(const QDate &date) {
   qCDebug(logTimelineWidget)
-      << "TimelineWidget::onSelectedDayChanged| Date changed:" << date;
+      << "TimelineWidget::onSelectedDayChanged| Date input:" << date;
 
-  throw  std::runtime_error("Not implemented");
-
-  
   const auto currentTime = QTime::currentTime();
   const auto daySec = QDateTime(date, currentTime).toMSecsSinceEpoch();
+
+  qCDebug(logTimelineWidget)
+      << "TimelineWidget::onSelectedDayChanged| Date output:" << daySec;
+
   mDataManager->selectDay(daySec);
 }
 
