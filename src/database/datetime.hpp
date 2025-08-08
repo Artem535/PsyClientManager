@@ -12,6 +12,6 @@ get_time_range(const Poco::Timestamp &timestamp) {
   const auto end_of_day = Poco::DateTime{
       input_date.year(), input_date.month(), input_date.day(), 23, 59, 59};
 
-  return {start_of_day.timestamp().epochTime(),
-          end_of_day.timestamp().epochTime()};
+  return {start_of_day.timestamp().epochMicroseconds(),
+          end_of_day.timestamp().epochMicroseconds()};
 }

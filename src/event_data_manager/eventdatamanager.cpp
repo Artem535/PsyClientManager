@@ -13,7 +13,7 @@ EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
           &EventDataManager::loadEvents);
 
   // Set selected day to today
-  const auto today = QDateTime::currentDateTime().toSecsSinceEpoch();
+  const auto today = QDateTime::currentDateTime().toMSecsSinceEpoch();
   selectDay(today);
 }
 
@@ -83,8 +83,8 @@ Event EventDataManager::toEvent(EventItem *item) {
   Event res{};
   res.id = item->getId();
   res.is_work_event = item->isWorkItem();
-  res.start_date = item->getStartTime().toSecsSinceEpoch();
-  res.end_date = item->getEndTime().toSecsSinceEpoch();
+  res.start_date = item->getStartTime().toMSecsSinceEpoch();
+  res.end_date = item->getEndTime().toMSecsSinceEpoch();
   res.name = item->getTitle().toStdString();
 
   return res;

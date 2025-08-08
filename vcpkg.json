@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "gtest",
     "poco",
     {
       "name": "reflectcpp",
@@ -7,6 +8,6 @@
         "yaml"
       ]
     },
-    "gtest"
+    "plog"
   ]
 }

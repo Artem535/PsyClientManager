@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(objectbox)
 
 find_package(ObjectBoxGenerator 4.0.0 REQUIRED)
 find_package(Poco REQUIRED COMPONENTS Foundation)
+find_package(plog CONFIG REQUIRED)
 
 add_library(${TARGET_NAME} STATIC 
     database.cpp
@@ -30,4 +31,4 @@ add_obx_schema(
     INSOURCE # Opt-in: Generate in source directory
 )
 
-target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Foundation)
+target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Foundation  plog::plog)
