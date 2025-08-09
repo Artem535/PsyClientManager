@@ -8,7 +8,7 @@ namespace pcm::database {
 
 Database::Database(const pcm::config::Config &conf) {
   plog::init(plog::verbose, "database.log");
-  
+
   auto db_pth = conf.db_conf.value_.db_pth;
   bool it_first_init = false;
   if (auto dir = Poco::File(db_pth); !dir.exists()) {
@@ -108,14 +108,15 @@ bool Database::has_conflict(const Event &event) {
 }
 
 std::vector<Event> Database::get_day_events(const int64_t date) {
-  const auto [start, end] = get_time_range(Poco::Timestamp{date});
-  PLOGD << "Database::get_day_events| start:" << start
-        << ", end:" << end;
+  PLOGD << "Input date" << date;
+  // Convert to microseconds.
+  const auto [start, end] = get_time_range(Poco::Timestamp{date * 1000});
+  PLOGD << "start:" << start << ", end:" << end;
 
-      auto query = m_events_box
-                       ->query(Event_::start_date.lessThan(end).and_(
-                           Event_::end_date.greaterThan(start)))
-                       .build();
+  auto query = m_events_box
+                   ->query(Event_::start_date.lessThan(end).and_(
+                       Event_::end_date.greaterThan(start)))
+                   .build();
 
   const auto result = query.find();
   return result;

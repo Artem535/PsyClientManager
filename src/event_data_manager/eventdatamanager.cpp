@@ -73,8 +73,8 @@ void EventDataManager::onEventSelected() {
 }
 
 EventItem *EventDataManager::toEventItem(const Event &event) {
-  const auto start = QDateTime::fromSecsSinceEpoch(event.start_date);
-  const auto end = QDateTime::fromSecsSinceEpoch(event.end_date);
+  const auto start = QDateTime::fromMSecsSinceEpoch(event.start_date);
+  const auto end = QDateTime::fromMSecsSinceEpoch(event.end_date);
   const auto title = QString::fromStdString(event.name);
   auto res = new EventItem(event.id, title, start, end, event.is_work_event);
   return res;
