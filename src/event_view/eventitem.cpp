@@ -7,44 +7,51 @@
 #include <QStyleOptionGraphicsItem>
 
 // Standard library
+#include "constants.hpp"
+
 #include <cmath>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
-EventItem::EventItem(long long id, const QString &title,
+EventItem::EventItem(const long long id, const QString &title,
                      const QDateTime &startTime, const QDateTime &endTime,
-                     bool isWorkItem)
-    : mIsWorkItem(isWorkItem), mTitle(title),
-      mStartTime(startTime), mEndTime(endTime), mId(id), mSize(100, 100) {
+                     const bool isWorkItem)
+    : mIsWorkItem(isWorkItem), mSize(100, 100),
+      mTitle(title), mStartTime(startTime), mEndTime(endTime), mId(id) {
 
   qCInfo(logPcmEventItem) << "Created event:" << title
                           << "(" << startTime.toString() << "-"
                           << endTime.toString() << ")";
 
-  
-  
   setFlag(QGraphicsItem::ItemIsMovable);
   setFlag(QGraphicsItem::ItemIsSelectable);
   setFlag(QGraphicsItem::ItemSendsGeometryChanges);
 }
 
 QRectF EventItem::boundingRect() const {
-  const qreal penWidth = 1.0;
-  const auto xOffset = mIsWorkItem ? 0 : mSize.width();
-  return QRectF(xOffset + penWidth, penWidth, mSize.width() + penWidth,
-                mSize.height() + penWidth);
+  constexpr qreal penWidth = 1.0;
+  constexpr int labelWidth = pcm::widgets::constants::kWidthLabel;
+
+  auto xOffset = mIsWorkItem ? 0 : mSize.width();
+  xOffset += labelWidth;
+
+  return {xOffset + penWidth, penWidth, mSize.width() + penWidth,
+                mSize.height() + penWidth};
 }
 
 void EventItem::updateSize(const QSize &newSize) {
   if (mSize == newSize)
     return;
   mSize = newSize;
+
+  constexpr int offset = pcm::widgets::constants::kWidthLabel / 2;
+  mSize.setWidth(mSize.width() - offset);
+
   emit prepareGeometryChange();
   update();
 }
 
 QSize EventItem::getSize() const { return mSize; }
-
 QDateTime EventItem::getStartTime() const { return mStartTime; }
 QDateTime EventItem::getEndTime() const { return mEndTime; }
 QString EventItem::getTitle() const { return mTitle; }
@@ -72,7 +79,7 @@ void EventItem::setEndTime(const QDateTime &endTime) {
   update();
 }
 
-void EventItem::setIsWorkItem(bool isWorkItem) {
+void EventItem::setIsWorkItem(const bool isWorkItem) {
   if (mIsWorkItem == isWorkItem)
     return;
   mIsWorkItem = isWorkItem;
@@ -80,20 +87,19 @@ void EventItem::setIsWorkItem(bool isWorkItem) {
   update();
 }
 
-void EventItem::setId(long long id) {
+void EventItem::setId(const long long id) {
   mId = id;
   qCDebug(logPcmEventItem) << "EventItem ID changed to:" << mId;
 }
 
-QVariant EventItem::itemChange(GraphicsItemChange change,
+QVariant EventItem::itemChange(const GraphicsItemChange change,
                                const QVariant &value) {
   switch (change) {
   case ItemPositionChange: {
-    auto newPos = value.toPointF();
+    const auto newPos = value.toPointF();
     if (std::abs(newPos.x()) > mSize.width()) {
-      qreal centerX = scene()->sceneRect().center().x();
-      bool newWorkItem = newPos.x() < centerX;
-      if (mIsWorkItem != newWorkItem) {
+      const qreal centerX = scene()->sceneRect().center().x();
+      if (const bool newWorkItem = newPos.x() < centerX; mIsWorkItem != newWorkItem) {
         mIsWorkItem = newWorkItem;
         emit prepareGeometryChange();
         update();
@@ -123,15 +129,17 @@ void EventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
   painter->save();
 
   // Fill and border colors
-  QColor fillColor = mIsWorkItem ? QColor(173, 216, 230)  // Light blue
+  const QColor fillColor = mIsWorkItem ? QColor(173, 216, 230)  // Light blue
                                 : QColor(255, 182, 193); // Light pink
-  QPen borderPen(mIsWorkItem ? Qt::darkBlue : Qt::darkRed, 1.5);
+  const QPen borderPen(mIsWorkItem ? Qt::darkBlue : Qt::darkRed, 1.5);
 
   painter->setBrush(fillColor);
   painter->setPen(borderPen);
 
   // Position of the rectangle
-  const int x = mIsWorkItem ? 0 : mSize.width();
+  constexpr int xOffset = pcm::widgets::constants::kWidthLabel;
+  const int x = mIsWorkItem ? xOffset : xOffset + mSize.width();
+
   painter->drawRoundedRect(x, 0, mSize.width(), mSize.height(), 5, 5);
 
   // Draw title text

@@ -49,9 +49,9 @@ public:
 
   /**
    * @brief Updates the size of the event item.
-   * @param size The new size.
+   * @param newSize The new size.
    */
-  void updateSize(const QSize &size);
+  void updateSize(const QSize &newSize);
 
   /**
    * @brief Returns the current size of the event item.

@@ -19,22 +19,66 @@ EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   updateSceneSize();
 }
 
-QGraphicsScene *EventView::getScene() { return mScene; }
+QGraphicsScene *EventView::getScene() const{ return mScene; }
 
 void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
 
   painter->save();
-  painter->setPen(QPen(Qt::gray, 1.0, Qt::DashLine));
-  // Draw vertical line that is centered in the viewport
-  // TODO: It needed the rect.x()?
-  const qreal xMid = rect.x() + rect.width() / 2;
-  painter->drawLine(QLineF{xMid, rect.top(), xMid, rect.bottom()});
+
+  // DRAW HORIZONTAL AXIS
+  {
+    painter->setPen(QPen(Qt::gray, 1.0, Qt::DashLine));
+    // Draw vertical line that is centered in the viewport
+    // TODO: It needed the rect.x()?
+    qreal xMid = rect.x() + rect.width() / 2;
+    xMid += pcm::widgets::constants::kWidthLabel / 2.0;
+    painter->drawLine(QLineF{xMid, rect.top(), xMid, rect.bottom()});
+  }
+
+  // Draw separator line
+  {
+    painter->setPen(QPen(Qt::lightGray, 1.0, Qt::SolidLine));
+    constexpr int xCord = pcm::widgets::constants::kWidthLabel;
+    painter->drawLine(QLineF(xCord, 0, xCord, rect.bottom()));
+  }
+
+
+  // DRAW TIME AXIS
+  {
+    constexpr int startHour = 0;
+    constexpr int endHour = 24;
+
+    QFont font = painter->font();
+    font.setPointSize(8);
+    painter->setFont(font);
+
+    for (int hour = startHour; hour < endHour; ++hour) {
+      constexpr int stepMinutes = 60;
+      const int totalMinutes = hour * stepMinutes;
+      const qreal yPos = totalMinutes * mPixelPerMin;
+
+      // Draw horizontal line
+      painter->drawLine(QLineF(rect.left(), yPos, rect.right(), yPos));
+
+      // Label for time: HH:00
+      auto timeLabel = QString("%1:00");
+      // FileWidth - 2 char, filled with 0.
+      timeLabel = timeLabel.arg(hour, 2, 10, QChar('0'));
+
+      constexpr int widthLabel = pcm::widgets::constants::kWidthLabel;
+      QRectF labelRect(rect.left(), yPos, widthLabel,
+                       20);
+
+      painter->drawText(labelRect, Qt::AlignLeft | Qt::AlignVCenter,
+                        timeLabel);
+    }
+  }
 
   painter->restore();
 }

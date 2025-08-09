@@ -16,7 +16,7 @@ class EventView : public QGraphicsView {
 
 public:
   explicit EventView(QWidget *parent = nullptr);
-  QGraphicsScene *getScene();
+  [[nodiscard]] QGraphicsScene *getScene() const;
 
 signals:
   void eventSelected(EventItem *item);
@@ -29,7 +29,7 @@ protected:
 
 private:
   QGraphicsScene *mScene;
-  int64_t mSelectedDay;
+  int64_t mSelectedDay = -1;
   qreal mPixelPerMin = 1;
 
   QVector<EventItem *> mEvents;

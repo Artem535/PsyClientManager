@@ -4,6 +4,7 @@
 
 #Build dir
 build
+cmake-build-debug
 
 .vscode/*
 !.vscode/settings.json
