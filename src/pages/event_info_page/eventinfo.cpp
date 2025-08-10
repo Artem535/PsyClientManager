@@ -3,6 +3,8 @@
 #include "ui/pages/ui_eventinfo.h" // <-- UI-заголовок теперь здесь
 #include <memory>
 
+Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
+
 EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
                              QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
@@ -21,8 +23,13 @@ EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
 
 void EventInfoPage::onEventClicked(EventItem *event) {
   if (event != nullptr) {
+    qCDebug(logEventInfo) << "EventInfoPage::onEventClicked| "
+    << "Start time:" << event->getStartTime()
+    << " End time:" << event->getEndTime()
+    << " ID:" << event->getId();
+
     mUi->mTitle->setText(event->getTitle());
-    mUi->mTimeFrom->setDateTime(event->getStartTime());
+    mUi->mTimeFrom->setDateTime(event->getStartTime()'');
     mUi->mTimeTo->setDateTime(event->getEndTime());
     mCurrentEvent = event;
   }
@@ -55,7 +62,9 @@ void EventInfoPage::connectButtons() {
     mInEditMode = true;
 
     const auto crtDateTime = QDateTime::currentDateTime();
-    mCurrentEvent = new EventItem(-1, "", crtDateTime, crtDateTime);
+    const auto localCrtDateTime = crtDateTime.toLocalTime();
+    mCurrentEvent =
+        new EventItem(-1, "New Event", localCrtDateTime, localCrtDateTime);
     emit onEventClicked(mCurrentEvent);
     emit changedEditMode();
   });

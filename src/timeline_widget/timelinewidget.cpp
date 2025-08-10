@@ -7,6 +7,7 @@
 #include <qboxlayout.h>
 #include <qdatetime.h>
 #include <qgraphicsscene.h>
+#include <qtimezone.h>
 
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 
@@ -42,7 +43,9 @@ void TimelineWidget::onSelectedDayChanged(const QDate &date) {
       << "TimelineWidget::onSelectedDayChanged| Date input:" << date;
 
   const auto currentTime = QTime::currentTime();
-  const auto daySec = QDateTime(date, currentTime).toMSecsSinceEpoch();
+  const auto day = QDateTime(date, currentTime, QTimeZone::LocalTime);
+  const auto dayUTC = day.toUTC();
+  const auto daySec = dayUTC.toMSecsSinceEpoch();
 
   qCDebug(logTimelineWidget)
       << "TimelineWidget::onSelectedDayChanged| Date output:" << daySec;
@@ -51,11 +54,12 @@ void TimelineWidget::onSelectedDayChanged(const QDate &date) {
 }
 
 void TimelineWidget::onEventSelected(EventItem *event) {
+  if (event == nullptr)
+    return;
+
   qCInfo(logTimelineWidget)
       << "TimelineWidget::onEventSelected| " << event->getId();
-  if (event != nullptr) {
     emit eventSelected(event);
-  }
 }
 
 void TimelineWidget::addEvent(EventItem *item) {

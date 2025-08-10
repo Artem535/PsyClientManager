@@ -1,6 +1,8 @@
 #pragma once
 
+#include "constants.hpp"
 #include "eventitem.h"
+
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLoggingCategory>
@@ -11,7 +13,7 @@
 #include <qgraphicsscene.h>
 #include <qgraphicsview.h>
 
-class EventView : public QGraphicsView {
+class EventView final : public QGraphicsView {
   Q_OBJECT
 
 public:
@@ -30,14 +32,12 @@ protected:
 private:
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
-  qreal mPixelPerMin = 1;
-
-  QVector<EventItem *> mEvents;
+  qreal mPixelPerMin = pcm::widgets::constants::kPixelPerMin;
 
   void drawBackground(QPainter *painter, const QRectF &rect) override;
   void updateSceneSize();
-  void updateItemsSize();
-  void updateItemsCords();
+  void updateItemsSize() const;
+  void updateItemsCords() const;
 
 private slots:
   void onEventSelected();

@@ -121,7 +121,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QTimeEdit" name="mTimeFrom"/>
+           <widget class="QTimeEdit" name="mTimeFrom">
+            <property name="timeSpec">
+             <enum>Qt::TimeSpec::LocalTime</enum>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_5">
@@ -134,7 +138,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QTimeEdit" name="mTimeTo"/>
+           <widget class="QTimeEdit" name="mTimeTo">
+            <property name="timeSpec">
+             <enum>Qt::TimeSpec::LocalTime</enum>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>

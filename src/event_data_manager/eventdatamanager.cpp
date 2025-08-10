@@ -1,19 +1,21 @@
 #include "eventdatamanager.h"
 #include "eventitem.h"
 #include <memory>
+#include <utility>
 #include <qloggingcategory.h>
+#include <qtimezone.h>
 
 Q_LOGGING_CATEGORY(logEventDataManager, "pcm.event_data_manager")
 
 EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
                                    QGraphicsScene *scene, QObject *parent)
-    : QObject(parent), mDb(db), mScene(scene) {
+    : QObject(parent), mDb(std::move(db)), mScene(scene) {
 
   connect(this, &EventDataManager::selectedDayChanged, this,
           &EventDataManager::loadEvents);
 
   // Set selected day to today
-  const auto today = QDateTime::currentDateTime().toMSecsSinceEpoch();
+  const auto today = QDateTime::currentMSecsSinceEpoch();
   selectDay(today);
 }
 
@@ -31,7 +33,6 @@ void EventDataManager::addEvent(const Event &event) {
 }
 
 void EventDataManager::addEvent(EventItem *item) {
-
   const Event event = toEvent(item);
   const obx_id id = mDb->add_event(event);
   item->setId(id);
@@ -49,12 +50,12 @@ void EventDataManager::addEventItemToScene(EventItem *item) {
 }
 
 void EventDataManager::loadEvents() {
-  auto events = mDb->get_day_events(mSelectedDay);
+  const auto events = mDb->get_day_events(mSelectedDay);
   mEvents.clear();
   mScene->clear();
 
   for (const auto &event : events) {
-    auto item = toEventItem(event);
+    const auto item = toEventItem(event);
     addEventItemToScene(item);
   }
 
@@ -62,8 +63,8 @@ void EventDataManager::loadEvents() {
 }
 
 void EventDataManager::onEventSelected() {
-  EventItem *item_tmp = qobject_cast<EventItem *>(sender());
-  auto item = mEvents[item_tmp->getId()];
+  const auto item_tmp = qobject_cast<EventItem *>(sender());
+  EventItem *item = mEvents[item_tmp->getId()];
 
   qCInfo(logEventDataManager)
       << "EventDataManager::onEventSelected| " << item->getId();
@@ -73,20 +74,50 @@ void EventDataManager::onEventSelected() {
 }
 
 EventItem *EventDataManager::toEventItem(const Event &event) {
-  const auto start = QDateTime::fromMSecsSinceEpoch(event.start_date);
-  const auto end = QDateTime::fromMSecsSinceEpoch(event.end_date);
-  const auto title = QString::fromStdString(event.name);
-  auto res = new EventItem(event.id, title, start, end, event.is_work_event);
-  return res;
+  // Parse start and end times from UTC (as stored in the database)
+  const QDateTime startUtc = QDateTime::fromMSecsSinceEpoch(event.start_date, Qt::UTC);
+  const QDateTime endUtc = QDateTime::fromMSecsSinceEpoch(event.end_date, Qt::UTC);
+
+  // Convert UTC times to local time for display
+  const QDateTime startLocal = startUtc.toLocalTime();
+  const QDateTime endLocal = endUtc.toLocalTime();
+
+  // Convert the event name from std::string to QString
+  const QString title = QString::fromStdString(event.name);
+
+  // Create and return a new EventItem using local time
+  const auto item = new EventItem(
+      event.id,
+      title,
+      startLocal,
+      endLocal,
+      event.is_work_event
+  );
+
+  return item;
 }
 
-Event EventDataManager::toEvent(EventItem *item) {
-  Event res{};
-  res.id = item->getId();
-  res.is_work_event = item->isWorkItem();
-  res.start_date = item->getStartTime().toMSecsSinceEpoch();
-  res.end_date = item->getEndTime().toMSecsSinceEpoch();
-  res.name = item->getTitle().toStdString();
+Event EventDataManager::toEvent(const EventItem *item) {
+  if (!item) {
+    qCWarning(logEventDataManager) << "EventDataManager::toEvent| item is null";
+    return {};
+  }
 
-  return res;
+  Event event{};
+
+  // Copy event ID
+  event.id = item->getId();
+
+  // Convert local time from UI to UTC for storage
+  const QDateTime startUtc = item->getStartTime().toUTC();
+  const QDateTime endUtc = item->getEndTime().toUTC();
+
+  event.start_date = startUtc.toMSecsSinceEpoch(); // Store in UTC
+  event.end_date = endUtc.toMSecsSinceEpoch();     // Store in UTC
+
+  // Copy other fields
+  event.is_work_event = item->isWorkItem();
+  event.name = item->getTitle().toStdString();
+
+  return event;
 }

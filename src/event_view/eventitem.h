@@ -142,5 +142,5 @@ private:
   QString mTitle;               ///< The title of the event.
   QDateTime mStartTime;         ///< The start time of the event.
   QDateTime mEndTime;           ///< The end time of the event.
-  long long mId;                ///< Unique identifier of the event.
+  unsigned long mId;                ///< Unique identifier of the event.
 };

@@ -42,6 +42,6 @@ private:
   long long int mSelectedDay = -1;
 
   EventItem *toEventItem(const Event &event);
-  Event toEvent(EventItem *item);
+  Event toEvent(const EventItem *item);
   void addEventItemToScene(EventItem *item);
 };

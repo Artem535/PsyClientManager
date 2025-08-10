@@ -24,7 +24,7 @@ EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   updateSceneSize();
 }
 
-QGraphicsScene *EventView::getScene() const{ return mScene; }
+QGraphicsScene *EventView::getScene() const { return mScene; }
 
 void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
@@ -47,7 +47,6 @@ void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
     constexpr int xCord = pcm::widgets::constants::kWidthLabel;
     painter->drawLine(QLineF(xCord, 0, xCord, rect.bottom()));
   }
-
 
   // DRAW TIME AXIS
   {
@@ -72,11 +71,9 @@ void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
       timeLabel = timeLabel.arg(hour, 2, 10, QChar('0'));
 
       constexpr int widthLabel = pcm::widgets::constants::kWidthLabel;
-      QRectF labelRect(rect.left(), yPos, widthLabel,
-                       20);
+      QRectF labelRect(rect.left(), yPos, widthLabel, 20);
 
-      painter->drawText(labelRect, Qt::AlignLeft | Qt::AlignVCenter,
-                        timeLabel);
+      painter->drawText(labelRect, Qt::AlignLeft | Qt::AlignVCenter, timeLabel);
     }
   }
 
@@ -97,7 +94,7 @@ void EventView::updateSceneSize() {
 }
 
 void EventView::onEventSelected() {
-  EventItem *item = qobject_cast<EventItem *>(sender());
+  auto *item = qobject_cast<EventItem *>(sender());
   qCInfo(logEventView) << "EventDataManager::onEventSelected| "
                        << item->getId();
   if (item != nullptr) {
@@ -105,12 +102,17 @@ void EventView::onEventSelected() {
   }
 }
 
-void EventView::updateItemsSize() {
+void EventView::updateItemsSize() const {
   const QSize viewportSize = viewport()->size();
 
   for (QGraphicsItem *item : scene()->items()) {
     if (const auto eventItem = dynamic_cast<EventItem *>(item);
         eventItem != nullptr) {
+
+
+
+
+
       eventItem->updateSize(
           {viewportSize.width() / 2, eventItem->getSize().height()});
       eventItem->update();
@@ -118,12 +120,16 @@ void EventView::updateItemsSize() {
   }
 }
 
-void EventView::updateItemsCords() {
+void EventView::updateItemsCords() const {
   for (QGraphicsItem *item : scene()->items()) {
     if (const auto eventItem = dynamic_cast<EventItem *>(item);
         eventItem != nullptr) {
 
       const auto datetimePoint = eventItem->getStartTime();
+
+      if (datetimePoint.timeSpec() != Qt::LocalTime)
+        qCWarning(logEventView) << "EventItem has non-local time!";
+
       const auto timePoint = datetimePoint.time();
       const auto countMin = timePoint.minute() + timePoint.hour() * 60;
       const auto yPos = countMin * mPixelPerMin;
