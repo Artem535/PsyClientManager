@@ -1,14 +1,11 @@
 #include "eventitem.h"
 
-// Qt
+#include "constants.hpp"
+
 #include <QGraphicsScene>
 #include <QLoggingCategory>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
-
-// Standard library
-#include "constants.hpp"
-
 #include <cmath>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
@@ -26,6 +23,8 @@ QEventItem::QEventItem(const long long id, const QString &title,
   setFlag(QGraphicsItem::ItemIsMovable);
   setFlag(QGraphicsItem::ItemIsSelectable);
   setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+
+  updateDuration();
 }
 
 QRectF QEventItem::boundingRect() const {
@@ -66,16 +65,24 @@ void QEventItem::setTitle(const QString &title) {
 }
 
 void QEventItem::setStartTime(const QDateTime &startTime) {
-  if (mStartTime == startTime)
+  if (mStartTime == startTime || startTime > mEndTime) {
+    qCWarning(logPcmEventItem) << "Invalid start time:" << startTime;
     return;
+  }
+
   mStartTime = startTime;
+  updateDuration();
   update();
 }
 
 void QEventItem::setEndTime(const QDateTime &endTime) {
-  if (mEndTime == endTime)
+  if (mEndTime == endTime || endTime < mStartTime) {
+    qCWarning(logPcmEventItem) << "Invalid end time:" << endTime;
     return;
+  }
+
   mEndTime = endTime;
+  updateDuration();
   update();
 }
 
@@ -91,6 +98,7 @@ void QEventItem::setId(const long long id) {
   mId = id;
   qCDebug(logPcmEventItem) << "EventItem ID changed to:" << mId;
 }
+unsigned int QEventItem::getDuration() const {return mDuration; }
 
 QVariant QEventItem::itemChange(const GraphicsItemChange change,
                                const QVariant &value) {
@@ -119,6 +127,15 @@ void QEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
   emit itemSelected();
   qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:" << mTitle;
   QGraphicsObject::mousePressEvent(event);
+}
+void QEventItem::updateDuration() {
+  auto startTimeMin = mStartTime.time().minute();
+  startTimeMin += mStartTime.time().hour() * 60;
+
+  auto endTimeMin = mEndTime.time().minute();
+  endTimeMin += mEndTime.time().hour() * 60;
+
+  mDuration = endTimeMin - startTimeMin;
 }
 
 void QEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,

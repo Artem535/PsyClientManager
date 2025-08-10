@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QWidget>
+#include <QMessageBox>
 
 // === STL ===
 #include <memory>
@@ -23,7 +24,7 @@ namespace Ui {
 class EventInfo;
 }
 
-class QEventInfoPage : public QWidget {
+class QEventInfoPage final : public QWidget {
   Q_OBJECT
 
 public:
@@ -52,4 +53,6 @@ private:
   void connectTimeline();
   void connectButtons();
   void connectButtonBox();
+  void connectTimeEditors();
+  void initDefaultTimes() const;
 };

@@ -109,12 +109,12 @@ void QEventView::updateItemsSize() const {
     if (const auto eventItem = dynamic_cast<QEventItem *>(item);
         eventItem != nullptr) {
 
+      // We need to update height of eventItem,
+      // it must be equal the duration of the event
+      const auto duration = eventItem->getDuration();
+      const auto height = static_cast<int>(round(duration * mPixelPerMin));
 
-
-
-
-      eventItem->updateSize(
-          {viewportSize.width() / 2, eventItem->getSize().height()});
+      eventItem->updateSize({viewportSize.width() / 2, height});
       eventItem->update();
     }
   }

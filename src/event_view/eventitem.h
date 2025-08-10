@@ -116,6 +116,7 @@ public:
    */
   void setId(long long id);
 
+  [[nodiscard]] unsigned int getDuration() const;
   /**
    * @brief Handles changes to the item's properties.
    *
@@ -141,5 +142,8 @@ private:
   QString mTitle;               ///< The title of the event.
   QDateTime mStartTime;         ///< The start time of the event.
   QDateTime mEndTime;           ///< The end time of the event.
-  unsigned long mId;                ///< Unique identifier of the event.
+  unsigned long mId;            ///< Unique identifier of the event.
+  unsigned int mDuration = 0;            ///< Duration of the event in minutes.
+
+  void updateDuration();
 };
