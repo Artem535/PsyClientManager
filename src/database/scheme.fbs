@@ -1,5 +1,5 @@
 
-table Client {
+table ObxClient {
     id: ulong;
     name: string;
     last_name: string;
@@ -9,7 +9,7 @@ table Client {
     birthday_date: int64;
 }
 
-table Event {
+table ObxEvent {
     id: ulong;
     
     name: string;
@@ -30,12 +30,12 @@ table Event {
     duration: int64;
 }
 
-table PaymentStatus {
+table ObxPaymentStatus {
     id: ulong;
     name: string;
 }
 
-table EventStatus {
+table ObxEventStatus {
     id: ulong;
     name: string;
 }

@@ -10,9 +10,9 @@
 #include "objectbox.hpp"
 
 
-struct Client_;
+struct ObxClient_;
 
-struct Client {
+struct ObxClient {
     obx_id id;
     std::string name;
     std::string last_name;
@@ -21,101 +21,39 @@ struct Client {
     int64_t birthday_date;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 1; }
+        static constexpr obx_schema_id entityId() { return 6; }
     
-        static void setObjectId(Client& object, obx_id newId) { object.id = newId; }
+        static void setObjectId(ObxClient& object, obx_id newId) { object.id = newId; }
     
         /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Client& object);
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxClient& object);
     
         /// Read an object from a valid FlatBuffer
-        static Client fromFlatBuffer(const void* data, size_t size);
+        static ObxClient fromFlatBuffer(const void* data, size_t size);
     
         /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<Client> newFromFlatBuffer(const void* data, size_t size);
+        static std::unique_ptr<ObxClient> newFromFlatBuffer(const void* data, size_t size);
     
         /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, Client& outObject);
+        static void fromFlatBuffer(const void* data, size_t size, ObxClient& outObject);
     };
 };
 
-struct Client_ {
-    static const obx::Property<Client, OBXPropertyType_Long> id;
-    static const obx::Property<Client, OBXPropertyType_String> name;
-    static const obx::Property<Client, OBXPropertyType_String> last_name;
-    static const obx::Property<Client, OBXPropertyType_String> additional_info;
-    static const obx::Property<Client, OBXPropertyType_String> diagnosis;
-    static const obx::Property<Client, OBXPropertyType_Date> birthday_date;
-};
-
-
-struct EventStatus_;
-
-struct EventStatus {
-    obx_id id;
-    std::string name;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 2; }
-    
-        static void setObjectId(EventStatus& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const EventStatus& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static EventStatus fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<EventStatus> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, EventStatus& outObject);
-    };
-};
-
-struct EventStatus_ {
-    static const obx::Property<EventStatus, OBXPropertyType_Long> id;
-    static const obx::Property<EventStatus, OBXPropertyType_String> name;
-};
-
-
-struct PaymentStatus_;
-
-struct PaymentStatus {
-    obx_id id;
-    std::string name;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 4; }
-    
-        static void setObjectId(PaymentStatus& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const PaymentStatus& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static PaymentStatus fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<PaymentStatus> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, PaymentStatus& outObject);
-    };
-};
-
-struct PaymentStatus_ {
-    static const obx::Property<PaymentStatus, OBXPropertyType_Long> id;
-    static const obx::Property<PaymentStatus, OBXPropertyType_String> name;
+struct ObxClient_ {
+    static const obx::Property<ObxClient, OBXPropertyType_Long> id;
+    static const obx::Property<ObxClient, OBXPropertyType_String> name;
+    static const obx::Property<ObxClient, OBXPropertyType_String> last_name;
+    static const obx::Property<ObxClient, OBXPropertyType_String> additional_info;
+    static const obx::Property<ObxClient, OBXPropertyType_String> diagnosis;
+    static const obx::Property<ObxClient, OBXPropertyType_Date> birthday_date;
 };
 
 struct EventStatus; 
 struct PaymentStatus; 
 
-struct Event_;
+struct ObxEvent_;
 
-struct Event {
+struct ObxEvent {
     obx_id id;
     std::string name;
     std::string description;
@@ -127,33 +65,95 @@ struct Event {
     int64_t duration;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 5; }
+        static constexpr obx_schema_id entityId() { return 7; }
     
-        static void setObjectId(Event& object, obx_id newId) { object.id = newId; }
+        static void setObjectId(ObxEvent& object, obx_id newId) { object.id = newId; }
     
         /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const Event& object);
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxEvent& object);
     
         /// Read an object from a valid FlatBuffer
-        static Event fromFlatBuffer(const void* data, size_t size);
+        static ObxEvent fromFlatBuffer(const void* data, size_t size);
     
         /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<Event> newFromFlatBuffer(const void* data, size_t size);
+        static std::unique_ptr<ObxEvent> newFromFlatBuffer(const void* data, size_t size);
     
         /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, Event& outObject);
+        static void fromFlatBuffer(const void* data, size_t size, ObxEvent& outObject);
     };
 };
 
-struct Event_ {
-    static const obx::Property<Event, OBXPropertyType_Long> id;
-    static const obx::Property<Event, OBXPropertyType_String> name;
-    static const obx::Property<Event, OBXPropertyType_String> description;
-    static const obx::Property<Event, OBXPropertyType_Bool> is_work_event;
-    static const obx::RelationProperty<Event, EventStatus> event_stat_id;
-    static const obx::RelationProperty<Event, PaymentStatus> payment_stat_id;
-    static const obx::Property<Event, OBXPropertyType_Date> start_date;
-    static const obx::Property<Event, OBXPropertyType_Date> end_date;
-    static const obx::Property<Event, OBXPropertyType_Long> duration;
+struct ObxEvent_ {
+    static const obx::Property<ObxEvent, OBXPropertyType_Long> id;
+    static const obx::Property<ObxEvent, OBXPropertyType_String> name;
+    static const obx::Property<ObxEvent, OBXPropertyType_String> description;
+    static const obx::Property<ObxEvent, OBXPropertyType_Bool> is_work_event;
+    static const obx::RelationProperty<ObxEvent, EventStatus> event_stat_id;
+    static const obx::RelationProperty<ObxEvent, PaymentStatus> payment_stat_id;
+    static const obx::Property<ObxEvent, OBXPropertyType_Date> start_date;
+    static const obx::Property<ObxEvent, OBXPropertyType_Date> end_date;
+    static const obx::Property<ObxEvent, OBXPropertyType_Long> duration;
+};
+
+
+struct ObxEventStatus_;
+
+struct ObxEventStatus {
+    obx_id id;
+    std::string name;
+
+    struct _OBX_MetaInfo {
+        static constexpr obx_schema_id entityId() { return 8; }
+    
+        static void setObjectId(ObxEventStatus& object, obx_id newId) { object.id = newId; }
+    
+        /// Write given object to the FlatBufferBuilder
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxEventStatus& object);
+    
+        /// Read an object from a valid FlatBuffer
+        static ObxEventStatus fromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static std::unique_ptr<ObxEventStatus> newFromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static void fromFlatBuffer(const void* data, size_t size, ObxEventStatus& outObject);
+    };
+};
+
+struct ObxEventStatus_ {
+    static const obx::Property<ObxEventStatus, OBXPropertyType_Long> id;
+    static const obx::Property<ObxEventStatus, OBXPropertyType_String> name;
+};
+
+
+struct ObxPaymentStatus_;
+
+struct ObxPaymentStatus {
+    obx_id id;
+    std::string name;
+
+    struct _OBX_MetaInfo {
+        static constexpr obx_schema_id entityId() { return 9; }
+    
+        static void setObjectId(ObxPaymentStatus& object, obx_id newId) { object.id = newId; }
+    
+        /// Write given object to the FlatBufferBuilder
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxPaymentStatus& object);
+    
+        /// Read an object from a valid FlatBuffer
+        static ObxPaymentStatus fromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static std::unique_ptr<ObxPaymentStatus> newFromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static void fromFlatBuffer(const void* data, size_t size, ObxPaymentStatus& outObject);
+    };
+};
+
+struct ObxPaymentStatus_ {
+    static const obx::Property<ObxPaymentStatus, OBXPropertyType_Long> id;
+    static const obx::Property<ObxPaymentStatus, OBXPropertyType_String> name;
 };
 

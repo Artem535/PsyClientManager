@@ -10,7 +10,7 @@ int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   MainWindow window;
 
-  window.add_client_info_page(std::make_shared<ClientModel>(mDb));
+  window.add_client_info_page(std::make_shared<QClientModel>(mDb));
   window.add_event_info_page(mDb);
 
   window.show();

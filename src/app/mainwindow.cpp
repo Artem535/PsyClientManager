@@ -8,13 +8,13 @@ MainWindow::MainWindow(QWidget *parent)
   mUi->setupUi(this);
 }
 
-void MainWindow::add_client_info_page(std::shared_ptr<ClientModel> model) {
+void MainWindow::add_client_info_page(std::shared_ptr<QClientModel> model) {
   mUi->tab_widget->addTab(new ClientInfo(model, this), "Client info");
 }
 
 void MainWindow::add_event_info_page(std::shared_ptr<pcm::database::Database> db) {
   if (db) {
-    mUi->tab_widget->addTab(new EventInfoPage(db, this), "Event info");
+    mUi->tab_widget->addTab(new QEventInfoPage(db, this), "Event info");
   }
 }
 

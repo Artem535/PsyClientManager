@@ -8,28 +8,30 @@
 #include <qdatetime.h>
 #include <qgraphicsscene.h>
 #include <qtimezone.h>
+#include <utility>
 
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 
-TimelineWidget::TimelineWidget(std::shared_ptr<pcm::database::Database> db,
-                               QWidget *parent)
+QTimelineWidget::QTimelineWidget(
+    const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
     : QWidget(parent) {
   mLayout = new QVBoxLayout(this);
   setLayout(mLayout);
 
-  mEventView = new EventView(this);
-  mDataManager = new EventDataManager(db, mEventView->getScene(), this);
+  mEventView = new QEventView(this);
+  mDataManager =
+      new QEventDataManager(db, mEventView->getScene(), this);
 
   mLayout->addWidget(mEventView);
 
-  connect(mDataManager, &EventDataManager::eventSelected, this,
-          &TimelineWidget::onEventSelected);
+  connect(mDataManager, &QEventDataManager::eventSelected, this,
+          &QTimelineWidget::onEventSelected);
 
-  connect(mDataManager, &EventDataManager::eventsLoaded, mEventView,
-          &EventView::updateScene);
+  connect(mDataManager, &QEventDataManager::eventsLoaded, mEventView,
+          &QEventView::updateScene);
 }
 
-void TimelineWidget::addEvent(const Event &event) {
+void QTimelineWidget::addEvent(const ObxEvent &event) const {
   if (mDataManager == nullptr)
     return;
 
@@ -38,7 +40,7 @@ void TimelineWidget::addEvent(const Event &event) {
   mDataManager->addEvent(event);
 }
 
-void TimelineWidget::onSelectedDayChanged(const QDate &date) {
+void QTimelineWidget::onSelectedDayChanged(const QDate &date) const {
   qCDebug(logTimelineWidget)
       << "TimelineWidget::onSelectedDayChanged| Date input:" << date;
 
@@ -53,19 +55,19 @@ void TimelineWidget::onSelectedDayChanged(const QDate &date) {
   mDataManager->selectDay(daySec);
 }
 
-void TimelineWidget::onEventSelected(EventItem *event) {
+void QTimelineWidget::onEventSelected(QEventItem *event) {
   if (event == nullptr)
     return;
 
   qCInfo(logTimelineWidget)
       << "TimelineWidget::onEventSelected| " << event->getId();
-    emit eventSelected(event);
+  emit eventSelected(event);
 }
 
-void TimelineWidget::addEvent(EventItem *item) {
+void QTimelineWidget::addEvent(QEventItem *item) const {
   if (item != nullptr) {
     mDataManager->addEvent(item);
   }
 }
 
-TimelineWidget::~TimelineWidget() = default;
+QTimelineWidget::~QTimelineWidget() = default;

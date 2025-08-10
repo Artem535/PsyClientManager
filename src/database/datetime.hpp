@@ -6,7 +6,7 @@
 
 inline std::pair<int64_t, int64_t>
 get_time_range(const Poco::Timestamp &timestamp) {
-  auto input_date = Poco::DateTime{timestamp};
+  const auto input_date = Poco::DateTime{timestamp};
   PLOGD << "Input date:" << input_date.year() << '-' << input_date.month() << '-' << input_date.day();
 
   const auto start_of_day = Poco::DateTime{

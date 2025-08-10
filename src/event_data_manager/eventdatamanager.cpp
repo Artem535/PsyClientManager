@@ -7,49 +7,49 @@
 
 Q_LOGGING_CATEGORY(logEventDataManager, "pcm.event_data_manager")
 
-EventDataManager::EventDataManager(std::shared_ptr<pcm::database::Database> db,
+QEventDataManager::QEventDataManager(std::shared_ptr<pcm::database::Database> db,
                                    QGraphicsScene *scene, QObject *parent)
     : QObject(parent), mDb(std::move(db)), mScene(scene) {
 
-  connect(this, &EventDataManager::selectedDayChanged, this,
-          &EventDataManager::loadEvents);
+  connect(this, &QEventDataManager::selectedDayChanged, this,
+          &QEventDataManager::loadEvents);
 
   // Set selected day to today
   const auto today = QDateTime::currentMSecsSinceEpoch();
   selectDay(today);
 }
 
-void EventDataManager::selectDay(const long long int &day) {
+void QEventDataManager::selectDay(const long long int &day) {
   qCDebug(logEventDataManager)
       << "EventDataManager::selectDay| Selected day changed" << day;
   mSelectedDay = day;
   emit selectedDayChanged();
 }
 
-void EventDataManager::addEvent(const Event &event) {
+void QEventDataManager::addEvent(const ObxEvent &event) {
   mDb->add_event(event);
   const auto eventItem = toEventItem(event);
   addEventItemToScene(eventItem);
 }
 
-void EventDataManager::addEvent(EventItem *item) {
-  const Event event = toEvent(item);
+void QEventDataManager::addEvent(QEventItem *item) {
+  const ObxEvent event = toEvent(item);
   const obx_id id = mDb->add_event(event);
   item->setId(id);
   addEventItemToScene(item);
 }
 
-void EventDataManager::addEventItemToScene(EventItem *item) {
+void QEventDataManager::addEventItemToScene(QEventItem *item) {
   if (mScene == nullptr)
     return;
 
   mScene->addItem(item);
   mEvents.insertOrAssign(item->getId(), item);
-  connect(item, &EventItem::itemSelected, this,
-          &EventDataManager::onEventSelected);
+  connect(item, &QEventItem::itemSelected, this,
+          &QEventDataManager::onEventSelected);
 }
 
-void EventDataManager::loadEvents() {
+void QEventDataManager::loadEvents() {
   const auto events = mDb->get_day_events(mSelectedDay);
   mEvents.clear();
   mScene->clear();
@@ -62,9 +62,9 @@ void EventDataManager::loadEvents() {
   emit eventsLoaded();
 }
 
-void EventDataManager::onEventSelected() {
-  const auto item_tmp = qobject_cast<EventItem *>(sender());
-  EventItem *item = mEvents[item_tmp->getId()];
+void QEventDataManager::onEventSelected() {
+  const auto item_tmp = qobject_cast<QEventItem *>(sender());
+  QEventItem *item = mEvents[item_tmp->getId()];
 
   qCInfo(logEventDataManager)
       << "EventDataManager::onEventSelected| " << item->getId();
@@ -73,10 +73,10 @@ void EventDataManager::onEventSelected() {
   }
 }
 
-EventItem *EventDataManager::toEventItem(const Event &event) {
+QEventItem *QEventDataManager::toEventItem(const ObxEvent &event) {
   // Parse start and end times from UTC (as stored in the database)
-  const QDateTime startUtc = QDateTime::fromMSecsSinceEpoch(event.start_date, Qt::UTC);
-  const QDateTime endUtc = QDateTime::fromMSecsSinceEpoch(event.end_date, Qt::UTC);
+  const QDateTime startUtc = QDateTime::fromMSecsSinceEpoch(event.start_date, QTimeZone::UTC);
+  const QDateTime endUtc = QDateTime::fromMSecsSinceEpoch(event.end_date, QTimeZone::UTC);
 
   // Convert UTC times to local time for display
   const QDateTime startLocal = startUtc.toLocalTime();
@@ -86,7 +86,7 @@ EventItem *EventDataManager::toEventItem(const Event &event) {
   const QString title = QString::fromStdString(event.name);
 
   // Create and return a new EventItem using local time
-  const auto item = new EventItem(
+  const auto item = new QEventItem(
       event.id,
       title,
       startLocal,
@@ -97,13 +97,13 @@ EventItem *EventDataManager::toEventItem(const Event &event) {
   return item;
 }
 
-Event EventDataManager::toEvent(const EventItem *item) {
+ObxEvent QEventDataManager::toEvent(const QEventItem *item) {
   if (!item) {
     qCWarning(logEventDataManager) << "EventDataManager::toEvent| item is null";
     return {};
   }
 
-  Event event{};
+  ObxEvent event{};
 
   // Copy event ID
   event.id = item->getId();

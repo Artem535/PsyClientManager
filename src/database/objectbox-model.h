@@ -77,8 +77,47 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "duration", OBXPropertyType_Long, 9, 5716146653668202541);
     obx_model_entity_last_property_id(model, 9, 5716146653668202541);
     
-    obx_model_last_entity_id(model, 5, 2275087930255141894);
-    obx_model_last_index_id(model, 4, 6077000883603522273);
+    obx_model_entity(model, "ObxClient", 6, 1276055315771980492);
+    obx_model_property(model, "id", OBXPropertyType_Long, 1, 452053588053143873);
+    obx_model_property_flags(model, OBXPropertyFlags_ID);
+    obx_model_property(model, "name", OBXPropertyType_String, 2, 3808716636712114465);
+    obx_model_property(model, "last_name", OBXPropertyType_String, 3, 2246920303058462103);
+    obx_model_property(model, "additional_info", OBXPropertyType_String, 4, 3291871443426391515);
+    obx_model_property(model, "diagnosis", OBXPropertyType_String, 5, 5823697886380435786);
+    obx_model_property(model, "birthday_date", OBXPropertyType_Date, 6, 1489414232755749908);
+    obx_model_entity_last_property_id(model, 6, 1489414232755749908);
+    
+    obx_model_entity(model, "ObxEvent", 7, 6312465015457351717);
+    obx_model_property(model, "id", OBXPropertyType_Long, 1, 2722298619602178402);
+    obx_model_property_flags(model, OBXPropertyFlags_ID);
+    obx_model_property(model, "name", OBXPropertyType_String, 2, 1805498599114546254);
+    obx_model_property(model, "description", OBXPropertyType_String, 3, 2923464261013182613);
+    obx_model_property(model, "is_work_event", OBXPropertyType_Bool, 4, 4751643885648285417);
+    obx_model_property(model, "event_stat_id", OBXPropertyType_Relation, 5, 1279799933926145338);
+    obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
+    obx_model_property_relation(model, "EventStatus", 5, 710846959809792147);
+    obx_model_property(model, "payment_stat_id", OBXPropertyType_Relation, 6, 4404538472672181582);
+    obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
+    obx_model_property_relation(model, "PaymentStatus", 6, 5732402837582512403);
+    obx_model_property(model, "start_date", OBXPropertyType_Date, 7, 1097158213809587039);
+    obx_model_property(model, "end_date", OBXPropertyType_Date, 8, 8963752415450789323);
+    obx_model_property(model, "duration", OBXPropertyType_Long, 9, 7949770622388427310);
+    obx_model_entity_last_property_id(model, 9, 7949770622388427310);
+    
+    obx_model_entity(model, "ObxEventStatus", 8, 428495872392820867);
+    obx_model_property(model, "id", OBXPropertyType_Long, 1, 1945110493359752364);
+    obx_model_property_flags(model, OBXPropertyFlags_ID);
+    obx_model_property(model, "name", OBXPropertyType_String, 2, 7863958216247807796);
+    obx_model_entity_last_property_id(model, 2, 7863958216247807796);
+    
+    obx_model_entity(model, "ObxPaymentStatus", 9, 3913365336717971459);
+    obx_model_property(model, "id", OBXPropertyType_Long, 1, 2022963127944036031);
+    obx_model_property_flags(model, OBXPropertyFlags_ID);
+    obx_model_property(model, "name", OBXPropertyType_String, 2, 840463892669945937);
+    obx_model_entity_last_property_id(model, 2, 840463892669945937);
+    
+    obx_model_last_entity_id(model, 9, 3913365336717971459);
+    obx_model_last_index_id(model, 6, 5732402837582512403);
     return model; // NOTE: the returned model will contain error information if an error occurred.
 }
 

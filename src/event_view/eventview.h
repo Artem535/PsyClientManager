@@ -13,15 +13,15 @@
 #include <qgraphicsscene.h>
 #include <qgraphicsview.h>
 
-class EventView final : public QGraphicsView {
+class QEventView final : public QGraphicsView {
   Q_OBJECT
 
 public:
-  explicit EventView(QWidget *parent = nullptr);
+  explicit QEventView(QWidget *parent = nullptr);
   [[nodiscard]] QGraphicsScene *getScene() const;
 
 signals:
-  void eventSelected(EventItem *item);
+  void eventSelected(QEventItem *item);
 
 public slots:
   void updateScene();

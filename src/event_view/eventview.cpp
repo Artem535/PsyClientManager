@@ -11,7 +11,7 @@
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 
-EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
+QEventView::QEventView(QWidget *parent) : QGraphicsView(parent) {
   mScene = new QGraphicsScene(this);
   setScene(mScene);
 
@@ -24,9 +24,9 @@ EventView::EventView(QWidget *parent) : QGraphicsView(parent) {
   updateSceneSize();
 }
 
-QGraphicsScene *EventView::getScene() const { return mScene; }
+QGraphicsScene *QEventView::getScene() const { return mScene; }
 
-void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
+void QEventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
 
   painter->save();
@@ -80,7 +80,7 @@ void EventView::drawBackground(QPainter *painter, const QRectF &rect) {
   painter->restore();
 }
 
-void EventView::updateSceneSize() {
+void QEventView::updateSceneSize() {
   const QSize viewportSize = viewport()->size();
 
   const auto sceneHeight =
@@ -93,8 +93,8 @@ void EventView::updateSceneSize() {
   scene()->setSceneRect(0, 0, viewportSize.width(), sceneHeight);
 }
 
-void EventView::onEventSelected() {
-  auto *item = qobject_cast<EventItem *>(sender());
+void QEventView::onEventSelected() {
+  auto *item = qobject_cast<QEventItem *>(sender());
   qCInfo(logEventView) << "EventDataManager::onEventSelected| "
                        << item->getId();
   if (item != nullptr) {
@@ -102,11 +102,11 @@ void EventView::onEventSelected() {
   }
 }
 
-void EventView::updateItemsSize() const {
+void QEventView::updateItemsSize() const {
   const QSize viewportSize = viewport()->size();
 
   for (QGraphicsItem *item : scene()->items()) {
-    if (const auto eventItem = dynamic_cast<EventItem *>(item);
+    if (const auto eventItem = dynamic_cast<QEventItem *>(item);
         eventItem != nullptr) {
 
 
@@ -120,9 +120,9 @@ void EventView::updateItemsSize() const {
   }
 }
 
-void EventView::updateItemsCords() const {
+void QEventView::updateItemsCords() const {
   for (QGraphicsItem *item : scene()->items()) {
-    if (const auto eventItem = dynamic_cast<EventItem *>(item);
+    if (const auto eventItem = dynamic_cast<QEventItem *>(item);
         eventItem != nullptr) {
 
       const auto datetimePoint = eventItem->getStartTime();
@@ -142,12 +142,12 @@ void EventView::updateItemsCords() const {
   }
 }
 
-void EventView::resizeEvent(QResizeEvent *event) {
+void QEventView::resizeEvent(QResizeEvent *event) {
   QGraphicsView::resizeEvent(event);
   updateScene();
 }
 
-void EventView::updateScene() {
+void QEventView::updateScene() {
   updateSceneSize();
   updateItemsSize();
   updateItemsCords();

@@ -5,7 +5,7 @@
 #include <qpushbutton.h>
 #include <qvariant.h>
 
-ClientInfo::ClientInfo(std::shared_ptr<ClientModel> model, QWidget *parent)
+ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
     : QWidget(parent), m_ui(std::make_unique<Ui::ClientInfo>()),
       m_client_model(model) {
   m_ui->setupUi(this);
@@ -66,7 +66,7 @@ void ClientInfo::clear_client_preview() {
 
 void ClientInfo::update_client_preview(const QModelIndex &index) {
   const auto data =
-      index.data(ClientModel::ClientRoles::Full_object).value<Client>();
+      index.data(QClientModel::ClientRoles::Full_object).value<ObxClient>();
 
   m_ui->name_input->setText(QString::fromStdString(data.name));
   m_ui->last_name_input->setText(QString::fromStdString(data.last_name));
@@ -93,9 +93,9 @@ int ClientInfo::count_age(const QDate &birthdate) const {
 }
 
 void ClientInfo::update_client_info(const QModelIndex &index) {
-  const auto current_client_var = index.data(ClientModel::ClientRoles::Id);
+  const auto current_client_var = index.data(QClientModel::ClientRoles::Id);
   const auto id = current_client_var.value<obx_id>();
-  Client client = get_client_from_ui();
+  ObxClient client = get_client_from_ui();
   client.id = id;
 
   m_client_model->setData(index, QVariant::fromValue(client));
@@ -103,8 +103,8 @@ void ClientInfo::update_client_info(const QModelIndex &index) {
   emit end_edit();
 }
 
-Client ClientInfo::get_client_from_ui() const {
-  Client client;
+ObxClient ClientInfo::get_client_from_ui() const {
+  ObxClient client;
 
   client.name = m_ui->name_input->text().toStdString();
   client.last_name = m_ui->last_name_input->text().toStdString();

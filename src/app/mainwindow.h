@@ -20,7 +20,7 @@ public:
   ~MainWindow() override;
 
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
-  void add_client_info_page(std::shared_ptr<ClientModel> model);
+  void add_client_info_page(std::shared_ptr<QClientModel> model);
   void add_event_info_page(std::shared_ptr<pcm::database::Database> db);
   
 private:

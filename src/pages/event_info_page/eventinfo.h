@@ -23,28 +23,28 @@ namespace Ui {
 class EventInfo;
 }
 
-class EventInfoPage : public QWidget {
+class QEventInfoPage : public QWidget {
   Q_OBJECT
 
 public:
-  explicit EventInfoPage(std::shared_ptr<pcm::database::Database> db,
+  explicit QEventInfoPage(std::shared_ptr<pcm::database::Database> db,
                          QWidget *parent = nullptr);
-  ~EventInfoPage() override;
+  ~QEventInfoPage() override;
 
 signals:
   void changedEditMode();
   void cleanUi();
-  void needAddNewEvent(EventItem *event);
+  void needAddNewEvent(QEventItem *event);
 
 private slots:
-  void onEventClicked(EventItem *event);
-  void addEvent(EventItem *event);
-  void clearUi();
+  void onEventClicked(QEventItem *event);
+  void addEvent(QEventItem *event) const;
+  void clearUi() const;
 
 private:
   std::unique_ptr<Ui::EventInfo> mUi;
-  EventItem *mCurrentEvent = nullptr;
-  TimelineWidget *mTimelineWidget;
+  QEventItem *mCurrentEvent = nullptr;
+  QTimelineWidget *mTimelineWidget;
   bool mCreatedNewEvent = false;
   bool mInEditMode = false;
 

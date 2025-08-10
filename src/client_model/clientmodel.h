@@ -9,14 +9,14 @@
 #include <qvariant.h>
 #include <QLoggingCategory>
 
-Q_DECLARE_METATYPE(Client)
+Q_DECLARE_METATYPE(ObxClient)
 
-class ClientModel : public QAbstractListModel {
+class QClientModel : public QAbstractListModel {
   Q_OBJECT
 
 public:
   enum ClientRoles { Id = Qt::UserRole + 1, Full_object };
-  explicit ClientModel(std::shared_ptr<pcm::database::Database> db,
+  explicit QClientModel(std::shared_ptr<pcm::database::Database> db,
                        QObject *parent = nullptr);
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -27,7 +27,7 @@ public:
   bool setData(const QModelIndex &index, const QVariant &value,
                int role = Qt::EditRole) override;
 
-  void add_new_client(const Client &new_client);
+  void add_new_client(const ObxClient &new_client);
 
 private:
   std::shared_ptr<pcm::database::Database> m_db;

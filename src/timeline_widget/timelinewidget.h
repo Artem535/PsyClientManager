@@ -12,26 +12,26 @@
 #include <qloggingcategory.h>
 #include <qtmetamacros.h>
 
-class TimelineWidget : public QWidget {
+class QTimelineWidget final : public QWidget {
   Q_OBJECT
 public:
-  TimelineWidget(std::shared_ptr<pcm::database::Database> db,
-                 QWidget *parent = nullptr);
-  ~TimelineWidget();
+  explicit QTimelineWidget(const std::shared_ptr<pcm::database::Database> &db,
+                          QWidget *parent = nullptr);
+  ~QTimelineWidget() override;
 
 public slots:
-  void onSelectedDayChanged(const QDate &date);
-  void addEvent(EventItem *item);
+  void onSelectedDayChanged(const QDate &date) const;
+  void addEvent(QEventItem *item) const;
 
 signals:
-  void eventSelected(EventItem *event);
+  void eventSelected(QEventItem *event);
 
 private slots:
-  void onEventSelected(EventItem *event);
-  void addEvent(const Event &event);
+  void onEventSelected(QEventItem *event);
+  void addEvent(const ObxEvent &event) const;
 
 private:
   QVBoxLayout *mLayout;
-  EventView *mEventView;
-  EventDataManager *mDataManager;
+  QEventView *mEventView;
+  QEventDataManager *mDataManager;
 };

@@ -31,7 +31,7 @@ public:
    * @param model A shared pointer to the client model object.
    * @param parent The parent widget.
    */
-  explicit ClientInfo(std::shared_ptr<ClientModel> model,
+  explicit ClientInfo(std::shared_ptr<QClientModel> model,
                       QWidget *parent = nullptr);
 
   /**
@@ -72,7 +72,7 @@ signals:
 
 private:
   std::unique_ptr<Ui::ClientInfo> m_ui; /**< The user interface object. */
-  std::shared_ptr<ClientModel> m_client_model; /**< The client model object. */
+  std::shared_ptr<QClientModel> m_client_model; /**< The client model object. */
 
   /**< Indicates whether the widget is in edit mode. */
   bool in_edit_mode = false;
@@ -94,7 +94,7 @@ private:
    *
    * @return The client information.
    */
-  Client get_client_from_ui() const;
+  ObxClient get_client_from_ui() const;
 
   /**
    * @brief Calculates the age based on the birthdate.

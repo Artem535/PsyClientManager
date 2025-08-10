@@ -5,18 +5,18 @@
 
 Q_LOGGING_CATEGORY(logClientModel, "pcm.ClientModel")
 
-ClientModel::ClientModel(std::shared_ptr<pcm::database::Database> db,
+QClientModel::QClientModel(std::shared_ptr<pcm::database::Database> db,
                          QObject *parent)
     : QAbstractListModel(parent), m_db{db} {
 
   m_client_ids = m_db->get_client_ids();
 }
 
-int ClientModel::rowCount(const QModelIndex &parent) const {
+int QClientModel::rowCount(const QModelIndex &parent) const {
   return static_cast<int>(m_client_ids.size());
 }
 
-QVariant ClientModel::data(const QModelIndex &index, int role) const {
+QVariant QClientModel::data(const QModelIndex &index, int role) const {
   if (!index.isValid()) {
     qCWarning(logClientModel) << "ClientModel::data: index is invalid";
     return QVariant();
@@ -32,13 +32,13 @@ QVariant ClientModel::data(const QModelIndex &index, int role) const {
 
   QVariant result;
   switch (role) {
-  case ClientModel::ClientRoles::Id:
+  case QClientModel::ClientRoles::Id:
     result = QVariant::fromValue(client_id);
     break;
   case Qt::DisplayRole:
     result = QString::fromStdString(client->name + " " + client->last_name);
     break;
-  case ClientModel::ClientRoles::Full_object:
+  case QClientModel::ClientRoles::Full_object:
     result = QVariant::fromValue(*client);
     break;
   default:
@@ -49,7 +49,7 @@ QVariant ClientModel::data(const QModelIndex &index, int role) const {
   return result;
 }
 
-bool ClientModel::setData(const QModelIndex &index, const QVariant &value,
+bool QClientModel::setData(const QModelIndex &index, const QVariant &value,
                           int role) {
   if (!index.isValid()) {
     qCWarning(logClientModel) << "ClientModel::updateClient: index is invalid";
@@ -68,14 +68,14 @@ bool ClientModel::setData(const QModelIndex &index, const QVariant &value,
 
   
   // const auto old_client = *m_db->get_client(m_client_ids.at(index.row()));
-  const auto client = value.value<Client>();
+  const auto client = value.value<ObxClient>();
 
   m_db->add_client(client);
   emit dataChanged(index, index, {role});
   return true;
 }
 
-void ClientModel::add_new_client(const Client &client) {
+void QClientModel::add_new_client(const ObxClient &client) {
   int new_row_index = m_client_ids.size();
   const auto id = m_db->add_client(client);
   

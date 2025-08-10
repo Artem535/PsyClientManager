@@ -13,7 +13,7 @@
  * This class inherits from QGraphicsObject and provides functionality to render
  * and manage event items visually.
  */
-class EventItem : public QGraphicsObject {
+class QEventItem final : public QGraphicsObject {
   Q_OBJECT
 
 public:
@@ -26,16 +26,15 @@ public:
    * @param startTime The start time of the event.
    * @param endTime The end time of the event.
    * @param isWorkItem True if the event is a work-related item.
-   * @param size The size of the event item.
    */
-  EventItem(long long id, const QString &title, const QDateTime &startTime,
+  QEventItem(long long id, const QString &title, const QDateTime &startTime,
             const QDateTime &endTime, bool isWorkItem = false);
 
   /**
    * @brief Returns the bounding rectangle of the item.
    * @return The bounding rectangle.
    */
-  QRectF boundingRect() const override;
+  [[nodiscard]] QRectF boundingRect() const override;
 
   /**
    * @brief Paints the event item using the provided painter.
@@ -57,33 +56,33 @@ public:
    * @brief Returns the current size of the event item.
    * @return The size.
    */
-  QSize getSize() const;
+  [[nodiscard]] QSize getSize() const;
 
   /**
    * @brief Returns the start time of the event.
    * @return The start time.
    */
-  QDateTime getStartTime() const;
+  [[nodiscard]] QDateTime getStartTime() const;
 
   /**
    * @brief Returns the end time of the event.
    * @return The end time.
    */
-  QDateTime getEndTime() const;
+  [[nodiscard]] QDateTime getEndTime() const;
 
   /**
    * @brief Returns the title of the event.
    * @return The title.
    */
-  QString getTitle() const;
+  [[nodiscard]] QString getTitle() const;
 
   /**
    * @brief Returns the unique identifier of the event.
    * @return The event ID.
    */
-  long long getId() const;
+  [[nodiscard]] unsigned long getId() const;
 
-  bool isWorkItem() const;
+  [[nodiscard]] bool isWorkItem() const;
 
   /**
    * @brief Sets the title of the event and triggers a repaint if changed.

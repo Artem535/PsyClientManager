@@ -1,16 +1,17 @@
 #include "eventinfo.h"
 #include "timelinewidget.h"
-#include "ui/pages/ui_eventinfo.h" // <-- UI-заголовок теперь здесь
+#include "ui/pages/ui_eventinfo.h"
 #include <memory>
+#include <utility>
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
-EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
+QEventInfoPage::QEventInfoPage(std::shared_ptr<pcm::database::Database> db,
                              QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
-  mTimelineWidget = new TimelineWidget(db, this);
+  mTimelineWidget = new QTimelineWidget(std::move(db), this);
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
   connectCalendar();
@@ -18,10 +19,10 @@ EventInfoPage::EventInfoPage(std::shared_ptr<pcm::database::Database> db,
   connectButtons();
   connectButtonBox();
 
-  emit changedEditMode(); // Инициализация видимости кнопок
+  emit changedEditMode();
 }
 
-void EventInfoPage::onEventClicked(EventItem *event) {
+void QEventInfoPage::onEventClicked(QEventItem *event) {
   if (event != nullptr) {
     qCDebug(logEventInfo) << "EventInfoPage::onEventClicked| "
     << "Start time:" << event->getStartTime()
@@ -29,30 +30,30 @@ void EventInfoPage::onEventClicked(EventItem *event) {
     << " ID:" << event->getId();
 
     mUi->mTitle->setText(event->getTitle());
-    mUi->mTimeFrom->setDateTime(event->getStartTime()'');
+    mUi->mTimeFrom->setDateTime(event->getStartTime());
     mUi->mTimeTo->setDateTime(event->getEndTime());
     mCurrentEvent = event;
   }
 }
 
-void EventInfoPage::clearUi() {
+void QEventInfoPage::clearUi() const {
   mUi->mTitle->clear();
   mUi->mTimeFrom->clear();
   mUi->mTimeTo->clear();
   mUi->mEventType->setCheckState(Qt::CheckState::Unchecked);
 }
 
-void EventInfoPage::connectCalendar() {
+void QEventInfoPage::connectCalendar() {
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
-          &TimelineWidget::onSelectedDayChanged);
+          &QTimelineWidget::onSelectedDayChanged);
 }
 
-void EventInfoPage::connectTimeline() {
-  connect(mTimelineWidget, &TimelineWidget::eventSelected, this,
-          &EventInfoPage::onEventClicked);
+void QEventInfoPage::connectTimeline() {
+  connect(mTimelineWidget, &QTimelineWidget::eventSelected, this,
+          &QEventInfoPage::onEventClicked);
 }
 
-void EventInfoPage::connectButtons() {
+void QEventInfoPage::connectButtons() {
   connect(mUi->mChangeButton, &QPushButton::clicked, [this]() {
     mInEditMode = true;
     emit changedEditMode();
@@ -64,16 +65,16 @@ void EventInfoPage::connectButtons() {
     const auto crtDateTime = QDateTime::currentDateTime();
     const auto localCrtDateTime = crtDateTime.toLocalTime();
     mCurrentEvent =
-        new EventItem(-1, "New Event", localCrtDateTime, localCrtDateTime);
+        new QEventItem(-1, "New Event", localCrtDateTime, localCrtDateTime);
     emit onEventClicked(mCurrentEvent);
     emit changedEditMode();
   });
 }
 
-void EventInfoPage::connectButtonBox() {
-  auto cancelButton =
+void QEventInfoPage::connectButtonBox() {
+  const auto cancelButton =
       mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel);
-  auto applyButton =
+  const auto applyButton =
       mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply);
 
   connect(cancelButton, &QPushButton::clicked, [this]() {
@@ -95,18 +96,17 @@ void EventInfoPage::connectButtonBox() {
     emit needAddNewEvent(mCurrentEvent);
   });
 
-  // Подключаем изменение режима для управления видимостью элементов
-  connect(this, &EventInfoPage::changedEditMode, [this]() {
+  connect(this, &QEventInfoPage::changedEditMode, [this]() {
     mUi->mButtonBox->setVisible(mInEditMode);
     mUi->mChangeButton->setVisible(!mInEditMode);
     mUi->mAddButton->setVisible(!mInEditMode);
   });
 
-  connect(this, &EventInfoPage::needAddNewEvent, this,
-          &EventInfoPage::addEvent);
+  connect(this, &QEventInfoPage::needAddNewEvent, this,
+          &QEventInfoPage::addEvent);
 }
 
-void EventInfoPage::addEvent(EventItem *event) {
+void QEventInfoPage::addEvent(QEventItem *event) const {
   if (event != nullptr) {
     event->setTitle(mUi->mTitle->text());
     event->setStartTime(mUi->mTimeFrom->dateTime());
@@ -117,4 +117,4 @@ void EventInfoPage::addEvent(EventItem *event) {
   }
 }
 
-EventInfoPage::~EventInfoPage() = default;
+QEventInfoPage::~QEventInfoPage() = default;
