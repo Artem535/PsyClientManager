@@ -28,7 +28,7 @@ class QEventInfoPage final : public QWidget {
   Q_OBJECT
 
 public:
-  explicit QEventInfoPage(std::shared_ptr<pcm::database::Database> db,
+  explicit QEventInfoPage(const std::shared_ptr<pcm::database::Database> &db,
                          QWidget *parent = nullptr);
   ~QEventInfoPage() override;
 
@@ -36,6 +36,7 @@ signals:
   void changedEditMode();
   void cleanUi();
   void needAddNewEvent(QEventItem *event);
+  void needSceneUpdate();
 
 private slots:
   void onEventClicked(QEventItem *event);
@@ -54,5 +55,6 @@ private:
   void connectButtons();
   void connectButtonBox();
   void connectTimeEditors();
+  void connectSceneUpdate();
   void initDefaultTimes() const;
 };

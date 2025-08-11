@@ -19,8 +19,7 @@ QTimelineWidget::QTimelineWidget(
   setLayout(mLayout);
 
   mEventView = new QEventView(this);
-  mDataManager =
-      new QEventDataManager(db, mEventView->getScene(), this);
+  mDataManager = new QEventDataManager(db, mEventView->getScene(), this);
 
   mLayout->addWidget(mEventView);
 
@@ -28,6 +27,9 @@ QTimelineWidget::QTimelineWidget(
           &QTimelineWidget::onEventSelected);
 
   connect(mDataManager, &QEventDataManager::eventsLoaded, mEventView,
+          &QEventView::updateScene);
+
+  connect(this, &QTimelineWidget::needSceneUpdate, mEventView,
           &QEventView::updateScene);
 }
 
@@ -69,5 +71,6 @@ void QTimelineWidget::addEvent(QEventItem *item) const {
     mDataManager->addEvent(item);
   }
 }
+void QTimelineWidget::updateScene() { emit needSceneUpdate(); }
 
 QTimelineWidget::~QTimelineWidget() = default;

@@ -8,12 +8,12 @@
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
-QEventInfoPage::QEventInfoPage(std::shared_ptr<pcm::database::Database> db,
-                               QWidget *parent)
+QEventInfoPage::QEventInfoPage(
+    const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
-  mTimelineWidget = new QTimelineWidget(std::move(db), this);
+  mTimelineWidget = new QTimelineWidget(db, this);
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
   connectCalendar();
@@ -21,6 +21,7 @@ QEventInfoPage::QEventInfoPage(std::shared_ptr<pcm::database::Database> db,
   connectButtons();
   connectButtonBox();
   connectTimeEditors();
+  connectSceneUpdate();
 
   initDefaultTimes();
 
@@ -41,6 +42,7 @@ void QEventInfoPage::connectTimeline() {
 
 // Connect Add and Change buttons
 void QEventInfoPage::connectButtons() {
+  // Button for change
   connect(mUi->mChangeButton, &QPushButton::clicked, [this]() {
     mInEditMode = true;
     emit changedEditMode();
@@ -50,8 +52,7 @@ void QEventInfoPage::connectButtons() {
     mInEditMode = true;
 
     const auto crtDateTime = QDateTime::currentDateTime().toLocalTime();
-    mCurrentEvent =
-        new QEventItem(-1, "New Event", crtDateTime, crtDateTime);
+    mCurrentEvent = new QEventItem(-1, "New Event", crtDateTime, crtDateTime);
     emit onEventClicked(mCurrentEvent);
     emit changedEditMode();
   });
@@ -82,6 +83,7 @@ void QEventInfoPage::connectButtonBox() {
     if (mUi->mTimeFrom->time() != mUi->mTimeTo->time()) {
       emit changedEditMode();
       emit needAddNewEvent(mCurrentEvent);
+      emit needSceneUpdate();
     } else {
       QMessageBox::warning(this, "Error",
                            "Error: Event cannot be with zero duration");
@@ -106,6 +108,10 @@ void QEventInfoPage::connectTimeEditors() {
       mUi->mTimeTo->setTime(mUi->mTimeFrom->time());
     }
   });
+}
+void QEventInfoPage::connectSceneUpdate() {
+  connect(this, &QEventInfoPage::needSceneUpdate, mTimelineWidget,
+          &QTimelineWidget::updateScene);
 }
 
 // Initialize default start/end times to current time

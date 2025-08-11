@@ -22,9 +22,11 @@ public:
 public slots:
   void onSelectedDayChanged(const QDate &date) const;
   void addEvent(QEventItem *item) const;
+  void updateScene();
 
 signals:
   void eventSelected(QEventItem *event);
+  void needSceneUpdate();
 
 private slots:
   void onEventSelected(QEventItem *event);
