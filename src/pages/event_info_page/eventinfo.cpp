@@ -32,6 +32,11 @@ QEventInfoPage::QEventInfoPage(
 void QEventInfoPage::connectCalendar() {
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
           &QTimelineWidget::onSelectedDayChanged);
+  // Update date in event info part when date is changed
+  connect(mUi->calendar_widget, &QCalendarWidget::clicked,
+          [&](const QDate &date) {
+            mUi->mEventDate->setDateTime(QDateTime(date, QTime::currentTime()));
+          });
 }
 
 // Connect timeline widget signals
@@ -80,13 +85,23 @@ void QEventInfoPage::connectButtonBox() {
   connect(applyButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
     mCreatedNewEvent = false;
-    if (mUi->mTimeFrom->time() != mUi->mTimeTo->time()) {
+    const auto isDurationZero = mUi->mTimeFrom->time() == mUi->mTimeTo->time();
+    const auto isTitleEmpty = mUi->mTitle->text().isEmpty();
+    const auto isEndTimeBeforeStartTime =
+        mUi->mTimeTo->dateTime() < mUi->mTimeFrom->dateTime();
+
+    if (isDurationZero) {
+      QMessageBox::warning(this, "Error",
+                           "Error: Event cannot be with zero duration");
+    } else if (isTitleEmpty) {
+      QMessageBox::warning(this, "Error", "Error: Event title cannot be empty");
+    } else if (isEndTimeBeforeStartTime) {
+      QMessageBox::warning(this, "Error",
+                           "Error: End time cannot be before start time");
+    } else {
       emit changedEditMode();
       emit needAddNewEvent(mCurrentEvent);
       emit needSceneUpdate();
-    } else {
-      QMessageBox::warning(this, "Error",
-                           "Error: Event cannot be with zero duration");
     }
   });
 
@@ -117,6 +132,7 @@ void QEventInfoPage::connectSceneUpdate() {
 // Initialize default start/end times to current time
 void QEventInfoPage::initDefaultTimes() const {
   const auto crtDateTime = QDateTime::currentDateTime();
+  mUi->mEventDate->setDateTime(crtDateTime);
   mUi->mTimeFrom->setDateTime(crtDateTime);
   mUi->mTimeTo->setDateTime(crtDateTime);
 }
@@ -148,8 +164,13 @@ void QEventInfoPage::clearUi() const {
 void QEventInfoPage::addEvent(QEventItem *event) const {
   if (event != nullptr) {
     event->setTitle(mUi->mTitle->text());
-    event->setStartTime(mUi->mTimeFrom->dateTime());
-    event->setEndTime(mUi->mTimeTo->dateTime());
+
+    const auto date = mUi->mEventDate->date();
+    const auto startTime = mUi->mTimeFrom->time();
+    const auto endTime = mUi->mTimeTo->time();
+
+    event->setStartTime(QDateTime(date, startTime));
+    event->setEndTime(QDateTime(date, endTime));
     event->setIsWorkItem(mUi->mEventType->checkState() ==
                          Qt::CheckState::Checked);
     mTimelineWidget->addEvent(event);

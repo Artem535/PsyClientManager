@@ -101,14 +101,14 @@
         <item row="0" column="1">
          <widget class="QLineEdit" name="mTitle"/>
         </item>
-        <item row="1" column="0">
+        <item row="2" column="0">
          <widget class="QLabel" name="label_4">
           <property name="text">
            <string>Время события</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="2" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
            <widget class="QLabel" name="label_3">
@@ -146,14 +146,21 @@
           </item>
          </layout>
         </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_6">
           <property name="text">
            <string>Тип события</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="3" column="1">
+         <widget class="QCheckBox" name="mEventType">
+          <property name="text">
+           <string>CheckBox</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
@@ -166,7 +173,7 @@
           </property>
          </spacer>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
            <widget class="QDialogButtonBox" name="mButtonBox">
@@ -200,10 +207,17 @@
           </item>
          </layout>
         </item>
-        <item row="2" column="1">
-         <widget class="QCheckBox" name="mEventType">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_7">
           <property name="text">
-           <string>CheckBox</string>
+           <string>Дата события</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDateEdit" name="mEventDate">
+          <property name="timeSpec">
+           <enum>Qt::TimeSpec::LocalTime</enum>
           </property>
          </widget>
         </item>
