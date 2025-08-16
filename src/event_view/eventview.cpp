@@ -73,7 +73,8 @@ void QEventView::drawBackground(QPainter *painter, const QRectF &rect) {
       constexpr int widthLabel = pcm::widgets::constants::kWidthLabel;
       QRectF labelRect(rect.left(), yPos, widthLabel, 20);
 
-      painter->drawText(labelRect, Qt::AlignLeft | Qt::AlignVCenter, timeLabel);
+      painter->drawText(labelRect, Qt::AlignHCenter | Qt::AlignVCenter,
+                        timeLabel);
     }
   }
 

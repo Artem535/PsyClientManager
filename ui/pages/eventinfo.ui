@@ -82,6 +82,12 @@
    </item>
    <item>
     <widget class="QFrame" name="frame_2">
+     <property name="maximumSize">
+      <size>
+       <width>520</width>
+       <height>809</height>
+      </size>
+     </property>
      <property name="frameShape">
       <enum>QFrame::Shape::StyledPanel</enum>
      </property>
@@ -156,7 +162,7 @@
         <item row="3" column="1">
          <widget class="QCheckBox" name="mEventType">
           <property name="text">
-           <string>CheckBox</string>
+           <string>Это рабочее событие</string>
           </property>
          </widget>
         </item>
