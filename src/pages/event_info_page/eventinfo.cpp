@@ -57,7 +57,7 @@ void QEventInfoPage::connectButtons() {
     mInEditMode = true;
 
     const auto crtDateTime = QDateTime::currentDateTime().toLocalTime();
-    mCurrentEvent = new QEventItem(-1, "New Event", crtDateTime, crtDateTime);
+    mCurrentEvent = new QEventItem(0, "New Event", crtDateTime, crtDateTime);
     emit onEventClicked(mCurrentEvent);
     emit changedEditMode();
   });
@@ -168,11 +168,12 @@ void QEventInfoPage::addEvent(QEventItem *event) const {
     const auto date = mUi->mEventDate->date();
     const auto startTime = mUi->mTimeFrom->time();
     const auto endTime = mUi->mTimeTo->time();
+    const auto isWorkItem = mUi->mEventType->checkState() ==
+                         Qt::CheckState::Checked;
 
-    event->setStartTime(QDateTime(date, startTime));
     event->setEndTime(QDateTime(date, endTime));
-    event->setIsWorkItem(mUi->mEventType->checkState() ==
-                         Qt::CheckState::Checked);
+    event->setStartTime(QDateTime(date, startTime));
+    event->setIsWorkItem(isWorkItem);
     mTimelineWidget->addEvent(event);
   }
 }
