@@ -112,6 +112,8 @@ ObxEvent QEventDataManager::toEvent(const QEventItem *item) {
   const QDateTime startUtc = item->getStartTime().toUTC();
   const QDateTime endUtc = item->getEndTime().toUTC();
 
+
+
   event.start_date = startUtc.toMSecsSinceEpoch(); // Store in UTC
   event.end_date = endUtc.toMSecsSinceEpoch();     // Store in UTC
 

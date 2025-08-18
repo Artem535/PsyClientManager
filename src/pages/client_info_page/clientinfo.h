@@ -21,7 +21,7 @@ class ClientInfo;
  * This class inherits from QWidget and provides methods for displaying and
  * editing client information.
  */
-class ClientInfo : public QWidget {
+class ClientInfo final : public QWidget {
   Q_OBJECT
 
 public:
@@ -45,12 +45,12 @@ public slots:
    *
    * @param index The index of the client.
    */
-  void update_client_preview(const QModelIndex &index);
+  void update_client_preview(const QModelIndex &index) const;
 
   /**
    * @brief Clears the client preview.
    */
-  void clear_client_preview();
+  void clear_client_preview() const;
 
   /**
    * @brief Updates the client information with the specified index.
@@ -71,8 +71,8 @@ signals:
   void end_edit();
 
 private:
-  std::unique_ptr<Ui::ClientInfo> m_ui; /**< The user interface object. */
-  std::shared_ptr<QClientModel> m_client_model; /**< The client model object. */
+  std::unique_ptr<Ui::ClientInfo> mUI; /**< The user interface object. */
+  std::shared_ptr<QClientModel> mClientModel; /**< The client model object. */
 
   /**< Indicates whether the widget is in edit mode. */
   bool in_edit_mode = false;
@@ -82,7 +82,7 @@ private:
    *
    * @param enable Indicates whether the edit fields should be enabled.
    */
-  void change_edit_fields_mode(bool enable = false);
+  void change_edit_fields_mode(bool enable = false) const;
 
   /**
    * @brief Connects the widgets.
@@ -94,7 +94,7 @@ private:
    *
    * @return The client information.
    */
-  ObxClient get_client_from_ui() const;
+  [[nodiscard]] ObxClient get_client_from_ui() const;
 
   /**
    * @brief Calculates the age based on the birthdate.
@@ -102,5 +102,5 @@ private:
    * @param birthdate The birthdate.
    * @return The age.
    */
-  int count_age(const QDate &birthdate) const;
+  static int count_age(const QDate &birthdate);
 };
