@@ -255,7 +255,7 @@
           "indexId": "5:710846959809792147",
           "type": 11,
           "flags": 520,
-          "relationTarget": "EventStatus"
+          "relationTarget": "ObxEventStatus"
         },
         {
           "id": "6:4404538472672181582",
@@ -263,7 +263,7 @@
           "indexId": "6:5732402837582512403",
           "type": 11,
           "flags": 520,
-          "relationTarget": "PaymentStatus"
+          "relationTarget": "ObxPaymentStatus"
         },
         {
           "id": "7:1097158213809587039",
@@ -317,10 +317,39 @@
           "type": 9
         }
       ]
+    },
+    {
+      "id": "10:1586798995545697338",
+      "lastPropertyId": "3:4777514309215282655",
+      "name": "ObxEventClient",
+      "properties": [
+        {
+          "id": "1:1287805911003841035",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7986701222677585850",
+          "name": "client_id",
+          "indexId": "7:5118054569131009804",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "ObxClient"
+        },
+        {
+          "id": "3:4777514309215282655",
+          "name": "event_id",
+          "indexId": "8:3062995833114425761",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "ObxEvent"
+        }
+      ]
     }
   ],
-  "lastEntityId": "9:3913365336717971459",
-  "lastIndexId": "6:5732402837582512403",
+  "lastEntityId": "10:1586798995545697338",
+  "lastIndexId": "8:3062995833114425761",
   "lastRelationId": "",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,

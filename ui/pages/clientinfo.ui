@@ -35,7 +35,7 @@
       <item>
        <widget class="QCheckBox" name="mAddUpdateCheckBox">
         <property name="text">
-         <string>Add/Chnage client</string>
+         <string>Add/Change client</string>
         </property>
        </widget>
       </item>

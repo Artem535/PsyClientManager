@@ -9,6 +9,14 @@ table ObxClient {
     birthday_date: int64;
 }
 
+table ObxEventClient {
+    id: ulong;
+    /// objectbox: relation=ObxClient
+    client_id: ulong;
+    /// objectbox: relation=ObxEvent
+    event_id: ulong;
+}
+
 table ObxEvent {
     id: ulong;
     
@@ -17,9 +25,9 @@ table ObxEvent {
 
     is_work_event: bool;
 
-    /// objectbox: relation=EventStatus
+    /// objectbox: relation=ObxEventStatus
     event_stat_id: ulong;
-    /// objectbox: relation=PaymentStatus
+    /// objectbox: relation=ObxPaymentStatus
     payment_stat_id: ulong;
     
     /// objectbox: date

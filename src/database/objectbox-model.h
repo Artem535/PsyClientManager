@@ -95,10 +95,10 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "is_work_event", OBXPropertyType_Bool, 4, 4751643885648285417);
     obx_model_property(model, "event_stat_id", OBXPropertyType_Relation, 5, 1279799933926145338);
     obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
-    obx_model_property_relation(model, "EventStatus", 5, 710846959809792147);
+    obx_model_property_relation(model, "ObxEventStatus", 5, 710846959809792147);
     obx_model_property(model, "payment_stat_id", OBXPropertyType_Relation, 6, 4404538472672181582);
     obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
-    obx_model_property_relation(model, "PaymentStatus", 6, 5732402837582512403);
+    obx_model_property_relation(model, "ObxPaymentStatus", 6, 5732402837582512403);
     obx_model_property(model, "start_date", OBXPropertyType_Date, 7, 1097158213809587039);
     obx_model_property(model, "end_date", OBXPropertyType_Date, 8, 8963752415450789323);
     obx_model_property(model, "duration", OBXPropertyType_Long, 9, 7949770622388427310);
@@ -116,8 +116,19 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "name", OBXPropertyType_String, 2, 840463892669945937);
     obx_model_entity_last_property_id(model, 2, 840463892669945937);
     
-    obx_model_last_entity_id(model, 9, 3913365336717971459);
-    obx_model_last_index_id(model, 6, 5732402837582512403);
+    obx_model_entity(model, "ObxEventClient", 10, 1586798995545697338);
+    obx_model_property(model, "id", OBXPropertyType_Long, 1, 1287805911003841035);
+    obx_model_property_flags(model, OBXPropertyFlags_ID);
+    obx_model_property(model, "client_id", OBXPropertyType_Relation, 2, 7986701222677585850);
+    obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
+    obx_model_property_relation(model, "ObxClient", 7, 5118054569131009804);
+    obx_model_property(model, "event_id", OBXPropertyType_Relation, 3, 4777514309215282655);
+    obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
+    obx_model_property_relation(model, "ObxEvent", 8, 3062995833114425761);
+    obx_model_entity_last_property_id(model, 3, 4777514309215282655);
+    
+    obx_model_last_entity_id(model, 10, 1586798995545697338);
+    obx_model_last_index_id(model, 8, 3062995833114425761);
     return model; // NOTE: the returned model will contain error information if an error occurred.
 }
 

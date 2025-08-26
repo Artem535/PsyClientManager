@@ -9,7 +9,7 @@ namespace pcm::database {
 Database::Database(const pcm::config::Config &conf) {
   plog::init(plog::verbose, "database.log");
 
-  auto db_pth = conf.db_conf.value_.db_pth;
+  const auto db_pth = conf.db_conf.value_.db_pth;
   bool it_first_init = false;
   if (auto dir = Poco::File(db_pth); !dir.exists()) {
     dir.createDirectories();
@@ -20,11 +20,10 @@ Database::Database(const pcm::config::Config &conf) {
   options.directory(db_pth.toString());
 
   m_store = std::make_unique<obx::Store>(options);
-  m_events_box = std::make_unique<obx::Box<ObxEvent>>(*m_store.get());
-  m_client_box = std::make_unique<obx::Box<ObxClient>>(*m_store.get());
-  m_payment_status_box =
-      std::make_unique<obx::Box<ObxPaymentStatus>>(*m_store.get());
-  m_event_status_box = std::make_unique<obx::Box<ObxEventStatus>>(*m_store.get());
+  m_events_box = std::make_unique<obx::Box<ObxEvent>>(*m_store);
+  m_client_box = std::make_unique<obx::Box<ObxClient>>(*m_store);
+  m_payment_status_box = std::make_unique<obx::Box<ObxPaymentStatus>>(*m_store);
+  m_event_status_box = std::make_unique<obx::Box<ObxEventStatus>>(*m_store);
 
   if (it_first_init) {
     init_payment_status_table();
@@ -107,7 +106,7 @@ bool Database::has_conflict(const ObxEvent &event) {
   return query.count() > 0;
 }
 
-std::vector<ObxEvent> Database::get_day_events(const int64_t date) {
+std::vector<ObxEvent> Database::get_day_events(const int64_t &date) {
   PLOGD << "Input date" << date;
   // Convert to microseconds.
   const auto [start, end] = get_time_range(Poco::Timestamp{date * 1000});

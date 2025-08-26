@@ -40,7 +40,7 @@ public:
   std::vector<obx_id> get_event_ids(int64_t date);
 
   bool has_conflict(const ObxEvent &event);
-  std::vector<ObxEvent> get_day_events(const int64_t date);
+  std::vector<ObxEvent> get_day_events(const int64_t &date);
 
 private:
   void add_demo_data();

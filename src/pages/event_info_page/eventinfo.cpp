@@ -10,7 +10,7 @@ Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
 QEventInfoPage::QEventInfoPage(
     const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
-    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
+    : QWidget(parent), mDB(db), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
   mTimelineWidget = new QTimelineWidget(db, this);
@@ -22,10 +22,15 @@ QEventInfoPage::QEventInfoPage(
   connectButtonBox();
   connectTimeEditors();
   connectSceneUpdate();
+  connectEventTypes();
 
   initDefaultTimes();
+  initClientComboBox();
+  initDefaultSates();
 
-  emit changedEditMode();
+  connect(this, &QEventInfoPage::changedEditMode, [this]() {
+    mUi->mEventType->setEnabled(mInEditMode);
+  });
 }
 
 // Connect calendar widget signals
@@ -82,6 +87,7 @@ void QEventInfoPage::connectButtonBox() {
     emit changedEditMode();
   });
 
+  // TODO: Move to separated function.
   connect(applyButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
     mCreatedNewEvent = false;
@@ -136,6 +142,33 @@ void QEventInfoPage::initDefaultTimes() const {
   mUi->mTimeFrom->setDateTime(crtDateTime);
   mUi->mTimeTo->setDateTime(crtDateTime);
 }
+void QEventInfoPage::initClientComboBox() const {
+  for (const auto &client : mDB->get_clients()) {
+    QString clientName = "%1 %2";
+    const auto title = clientName.arg(client->name, client->last_name);
+    mUi->mClientComboBox->addItem(title, QVariant::fromValue(client->id));
+  }
+}
+void QEventInfoPage::connectEventTypes() const {
+  connect(mUi->mEventType, &QCheckBox::checkStateChanged,
+          [this](const int state) {
+            const auto isWorkItem = state == Qt::CheckState::Checked;
+            const auto title = isWorkItem ? "Work item" : "Event";
+            mUi->mEventType->setText(title);
+            mUi->mClientComboBox->setVisible(isWorkItem);
+            mUi->mClientComboxBoxLabel->setVisible(isWorkItem);
+          });
+}
+void QEventInfoPage::initDefaultSates()  {
+  // Disable visible of client combobox
+  mUi->mClientComboBox->setVisible(false);
+  mUi->mClientComboxBoxLabel->setVisible(false);
+
+  // Disable the event type checkbox
+  mUi->mEventType->setEnabled(false);
+
+  emit changedEditMode();
+}
 
 // Called when an event is clicked in the timeline
 void QEventInfoPage::onEventClicked(QEventItem *event) {
@@ -168,8 +201,8 @@ void QEventInfoPage::addEvent(QEventItem *event) const {
     const auto date = mUi->mEventDate->date();
     const auto startTime = mUi->mTimeFrom->time();
     const auto endTime = mUi->mTimeTo->time();
-    const auto isWorkItem = mUi->mEventType->checkState() ==
-                         Qt::CheckState::Checked;
+    const auto isWorkItem =
+        mUi->mEventType->checkState() == Qt::CheckState::Checked;
 
     event->setEndTime(QDateTime(date, endTime));
     event->setStartTime(QDateTime(date, startTime));
