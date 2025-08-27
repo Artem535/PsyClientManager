@@ -24,6 +24,7 @@ Database::Database(const pcm::config::Config &conf) {
   m_client_box = std::make_unique<obx::Box<ObxClient>>(*m_store);
   m_payment_status_box = std::make_unique<obx::Box<ObxPaymentStatus>>(*m_store);
   m_event_status_box = std::make_unique<obx::Box<ObxEventStatus>>(*m_store);
+  m_event_client_box = std::make_unique<obx::Box<ObxEventClient>>(*m_store);
 
   if (it_first_init) {
     init_payment_status_table();
@@ -57,6 +58,13 @@ bool Database::remove_client(const obx_id &id) {
   const bool is_removed{m_client_box->remove(id)};
   return is_removed;
 }
+
+obx_id Database::add_event_client(const obx_id &event_id,
+                                const obx_id &client_id) {
+  ObxEventClient obj = {.client_id = client_id, .event_id = event_id};
+  m_event_client_box->put(obj);
+}
+
 
 std::unique_ptr<ObxClient> Database::get_client(const obx_id &id) {
   return m_client_box->get(id);

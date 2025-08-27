@@ -66,10 +66,12 @@ void QTimelineWidget::onEventSelected(QEventItem *event) {
   emit eventSelected(event);
 }
 
-void QTimelineWidget::addEvent(QEventItem *item) const {
-  if (item != nullptr) {
-    mDataManager->addEvent(item);
-  }
+obx_id QTimelineWidget::addEvent(QEventItem *item) const {
+  if (item == nullptr)
+    return 0;
+
+  const auto id = mDataManager->addEvent(item);
+  return id;
 }
 void QTimelineWidget::updateScene() { emit needSceneUpdate(); }
 

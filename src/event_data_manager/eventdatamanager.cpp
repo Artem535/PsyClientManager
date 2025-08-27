@@ -32,11 +32,13 @@ void QEventDataManager::addEvent(const ObxEvent &event) {
   addEventItemToScene(eventItem);
 }
 
-void QEventDataManager::addEvent(QEventItem *item) {
+obx_id QEventDataManager::addEvent(QEventItem *item) {
   const ObxEvent event = toEvent(item);
   const obx_id id = mDb->add_event(event);
   item->setId(id);
   addEventItemToScene(item);
+
+  return id;
 }
 
 void QEventDataManager::addEventItemToScene(QEventItem *item) {

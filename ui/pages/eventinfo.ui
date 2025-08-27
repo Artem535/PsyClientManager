@@ -84,7 +84,7 @@
     <widget class="QFrame" name="frame_2">
      <property name="maximumSize">
       <size>
-       <width>400</width>
+       <width>500</width>
        <height>809</height>
       </size>
      </property>
@@ -210,8 +210,20 @@
           </item>
           <item>
            <widget class="QPushButton" name="mAddButton">
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Добавить новое событие</string>
+            </property>
+            <property name="autoDefault">
+             <bool>false</bool>
+            </property>
+            <property name="default">
+             <bool>false</bool>
+            </property>
+            <property name="flat">
+             <bool>false</bool>
             </property>
            </widget>
           </item>

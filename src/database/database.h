@@ -33,11 +33,14 @@ public:
   obx_id add_client(const ObxClient &client);
   bool remove_client(const obx_id &id);
 
+  obx_id add_event_client(const obx_id &event_id, const obx_id &client_id);
+
   std::unique_ptr<ObxClient> get_client(const obx_id &id);
   std::vector<std::unique_ptr<ObxClient>> get_clients();
 
   std::vector<obx_id> get_client_ids();
   std::vector<obx_id> get_event_ids(int64_t date);
+
 
   bool has_conflict(const ObxEvent &event);
   std::vector<ObxEvent> get_day_events(const int64_t &date);
@@ -52,6 +55,7 @@ private:
   std::unique_ptr<obx::Box<ObxClient>> m_client_box;
   std::unique_ptr<obx::Box<ObxPaymentStatus>> m_payment_status_box;
   std::unique_ptr<obx::Box<ObxEventStatus>> m_event_status_box;
+  std::unique_ptr<obx::Box<ObxEventClient>> m_event_client_box;
 };
 
 } // namespace pcm::database

@@ -28,9 +28,8 @@ QEventInfoPage::QEventInfoPage(
   initClientComboBox();
   initDefaultSates();
 
-  connect(this, &QEventInfoPage::changedEditMode, [this]() {
-    mUi->mEventType->setEnabled(mInEditMode);
-  });
+  connect(this, &QEventInfoPage::changedEditMode,
+          [this]() { mUi->mEventType->setEnabled(mInEditMode); });
 }
 
 // Connect calendar widget signals
@@ -159,7 +158,7 @@ void QEventInfoPage::connectEventTypes() const {
             mUi->mClientComboxBoxLabel->setVisible(isWorkItem);
           });
 }
-void QEventInfoPage::initDefaultSates()  {
+void QEventInfoPage::initDefaultSates() {
   // Disable visible of client combobox
   mUi->mClientComboBox->setVisible(false);
   mUi->mClientComboxBoxLabel->setVisible(false);
@@ -195,19 +194,27 @@ void QEventInfoPage::clearUi() const {
 
 // Add a new event to the timeline
 void QEventInfoPage::addEvent(QEventItem *event) const {
-  if (event != nullptr) {
-    event->setTitle(mUi->mTitle->text());
+  if (event == nullptr)
+    return;
 
-    const auto date = mUi->mEventDate->date();
-    const auto startTime = mUi->mTimeFrom->time();
-    const auto endTime = mUi->mTimeTo->time();
-    const auto isWorkItem =
-        mUi->mEventType->checkState() == Qt::CheckState::Checked;
+  event->setTitle(mUi->mTitle->text());
 
-    event->setEndTime(QDateTime(date, endTime));
-    event->setStartTime(QDateTime(date, startTime));
-    event->setIsWorkItem(isWorkItem);
-    mTimelineWidget->addEvent(event);
+  const auto date = mUi->mEventDate->date();
+  const auto startTime = mUi->mTimeFrom->time();
+  const auto endTime = mUi->mTimeTo->time();
+  const auto isWorkItem =
+      mUi->mEventType->checkState() == Qt::CheckState::Checked;
+
+  event->setEndTime(QDateTime(date, endTime));
+  event->setStartTime(QDateTime(date, startTime));
+  event->setIsWorkItem(isWorkItem);
+  const auto event_id = mTimelineWidget->addEvent(event);
+
+  if (isWorkItem) {
+    const auto client_id = mUi->mClientComboBox->currentData().toULongLong();
+
+    [[maybe_unused]]
+    const auto id = mDB->add_event_client(event_id, client_id);
   }
 }
 

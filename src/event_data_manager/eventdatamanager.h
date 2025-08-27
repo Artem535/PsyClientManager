@@ -19,7 +19,7 @@ public:
   void loadEvents();
 
   void addEvent(const ObxEvent &event);
-  void addEvent(QEventItem *event);
+  [[nodiscard]] obx_id addEvent(QEventItem *event);
 
   void updateEvent(obx_id eventId, const ObxEvent &newData);
   void removeEvent(obx_id eventId);

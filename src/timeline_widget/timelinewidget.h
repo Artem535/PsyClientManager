@@ -16,12 +16,12 @@ class QTimelineWidget final : public QWidget {
   Q_OBJECT
 public:
   explicit QTimelineWidget(const std::shared_ptr<pcm::database::Database> &db,
-                          QWidget *parent = nullptr);
+                           QWidget *parent = nullptr);
   ~QTimelineWidget() override;
 
 public slots:
   void onSelectedDayChanged(const QDate &date) const;
-  void addEvent(QEventItem *item) const;
+  [[nodiscard]] obx_id addEvent(QEventItem *item) const;
   void updateScene();
 
 signals:
