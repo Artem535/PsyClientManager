@@ -45,6 +45,8 @@ public:
   bool has_conflict(const ObxEvent &event);
   std::vector<ObxEvent> get_day_events(const int64_t &date);
 
+  ObxClient get_client_by_event(const obx_id &event_id);
+
 private:
   void add_demo_data();
   void init_payment_status_table();

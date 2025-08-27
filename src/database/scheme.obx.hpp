@@ -21,7 +21,7 @@ struct ObxClient {
     int64_t birthday_date;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 6; }
+        static constexpr obx_schema_id entityId() { return 1; }
     
         static void setObjectId(ObxClient& object, obx_id newId) { object.id = newId; }
     
@@ -65,7 +65,7 @@ struct ObxEvent {
     int64_t duration;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 7; }
+        static constexpr obx_schema_id entityId() { return 2; }
     
         static void setObjectId(ObxEvent& object, obx_id newId) { object.id = newId; }
     
@@ -95,6 +95,41 @@ struct ObxEvent_ {
     static const obx::Property<ObxEvent, OBXPropertyType_Long> duration;
 };
 
+struct ObxClient; 
+struct ObxEvent; 
+
+struct ObxEventClient_;
+
+struct ObxEventClient {
+    obx_id id;
+    obx_id client_id;
+    obx_id event_id;
+
+    struct _OBX_MetaInfo {
+        static constexpr obx_schema_id entityId() { return 3; }
+    
+        static void setObjectId(ObxEventClient& object, obx_id newId) { object.id = newId; }
+    
+        /// Write given object to the FlatBufferBuilder
+        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxEventClient& object);
+    
+        /// Read an object from a valid FlatBuffer
+        static ObxEventClient fromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static std::unique_ptr<ObxEventClient> newFromFlatBuffer(const void* data, size_t size);
+    
+        /// Read an object from a valid FlatBuffer
+        static void fromFlatBuffer(const void* data, size_t size, ObxEventClient& outObject);
+    };
+};
+
+struct ObxEventClient_ {
+    static const obx::Property<ObxEventClient, OBXPropertyType_Long> id;
+    static const obx::RelationProperty<ObxEventClient, ObxClient> client_id;
+    static const obx::RelationProperty<ObxEventClient, ObxEvent> event_id;
+};
+
 
 struct ObxEventStatus_;
 
@@ -103,7 +138,7 @@ struct ObxEventStatus {
     std::string name;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 8; }
+        static constexpr obx_schema_id entityId() { return 4; }
     
         static void setObjectId(ObxEventStatus& object, obx_id newId) { object.id = newId; }
     
@@ -134,7 +169,7 @@ struct ObxPaymentStatus {
     std::string name;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 9; }
+        static constexpr obx_schema_id entityId() { return 5; }
     
         static void setObjectId(ObxPaymentStatus& object, obx_id newId) { object.id = newId; }
     
@@ -155,40 +190,5 @@ struct ObxPaymentStatus {
 struct ObxPaymentStatus_ {
     static const obx::Property<ObxPaymentStatus, OBXPropertyType_Long> id;
     static const obx::Property<ObxPaymentStatus, OBXPropertyType_String> name;
-};
-
-struct ObxClient; 
-struct ObxEvent; 
-
-struct ObxEventClient_;
-
-struct ObxEventClient {
-    obx_id id;
-    obx_id client_id;
-    obx_id event_id;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 10; }
-    
-        static void setObjectId(ObxEventClient& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxEventClient& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxEventClient fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxEventClient> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxEventClient& outObject);
-    };
-};
-
-struct ObxEventClient_ {
-    static const obx::Property<ObxEventClient, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<ObxEventClient, ObxClient> client_id;
-    static const obx::RelationProperty<ObxEventClient, ObxEvent> event_id;
 };
 

@@ -4,360 +4,176 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
-      "id": "1:4232924590366596268",
-      "lastPropertyId": "7:6437078930246871991",
-      "name": "Client",
-      "properties": [
-        {
-          "id": "1:2118396169943376223",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:2420429962535564379",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "3:9060221825843465878",
-          "name": "last_name",
-          "type": 9
-        },
-        {
-          "id": "4:5478106197915482444",
-          "name": "additional_info",
-          "type": 9
-        },
-        {
-          "id": "5:1835775022643446179",
-          "name": "diagnosis",
-          "type": 9
-        },
-        {
-          "id": "6:3200790165446494807",
-          "name": "birthday_date",
-          "type": 10
-        }
-      ]
-    },
-    {
-      "id": "2:178701048376682576",
-      "lastPropertyId": "2:1269261941935221798",
-      "name": "EventStatus",
-      "properties": [
-        {
-          "id": "1:3743004761803902039",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1269261941935221798",
-          "name": "name",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "3:2764412866232652727",
-      "lastPropertyId": "7:706082463420064439",
-      "name": "Events",
-      "properties": [
-        {
-          "id": "1:4914901320129076539",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:3080437405275653789",
-          "name": "event_stat_id",
-          "indexId": "1:4835662900399819860",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "EventStatus"
-        },
-        {
-          "id": "3:3042416171413486389",
-          "name": "payment_stat_id",
-          "indexId": "2:6234586313957568125",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "PaymentStatus"
-        },
-        {
-          "id": "4:2974585387743269004",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "5:4156345417899504069",
-          "name": "start_date",
-          "type": 10
-        },
-        {
-          "id": "6:6174844177528786463",
-          "name": "end_date",
-          "type": 10
-        },
-        {
-          "id": "7:706082463420064439",
-          "name": "duration",
-          "type": 6
-        }
-      ]
-    },
-    {
-      "id": "4:7128285385869012364",
-      "lastPropertyId": "2:1868611908526886811",
-      "name": "PaymentStatus",
-      "properties": [
-        {
-          "id": "1:8962486209677227357",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1868611908526886811",
-          "name": "name",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "5:2275087930255141894",
-      "lastPropertyId": "9:5716146653668202541",
-      "name": "Event",
-      "properties": [
-        {
-          "id": "1:4202322800725384350",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:6174680980825670351",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "3:2685668261718824971",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "4:7332813401351768790",
-          "name": "is_work_event",
-          "type": 1
-        },
-        {
-          "id": "5:6756516191170196090",
-          "name": "event_stat_id",
-          "indexId": "3:8539627464916298022",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "EventStatus"
-        },
-        {
-          "id": "6:156741055834734281",
-          "name": "payment_stat_id",
-          "indexId": "4:6077000883603522273",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "PaymentStatus"
-        },
-        {
-          "id": "7:8620128003167801451",
-          "name": "start_date",
-          "type": 10
-        },
-        {
-          "id": "8:5610333834680675135",
-          "name": "end_date",
-          "type": 10
-        },
-        {
-          "id": "9:5716146653668202541",
-          "name": "duration",
-          "type": 6
-        }
-      ]
-    },
-    {
-      "id": "6:1276055315771980492",
-      "lastPropertyId": "6:1489414232755749908",
+      "id": "1:9222488863877849404",
+      "lastPropertyId": "6:7650197688374967512",
       "name": "ObxClient",
       "properties": [
         {
-          "id": "1:452053588053143873",
+          "id": "1:4437955445005046920",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:3808716636712114465",
+          "id": "2:3042717258127856013",
           "name": "name",
           "type": 9
         },
         {
-          "id": "3:2246920303058462103",
+          "id": "3:4930106246710698986",
           "name": "last_name",
           "type": 9
         },
         {
-          "id": "4:3291871443426391515",
+          "id": "4:1032589761500929099",
           "name": "additional_info",
           "type": 9
         },
         {
-          "id": "5:5823697886380435786",
+          "id": "5:4653121431483938636",
           "name": "diagnosis",
           "type": 9
         },
         {
-          "id": "6:1489414232755749908",
+          "id": "6:7650197688374967512",
           "name": "birthday_date",
           "type": 10
         }
       ]
     },
     {
-      "id": "7:6312465015457351717",
-      "lastPropertyId": "9:7949770622388427310",
+      "id": "2:6602257003920660585",
+      "lastPropertyId": "9:2489937869615063357",
       "name": "ObxEvent",
       "properties": [
         {
-          "id": "1:2722298619602178402",
+          "id": "1:1863236555416346146",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:1805498599114546254",
+          "id": "2:4154493402714280900",
           "name": "name",
           "type": 9
         },
         {
-          "id": "3:2923464261013182613",
+          "id": "3:8647926316662035098",
           "name": "description",
           "type": 9
         },
         {
-          "id": "4:4751643885648285417",
+          "id": "4:5337740726563963484",
           "name": "is_work_event",
           "type": 1
         },
         {
-          "id": "5:1279799933926145338",
+          "id": "5:4788778188756128348",
           "name": "event_stat_id",
-          "indexId": "5:710846959809792147",
+          "indexId": "1:943550472254333744",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxEventStatus"
         },
         {
-          "id": "6:4404538472672181582",
+          "id": "6:5927558126686696451",
           "name": "payment_stat_id",
-          "indexId": "6:5732402837582512403",
+          "indexId": "2:5525901426439236628",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxPaymentStatus"
         },
         {
-          "id": "7:1097158213809587039",
+          "id": "7:8167175638137048872",
           "name": "start_date",
           "type": 10
         },
         {
-          "id": "8:8963752415450789323",
+          "id": "8:814619399907758219",
           "name": "end_date",
           "type": 10
         },
         {
-          "id": "9:7949770622388427310",
+          "id": "9:2489937869615063357",
           "name": "duration",
           "type": 6
         }
       ]
     },
     {
-      "id": "8:428495872392820867",
-      "lastPropertyId": "2:7863958216247807796",
-      "name": "ObxEventStatus",
-      "properties": [
-        {
-          "id": "1:1945110493359752364",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:7863958216247807796",
-          "name": "name",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "9:3913365336717971459",
-      "lastPropertyId": "2:840463892669945937",
-      "name": "ObxPaymentStatus",
-      "properties": [
-        {
-          "id": "1:2022963127944036031",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:840463892669945937",
-          "name": "name",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "10:1586798995545697338",
-      "lastPropertyId": "3:4777514309215282655",
+      "id": "3:8105372197119122755",
+      "lastPropertyId": "3:2760004704272577736",
       "name": "ObxEventClient",
       "properties": [
         {
-          "id": "1:1287805911003841035",
+          "id": "1:1505496827744851731",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:7986701222677585850",
+          "id": "2:7801791581035965306",
           "name": "client_id",
-          "indexId": "7:5118054569131009804",
+          "indexId": "3:384473963347765670",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxClient"
         },
         {
-          "id": "3:4777514309215282655",
+          "id": "3:2760004704272577736",
           "name": "event_id",
-          "indexId": "8:3062995833114425761",
+          "indexId": "4:7673689708577955306",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxEvent"
         }
       ]
+    },
+    {
+      "id": "4:7474041764443288441",
+      "lastPropertyId": "2:1641681440468857588",
+      "name": "ObxEventStatus",
+      "properties": [
+        {
+          "id": "1:1908433294440041011",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1641681440468857588",
+          "name": "name",
+          "type": 9
+        }
+      ]
+    },
+    {
+      "id": "5:3636246469301265828",
+      "lastPropertyId": "2:1212835695634219967",
+      "name": "ObxPaymentStatus",
+      "properties": [
+        {
+          "id": "1:6223551215575050957",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1212835695634219967",
+          "name": "name",
+          "type": 9
+        }
+      ]
     }
   ],
-  "lastEntityId": "10:1586798995545697338",
-  "lastIndexId": "8:3062995833114425761",
+  "lastEntityId": "5:3636246469301265828",
+  "lastIndexId": "4:7673689708577955306",
   "lastRelationId": "",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [
-    6437078930246871991
-  ],
+  "retiredPropertyUids": [],
   "retiredRelationUids": [],
   "version": 1
 }

@@ -142,6 +142,7 @@ void QEventInfoPage::initDefaultTimes() const {
   mUi->mTimeTo->setDateTime(crtDateTime);
 }
 void QEventInfoPage::initClientComboBox() const {
+  mUi->mClientComboBox->clear();
   for (const auto &client : mDB->get_clients()) {
     QString clientName = "%1 %2";
     const auto title = clientName.arg(client->name, client->last_name);
@@ -180,7 +181,21 @@ void QEventInfoPage::onEventClicked(QEventItem *event) {
     mUi->mTitle->setText(event->getTitle());
     mUi->mTimeFrom->setDateTime(event->getStartTime());
     mUi->mTimeTo->setDateTime(event->getEndTime());
+    mUi->mEventType->setCheckState(event->isWorkItem()
+                                       ? Qt::CheckState::Checked
+                                       : Qt::CheckState::Unchecked);
     mCurrentEvent = event;
+
+    if (event->isWorkItem()) {
+      // Get client that is associated with the event
+      const auto client = mDB->get_client_by_event(event->getId());
+      const auto clientId = QVariant::fromValue(client.id);
+      // Set client combobox to the client that is associated with the event
+      if (const auto index = mUi->mClientComboBox->findData(clientId);
+          index != -1) {
+        mUi->mClientComboBox->setCurrentIndex(index);
+      }
+    }
   }
 }
 

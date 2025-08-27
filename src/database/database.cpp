@@ -1,6 +1,3 @@
-#include <Poco/Timestamp.h>
-#include <utility>
-#include <vector>
 #define OBX_CPP_FILE
 #include "database.h"
 
@@ -60,11 +57,11 @@ bool Database::remove_client(const obx_id &id) {
 }
 
 obx_id Database::add_event_client(const obx_id &event_id,
-                                const obx_id &client_id) {
+                                  const obx_id &client_id) {
   ObxEventClient obj = {.client_id = client_id, .event_id = event_id};
-  m_event_client_box->put(obj);
+  const auto id = m_event_client_box->put(obj);
+  return id;
 }
-
 
 std::unique_ptr<ObxClient> Database::get_client(const obx_id &id) {
   return m_client_box->get(id);
@@ -127,6 +124,28 @@ std::vector<ObxEvent> Database::get_day_events(const int64_t &date) {
 
   const auto result = query.find();
   return result;
+}
+
+ObxClient Database::get_client_by_event(const obx_id &event_id) {
+  // TODO: Move to relations instead of query.
+  // clang-format off
+  auto query = m_event_client_box->query(
+  ObxEventClient_::event_id.equals(event_id)
+  );
+  // clang-format on
+  auto build_query = query.build();
+  const auto result = build_query.find();
+
+  // TODO: Made it more safe.
+  if (result.empty()) {
+    throw std::runtime_error("Can't find client for event with id: " +
+                             std::to_string(event_id));
+  }
+
+  const auto client_id = result[0].client_id;
+  const auto client = m_client_box->get(client_id);
+
+  return *client;
 }
 
 } // namespace pcm::database

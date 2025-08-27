@@ -12,5 +12,5 @@ constexpr std::array<ObxEventStatus, 3> event_statuses = {
 constexpr std::array<ObxPaymentStatus, 5> payment_statuses = {
     ObxPaymentStatus{.name = "pending"}, ObxPaymentStatus{.name = "paid"},
     ObxPaymentStatus{.name = "canceled"}, ObxPaymentStatus{.name = "refunded"},
-    ObxPaymentStatus{.name = "skiped"}};
+    ObxPaymentStatus{.name = "skipped"}};
 }; // namespace pcm::constance

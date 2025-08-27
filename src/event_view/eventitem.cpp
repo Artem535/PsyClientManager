@@ -11,14 +11,15 @@
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
 QEventItem::QEventItem(const long long id, const QString &title,
-                     const QDateTime &startTime, const QDateTime &endTime,
-                     const bool isWorkItem)
-    : mIsWorkItem(isWorkItem), mSize(100, 100),
-      mTitle(title), mStartTime(startTime), mEndTime(endTime), mId(id) {
+                       const QDateTime &startTime, const QDateTime &endTime,
+                       const bool isWorkItem)
+    : mIsWorkItem(isWorkItem), mSize(100, 100), mTitle(title),
+      mStartTime(startTime), mEndTime(endTime), mId(id) {
 
-  qCInfo(logPcmEventItem) << "Created event:" << title
-                          << "(" << startTime.toString() << "-"
-                          << endTime.toString() << ")";
+  qCInfo(logPcmEventItem) << "QEventItem::QEventItem"
+                          << "Created event:" << title << "("
+                          << startTime.toString() << "-" << endTime.toString()
+                          << ")";
 
   setFlag(QGraphicsItem::ItemIsMovable);
   setFlag(QGraphicsItem::ItemIsSelectable);
@@ -35,7 +36,7 @@ QRectF QEventItem::boundingRect() const {
   xOffset += labelWidth;
 
   return {xOffset + penWidth, penWidth, mSize.width() + penWidth,
-                mSize.height() + penWidth};
+          mSize.height() + penWidth};
 }
 
 void QEventItem::updateSize(const QSize &newSize) {
@@ -55,7 +56,7 @@ QDateTime QEventItem::getStartTime() const { return mStartTime; }
 QDateTime QEventItem::getEndTime() const { return mEndTime; }
 QString QEventItem::getTitle() const { return mTitle; }
 unsigned long QEventItem::getId() const { return mId; }
-bool QEventItem::isWorkItem() const {return mIsWorkItem;};
+bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
 void QEventItem::setTitle(const QString &title) {
   if (mTitle == title)
@@ -65,8 +66,12 @@ void QEventItem::setTitle(const QString &title) {
 }
 
 void QEventItem::setStartTime(const QDateTime &startTime) {
-  if (mStartTime == startTime || startTime > mEndTime) {
-    qCWarning(logPcmEventItem) << "Invalid start time:" << startTime;
+  if (mStartTime == startTime)
+    return;
+
+  if (startTime > mEndTime) {
+    qCWarning(logPcmEventItem) << "QEventItem::setStartTime"
+                               << "Invalid start time:" << startTime;
     return;
   }
 
@@ -76,8 +81,12 @@ void QEventItem::setStartTime(const QDateTime &startTime) {
 }
 
 void QEventItem::setEndTime(const QDateTime &endTime) {
-  if (mEndTime == endTime || endTime < mStartTime) {
-    qCWarning(logPcmEventItem) << "Invalid end time:" << endTime;
+  if (mEndTime == endTime)
+    return;
+
+  if (endTime < mStartTime) {
+    qCWarning(logPcmEventItem) << "QEventItem::setEndTime"
+                               << "Invalid end time:" << endTime;
     return;
   }
 
@@ -98,16 +107,17 @@ void QEventItem::setId(const long long id) {
   mId = id;
   qCDebug(logPcmEventItem) << "EventItem ID changed to:" << mId;
 }
-unsigned int QEventItem::getDuration() const {return mDuration; }
+unsigned int QEventItem::getDuration() const { return mDuration; }
 
 QVariant QEventItem::itemChange(const GraphicsItemChange change,
-                               const QVariant &value) {
+                                const QVariant &value) {
   switch (change) {
   case ItemPositionChange: {
     const auto newPos = value.toPointF();
     if (std::abs(newPos.x()) > mSize.width()) {
       const qreal centerX = scene()->sceneRect().center().x();
-      if (const bool newWorkItem = newPos.x() < centerX; mIsWorkItem != newWorkItem) {
+      if (const bool newWorkItem = newPos.x() < centerX;
+          mIsWorkItem != newWorkItem) {
         mIsWorkItem = newWorkItem;
         emit prepareGeometryChange();
         update();
@@ -125,7 +135,8 @@ QVariant QEventItem::itemChange(const GraphicsItemChange change,
 
 void QEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
   emit itemSelected();
-  qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:" << mTitle;
+  qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:"
+                          << mTitle;
   QGraphicsObject::mousePressEvent(event);
 }
 void QEventItem::updateDuration() {
@@ -138,8 +149,9 @@ void QEventItem::updateDuration() {
   mDuration = endTimeMin - startTimeMin;
 }
 
-void QEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-                      QWidget *widget) {
+void QEventItem::paint(QPainter *painter,
+                       const QStyleOptionGraphicsItem *option,
+                       QWidget *widget) {
   Q_UNUSED(option)
   Q_UNUSED(widget)
 
@@ -147,7 +159,7 @@ void QEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
 
   // Fill and border colors
   const QColor fillColor = mIsWorkItem ? QColor(173, 216, 230)  // Light blue
-                                : QColor(255, 182, 193); // Light pink
+                                       : QColor(255, 182, 193); // Light pink
   const QPen borderPen(mIsWorkItem ? Qt::darkBlue : Qt::darkRed, 1.5);
 
   painter->setBrush(fillColor);
@@ -163,8 +175,8 @@ void QEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
   painter->setPen(Qt::white);
   const qreal margin_y = 0.1 * mSize.height();
   const qreal margin_x = 0.05 * mSize.width();
-  const QRectF textRect(x + margin_x, margin_y,
-                        mSize.width() * 0.9, mSize.height() * 0.8);
+  const QRectF textRect(x + margin_x, margin_y, mSize.width() * 0.9,
+                        mSize.height() * 0.8);
   painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
 
   painter->restore();
