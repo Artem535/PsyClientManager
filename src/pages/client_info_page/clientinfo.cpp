@@ -1,137 +1,207 @@
 #include "clientinfo.h"
 #include "ui/pages/ui_clientinfo.h"
-#include <objectbox.h>
-#include <qdatetime.h>
-#include <qpushbutton.h>
-#include <qvariant.h>
+
+#include <QAbstractItemView>
+#include <QMessageBox>
+#include <QVariant>
+
+Q_LOGGING_CATEGORY(logClientInfo, "pcm.ClientInfo")
 
 ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
-    : QWidget(parent), mUI(std::make_unique<Ui::ClientInfo>()),
-      mClientModel(model) {
-  mUI->setupUi(this);
+    : QWidget(parent), mUi(std::make_unique<Ui::ClientInfo>()),
+      mClientModel(std::move(model)) {
+  mUi->setupUi(this);
 
-  mUI->listView->setModel(mClientModel.get());
-  mUI->listView->setViewMode(QListView::ViewMode::ListMode);
+  mUi->listView->setModel(mClientModel.get());
+  mUi->listView->setViewMode(QListView::ListMode);
 
-  change_edit_fields_mode(in_edit_mode);
-  connect_widgets();
+  // Initialize UI
+  clearUi();
+  mUi->mAddNewClientButton->setVisible(false);
+  mUi->mUpdateButton->setVisible(false);
 
-  mUI->mAddNewClientButton->setVisible(in_edit_mode);
-  mUI->mUpdateButton->setVisible(in_edit_mode);
-}
-
-void ClientInfo::change_edit_fields_mode(const bool enable) const {
-  mUI->mNameInput->setEnabled(enable);
-  mUI->mLastNameInput->setEnabled(enable);
-  mUI->mBirthdateInput->setEnabled(enable);
-  mUI->mAgeInput->setEnabled(enable);
-  mUI->mAddNewClientButton->setVisible(enable);
-  mUI->mUpdateButton->setVisible(enable);
-}
-
-void ClientInfo::connect_widgets() {
-  connect(mUI->listView, &QAbstractItemView::clicked, this,
-          &ClientInfo::update_client_preview);
-  connect(mUI->mAddUpdateCheckBox, &QCheckBox::checkStateChanged,
-          [this](const Qt::CheckState &state) {
-            in_edit_mode = state != Qt::Unchecked;
-            change_edit_fields_mode(in_edit_mode);
-          });
-  connect(mUI->clear_button, &QPushButton::clicked, this,
-          &ClientInfo::clear_client_preview);
-
-  connect(mUI->mUpdateButton, &QPushButton::clicked, [this]() {
-    const auto current_index = mUI->listView->currentIndex();
-    update_client_info(current_index);
-  });
-
-  connect(mUI->mAddNewClientButton, &QPushButton::clicked, this,
-          &ClientInfo::add_new_client);
-
-  connect(this, &ClientInfo::end_edit, [this]() {
-    in_edit_mode = false;
-    change_edit_fields_mode(in_edit_mode);
-  });
-
-  connect(this, &ClientInfo::end_edit,
-          [this]() { mUI->mAddUpdateCheckBox->setChecked(false); });
-  connect(mUI->mBirthdateInput, &QDateTimeEdit::dateChanged,
-          [&](const QDate &date) {
-            const auto countedAge = count_age(date);
-            mUI->mAgeInput->setText(QString::number(countedAge));
-          });
-}
-
-void ClientInfo::clear_client_preview() const {
-  mUI->mNameInput->clear();
-  mUI->mLastNameInput->clear();
-  mUI->mBirthdateInput->clear();
-  mUI->mAgeInput->clear();
-}
-
-void ClientInfo::update_client_preview(const QModelIndex &index) const {
-  const auto data =
-      index.data(QClientModel::ClientRoles::Full_object).value<ObxClient>();
-
-  mUI->mNameInput->setText(QString::fromStdString(data.name));
-  mUI->mLastNameInput->setText(QString::fromStdString(data.last_name));
-
-  const auto birthdate = QDateTime::fromSecsSinceEpoch(data.birthday_date);
-  mUI->mBirthdateInput->setDate(birthdate.date());
-
-  // Calc age from birthday
-  const auto age = count_age(birthdate.date());
-  mUI->mAgeInput->setText(QString::number(age));
-
-  mUI->mAdditionalInfo->setPlainText(
-      QString::fromStdString(data.additional_info));
-}
-
-int ClientInfo::count_age(const QDate &birthdate) {
-  const QDate current_date = QDateTime::currentDateTime().date();
-  int age{current_date.year() - birthdate.year()};
-
-  const bool is_month_less = current_date.month() < birthdate.month();
-
-  bool is_before_birthday_day = current_date.month() < birthdate.month();
-  is_before_birthday_day &= current_date.day() < birthdate.day();
-
-  age = is_month_less || is_before_birthday_day ? age - 1 : age;
-  return age;
-}
-
-void ClientInfo::update_client_info(const QModelIndex &index) {
-  const auto current_client_var = index.data(QClientModel::ClientRoles::Id);
-  const auto id = current_client_var.value<obx_id>();
-  ObxClient client = get_client_from_ui();
-  client.id = id;
-
-  mClientModel->setData(index, QVariant::fromValue(client));
-
-  emit end_edit();
-}
-
-ObxClient ClientInfo::get_client_from_ui() const {
-  ObxClient client;
-
-  client.name = mUI->mNameInput->text().toStdString();
-  client.last_name = mUI->mLastNameInput->text().toStdString();
-
-  const auto date = mUI->mBirthdateInput->date();
-  client.birthday_date = QDateTime(date, QTime()).toSecsSinceEpoch();
-  client.additional_info = mUI->mAdditionalInfo->toPlainText().toStdString();
-
-  return client;
-}
-
-void ClientInfo::add_new_client() {
-  auto client = get_client_from_ui();
-  client.id = 0;
-  mClientModel->add_new_client(client);
-
-  clear_client_preview();
-
-  emit end_edit();
+  connectSignals();
+  updateButtonState();
 }
 
 ClientInfo::~ClientInfo() = default;
+
+void ClientInfo::connectSignals() {
+  // Client list
+  connect(mUi->listView, &QAbstractItemView::clicked, this,
+          &ClientInfo::onClientSelected);
+
+  // Edit mode toggle
+  connect(mUi->mAddUpdateCheckBox, &QCheckBox::toggled, this,
+          &ClientInfo::onEditModeToggled);
+
+  // Action buttons
+  connect(mUi->mUpdateButton, &QPushButton::clicked, this,
+          &ClientInfo::onUpdateClicked);
+  connect(mUi->mAddNewClientButton, &QPushButton::clicked, this,
+          &ClientInfo::onAddClicked);
+  connect(mUi->clear_button, &QPushButton::clicked, this,
+          &ClientInfo::onClearClicked);
+
+  // Birthdate change
+  connect(mUi->mBirthdateInput, &QDateTimeEdit::dateChanged, this,
+          &ClientInfo::onDateChanged);
+
+  // Reactive validation
+  connect(mUi->mNameInput, &QLineEdit::textChanged, this,
+          &ClientInfo::updateButtonState);
+  connect(mUi->mLastNameInput, &QLineEdit::textChanged, this,
+          &ClientInfo::updateButtonState);
+  connect(mUi->mBirthdateInput, &QDateTimeEdit::dateTimeChanged, this,
+          &ClientInfo::updateButtonState);
+}
+
+void ClientInfo::onClientSelected(const QModelIndex &index) {
+  if (!index.isValid()) {
+    clearUi();
+    return;
+  }
+
+  const auto clientVar = index.data(QClientModel::ClientRoles::Full_object);
+  if (!clientVar.canConvert<ObxClient>())
+    return;
+
+  const auto client = clientVar.value<ObxClient>();
+  updateUiFromClient(client);
+  mEditingClient = client;
+}
+
+void ClientInfo::onEditModeToggled(const bool checked) {
+  mInEditMode = checked;
+  mUi->mAddNewClientButton->setVisible(checked);
+  mUi->mUpdateButton->setVisible(checked);
+  mUi->mNameInput->setEnabled(checked);
+  mUi->mLastNameInput->setEnabled(checked);
+  mUi->mBirthdateInput->setEnabled(checked);
+  mUi->mAdditionalInfo->setEnabled(checked);
+
+  if (!checked) {
+    clearUi();
+    mEditingClient.reset();
+  }
+
+  updateButtonState();
+}
+
+void ClientInfo::onUpdateClicked() {
+  if (!mEditingClient || !validateInput())
+    return;
+
+  const auto updatedClient = getClientFromUi();
+  const auto currentIndex = mUi->listView->currentIndex();
+
+  if (mClientModel->setData(currentIndex, QVariant::fromValue(updatedClient))) {
+    mEditingClient = updatedClient;
+    QMessageBox::information(this, tr("Success"),
+                             tr("Client updated successfully"));
+    emit end_edit();
+  } else {
+    QMessageBox::warning(this, tr("Error"), tr("Failed to update client"));
+  }
+}
+
+void ClientInfo::onAddClicked() {
+  if (!validateInput())
+    return;
+
+  const auto newClient = getClientFromUi();
+  mClientModel->add_new_client(newClient);
+  clearUi();
+  QMessageBox::information(this, tr("Success"),
+                           tr("Client added successfully"));
+  emit end_edit();
+}
+
+void ClientInfo::onClearClicked() {
+  clearUi();
+  mUi->listView->clearSelection();
+  if (mInEditMode) {
+    mUi->mAddUpdateCheckBox->setChecked(false);
+    mInEditMode = false;
+  }
+}
+
+void ClientInfo::onDateChanged(const QDate &date) {
+  if (date.isValid()) {
+    const int age = countAge(date);
+    mUi->mAgeInput->setText(QString::number(age));
+  } else {
+    mUi->mAgeInput->clear();
+  }
+}
+
+void ClientInfo::updateUiFromClient(const ObxClient &client) {
+  mUi->mNameInput->setText(QString::fromStdString(client.name));
+  mUi->mLastNameInput->setText(QString::fromStdString(client.last_name));
+  mUi->mBirthdateInput->setDateTime(
+      QDateTime::fromSecsSinceEpoch(client.birthday_date));
+  mUi->mAdditionalInfo->setPlainText(
+      QString::fromStdString(client.additional_info));
+}
+
+void ClientInfo::clearUi() {
+  mUi->mNameInput->clear();
+  mUi->mLastNameInput->clear();
+  mUi->mBirthdateInput->clear();
+  mUi->mAgeInput->clear();
+  mUi->mAdditionalInfo->clear();
+  mEditingClient.reset();
+}
+
+bool ClientInfo::validateInput() {
+  const bool nameEmpty = mUi->mNameInput->text().trimmed().isEmpty();
+  const bool lastNameEmpty = mUi->mLastNameInput->text().trimmed().isEmpty();
+  const bool dateInvalid = !mUi->mBirthdateInput->date().isValid();
+
+  if (nameEmpty) {
+    QMessageBox::warning(this, tr("Error"), tr("Name cannot be empty"));
+    return false;
+  }
+  if (lastNameEmpty) {
+    QMessageBox::warning(this, tr("Error"), tr("Last name cannot be empty"));
+    return false;
+  }
+  if (dateInvalid) {
+    QMessageBox::warning(this, tr("Error"), tr("Invalid birth date"));
+    return false;
+  }
+  return true;
+}
+
+ObxClient ClientInfo::getClientFromUi() const {
+  ObxClient client;
+  client.id = mEditingClient.has_value() ? mEditingClient->id : 0;
+  client.name = mUi->mNameInput->text().toStdString();
+  client.last_name = mUi->mLastNameInput->text().toStdString();
+  client.birthday_date =
+      mUi->mBirthdateInput->date().startOfDay().toSecsSinceEpoch();
+  client.additional_info = mUi->mAdditionalInfo->toPlainText().toStdString();
+  return client;
+}
+
+int ClientInfo::countAge(const QDate &birthDate) const {
+  const QDate now = QDate::currentDate();
+  int age = now.year() - birthDate.year();
+  if (now.month() < birthDate.month() ||
+      (now.month() == birthDate.month() && now.day() < birthDate.day())) {
+    age--;
+  }
+  return age;
+}
+
+void ClientInfo::updateButtonState() {
+  const bool hasValidName = !mUi->mNameInput->text().trimmed().isEmpty();
+  const bool hasValidLastName =
+      !mUi->mLastNameInput->text().trimmed().isEmpty();
+  const bool hasValidDate = mUi->mBirthdateInput->date().isValid();
+  const bool isValid = hasValidName && hasValidLastName && hasValidDate;
+
+  mUi->mAddNewClientButton->setEnabled(mInEditMode && isValid);
+  mUi->mUpdateButton->setEnabled(mInEditMode && isValid &&
+                                 mEditingClient.has_value());
+}

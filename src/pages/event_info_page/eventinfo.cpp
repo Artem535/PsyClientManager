@@ -1,8 +1,10 @@
 #include "eventinfo.h"
-
 #include "timelinewidget.h"
 #include "ui/pages/ui_eventinfo.h"
 
+#include <QAbstractButton>
+#include <QMessageBox>
+#include <QPointer>
 #include <memory>
 #include <utility>
 
@@ -10,10 +12,11 @@ Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
 QEventInfoPage::QEventInfoPage(
     const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
-    : QWidget(parent), mDB(db), mUi(std::make_unique<Ui::EventInfo>()) {
+    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>().release()),
+      mDb(db) {
   mUi->setupUi(this);
 
-  mTimelineWidget = new QTimelineWidget(db, this);
+  mTimelineWidget = new QTimelineWidget(mDb, this);
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
   connectCalendar();
@@ -30,6 +33,8 @@ QEventInfoPage::QEventInfoPage(
 
   connect(this, &QEventInfoPage::changedEditMode,
           [this]() { mUi->mEventType->setEnabled(mInEditMode); });
+
+  updateButtonState();
 }
 
 // Connect calendar widget signals
@@ -38,7 +43,7 @@ void QEventInfoPage::connectCalendar() {
           &QTimelineWidget::onSelectedDayChanged);
   // Update date in event info part when date is changed
   connect(mUi->calendar_widget, &QCalendarWidget::clicked,
-          [&](const QDate &date) {
+          [this](const QDate &date) {
             mUi->mEventDate->setDateTime(QDateTime(date, QTime::currentTime()));
           });
 }
@@ -59,6 +64,7 @@ void QEventInfoPage::connectButtons() {
 
   connect(mUi->mAddButton, &QPushButton::clicked, [this]() {
     mInEditMode = true;
+    mCreatedNewEvent = true;
 
     const auto crtDateTime = QDateTime::currentDateTime().toLocalTime();
     mCurrentEvent = new QEventItem(0, "New Event", crtDateTime, crtDateTime);
@@ -69,66 +75,64 @@ void QEventInfoPage::connectButtons() {
 
 // Connect Cancel/Apply buttons and mode change signals
 void QEventInfoPage::connectButtonBox() {
-  const auto cancelButton =
-      mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Cancel);
-  const auto applyButton =
-      mUi->mButtonBox->button(QDialogButtonBox::StandardButton::Apply);
+  const auto cancelButton = mUi->mButtonBox->button(QDialogButtonBox::Cancel);
+  const auto applyButton = mUi->mButtonBox->button(QDialogButtonBox::Apply);
 
   connect(cancelButton, &QPushButton::clicked, [this]() {
     mInEditMode = false;
 
-    if (mCreatedNewEvent && mCurrentEvent != nullptr) {
-      delete mCurrentEvent;
-      mCurrentEvent = nullptr;
+    if (mCreatedNewEvent && mCurrentEvent) {
+      delete mCurrentEvent.data();
+      mCurrentEvent.clear();
     }
 
     mCreatedNewEvent = false;
     emit changedEditMode();
   });
 
-  // TODO: Move to separated function.
   connect(applyButton, &QPushButton::clicked, [this]() {
+    if (!mCurrentEvent || !validateInput()) {
+      return;
+    }
+
     mInEditMode = false;
     mCreatedNewEvent = false;
-    const auto isDurationZero = mUi->mTimeFrom->time() == mUi->mTimeTo->time();
-    const auto isTitleEmpty = mUi->mTitle->text().isEmpty();
-    const auto isEndTimeBeforeStartTime =
-        mUi->mTimeTo->dateTime() < mUi->mTimeFrom->dateTime();
 
-    if (isDurationZero) {
-      QMessageBox::warning(this, "Error",
-                           "Error: Event cannot be with zero duration");
-    } else if (isTitleEmpty) {
-      QMessageBox::warning(this, "Error", "Error: Event title cannot be empty");
-    } else if (isEndTimeBeforeStartTime) {
-      QMessageBox::warning(this, "Error",
-                           "Error: End time cannot be before start time");
-    } else {
-      emit changedEditMode();
-      emit needAddNewEvent(mCurrentEvent);
-      emit needSceneUpdate();
-    }
+    emit changedEditMode();
+    emit needAddNewEvent(mCurrentEvent.data());
+    emit needSceneUpdate();
   });
 
   connect(this, &QEventInfoPage::changedEditMode, [this]() {
-    mUi->mButtonBox->setVisible(mInEditMode);
-    mUi->mChangeButton->setVisible(!mInEditMode);
-    mUi->mAddButton->setVisible(!mInEditMode);
+    const bool inEdit = mInEditMode;
+    mUi->mButtonBox->setVisible(inEdit);
+    mUi->mChangeButton->setVisible(!inEdit);
+    mUi->mAddButton->setVisible(!inEdit);
   });
 
   connect(this, &QEventInfoPage::needAddNewEvent, this,
           &QEventInfoPage::addEvent);
 }
 
-// Connect time editors to synchronize start and end times
+// Синхронизация времени: start не может быть больше end
 void QEventInfoPage::connectTimeEditors() {
-  connect(mUi->mTimeFrom, &QDateTimeEdit::timeChanged, [this]() {
-    // Ensure the start time is not greater than the end time
-    if (mUi->mTimeFrom->dateTime() > mUi->mTimeTo->dateTime()) {
-      mUi->mTimeTo->setTime(mUi->mTimeFrom->time());
-    }
-  });
+  connect(mUi->mTimeFrom, &QDateTimeEdit::dateTimeChanged,
+          [this](const QDateTime &dt) {
+            if (mUi->mTimeTo->dateTime() < dt) {
+              mUi->mTimeTo->setDateTime(dt.addSecs(60)); // Минимум 1 минута
+            }
+            updateButtonState();
+          });
+
+  connect(mUi->mTimeTo, &QDateTimeEdit::dateTimeChanged,
+          [this](const QDateTime &dt) {
+            if (dt < mUi->mTimeFrom->dateTime()) {
+              mUi->mTimeFrom->setDateTime(dt.addSecs(-60));
+            }
+            updateButtonState();
+          });
 }
+
 void QEventInfoPage::connectSceneUpdate() {
   connect(this, &QEventInfoPage::needSceneUpdate, mTimelineWidget,
           &QTimelineWidget::updateScene);
@@ -141,62 +145,61 @@ void QEventInfoPage::initDefaultTimes() const {
   mUi->mTimeFrom->setDateTime(crtDateTime);
   mUi->mTimeTo->setDateTime(crtDateTime);
 }
+
 void QEventInfoPage::initClientComboBox() const {
   mUi->mClientComboBox->clear();
-  for (const auto &client : mDB->get_clients()) {
+  for (const auto &client : mDb->get_clients()) {
     QString clientName = "%1 %2";
-    const auto title = clientName.arg(client->name, client->last_name);
+    const auto title =
+        clientName.arg(QString::fromStdString(client->name),
+                       QString::fromStdString(client->last_name));
     mUi->mClientComboBox->addItem(title, QVariant::fromValue(client->id));
   }
 }
+
 void QEventInfoPage::connectEventTypes() const {
-  connect(mUi->mEventType, &QCheckBox::checkStateChanged,
-          [this](const int state) {
-            const auto isWorkItem = state == Qt::CheckState::Checked;
-            const auto title = isWorkItem ? "Work item" : "Event";
-            mUi->mEventType->setText(title);
-            mUi->mClientComboBox->setVisible(isWorkItem);
-            mUi->mClientComboxBoxLabel->setVisible(isWorkItem);
-          });
+  connect(mUi->mEventType, &QCheckBox::toggled, [this](const bool checked) {
+    mUi->mEventType->setText(checked ? "Work item" : "Event");
+    mUi->mClientComboBox->setVisible(checked);
+    mUi->mClientComboxBoxLabel->setVisible(checked);
+  });
 }
+
 void QEventInfoPage::initDefaultSates() {
-  // Disable visible of client combobox
   mUi->mClientComboBox->setVisible(false);
   mUi->mClientComboxBoxLabel->setVisible(false);
-
-  // Disable the event type checkbox
   mUi->mEventType->setEnabled(false);
-
   emit changedEditMode();
 }
 
 // Called when an event is clicked in the timeline
 void QEventInfoPage::onEventClicked(QEventItem *event) {
-  if (event != nullptr) {
-    qCDebug(logEventInfo) << "EventInfoPage::onEventClicked| "
-                          << "Start time:" << event->getStartTime()
-                          << " End time:" << event->getEndTime()
-                          << " ID:" << event->getId();
+  if (!event)
+    return;
 
-    mUi->mTitle->setText(event->getTitle());
-    mUi->mTimeFrom->setDateTime(event->getStartTime());
-    mUi->mTimeTo->setDateTime(event->getEndTime());
-    mUi->mEventType->setCheckState(event->isWorkItem()
-                                       ? Qt::CheckState::Checked
-                                       : Qt::CheckState::Unchecked);
-    mCurrentEvent = event;
+  qCDebug(logEventInfo) << "EventInfoPage::onEventClicked|"
+                        << "Start time:" << event->getStartTime()
+                        << "End time:" << event->getEndTime()
+                        << "ID:" << event->getId();
 
-    if (event->isWorkItem()) {
-      // Get client that is associated with the event
-      const auto client = mDB->get_client_by_event(event->getId());
-      const auto clientId = QVariant::fromValue(client.id);
-      // Set client combobox to the client that is associated with the event
-      if (const auto index = mUi->mClientComboBox->findData(clientId);
-          index != -1) {
-        mUi->mClientComboBox->setCurrentIndex(index);
-      }
+  mUi->mTitle->setText(event->getTitle());
+  mUi->mTimeFrom->setDateTime(event->getStartTime());
+  mUi->mTimeTo->setDateTime(event->getEndTime());
+
+  const bool isWorkItem = event->isWorkItem();
+  mUi->mEventType->setChecked(isWorkItem);
+  mCurrentEvent = event;
+
+  if (isWorkItem) {
+    const auto client = mDb->get_client_by_event(event->getId());
+    const auto clientId = QVariant::fromValue(client.id);
+    if (const int index = mUi->mClientComboBox->findData(clientId);
+        index != -1) {
+      mUi->mClientComboBox->setCurrentIndex(index);
     }
   }
+
+  updateButtonState();
 }
 
 // Clear all UI fields
@@ -204,32 +207,58 @@ void QEventInfoPage::clearUi() const {
   mUi->mTitle->clear();
   mUi->mTimeFrom->clear();
   mUi->mTimeTo->clear();
-  mUi->mEventType->setCheckState(Qt::CheckState::Unchecked);
+  mUi->mEventType->setChecked(false);
 }
 
 // Add a new event to the timeline
 void QEventInfoPage::addEvent(QEventItem *event) const {
-  if (event == nullptr)
+  if (!event)
     return;
 
   event->setTitle(mUi->mTitle->text());
-
   const auto date = mUi->mEventDate->date();
-  const auto startTime = mUi->mTimeFrom->time();
-  const auto endTime = mUi->mTimeTo->time();
-  const auto isWorkItem =
-      mUi->mEventType->checkState() == Qt::CheckState::Checked;
+  const auto startTime = QDateTime(date, mUi->mTimeFrom->time());
+  const auto endTime = QDateTime(date, mUi->mTimeTo->time());
+  const bool isWorkItem = mUi->mEventType->isChecked();
 
-  event->setEndTime(QDateTime(date, endTime));
-  event->setStartTime(QDateTime(date, startTime));
+  event->setEndTime(endTime);
+  event->setStartTime(startTime);
   event->setIsWorkItem(isWorkItem);
-  const auto event_id = mTimelineWidget->addEvent(event);
+
+  const auto eventId = mTimelineWidget->addEvent(event);
 
   if (isWorkItem) {
-    const auto client_id = mUi->mClientComboBox->currentData().toULongLong();
+    const auto clientId = mUi->mClientComboBox->currentData().toULongLong();
+    [[maybe_unused]] const auto dbId = mDb->add_event_client(eventId, clientId);
+  }
+}
 
-    [[maybe_unused]]
-    const auto id = mDB->add_event_client(event_id, client_id);
+// Centralized validation with user feedback
+bool QEventInfoPage::validateInput() {
+  const bool isTitleEmpty = mUi->mTitle->text().trimmed().isEmpty();
+  const bool isZeroDuration =
+      mUi->mTimeTo->dateTime() <= mUi->mTimeFrom->dateTime();
+
+  if (isTitleEmpty) {
+    QMessageBox::warning(this, tr("Error"), tr("Event title cannot be empty"));
+    return false;
+  }
+  if (isZeroDuration) {
+    QMessageBox::warning(this, tr("Error"),
+                         tr("Event duration must be greater than zero"));
+    return false;
+  }
+  return true;
+}
+
+// Update Apply button state reactively
+void QEventInfoPage::updateButtonState() const {
+  const bool isValid = !mUi->mTitle->text().trimmed().isEmpty() &&
+                       mUi->mTimeTo->dateTime() > mUi->mTimeFrom->dateTime();
+
+  if (const auto applyButton =
+          mUi->mButtonBox->button(QDialogButtonBox::Apply)) {
+    applyButton->setEnabled(isValid);
   }
 }
 
