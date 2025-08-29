@@ -19,6 +19,9 @@ struct ObxClient {
     std::string additional_info;
     std::string diagnosis;
     int64_t birthday_date;
+    std::string email;
+    std::string phone_number;
+    bool client_active;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 1; }
@@ -46,6 +49,9 @@ struct ObxClient_ {
     static const obx::Property<ObxClient, OBXPropertyType_String> additional_info;
     static const obx::Property<ObxClient, OBXPropertyType_String> diagnosis;
     static const obx::Property<ObxClient, OBXPropertyType_Date> birthday_date;
+    static const obx::Property<ObxClient, OBXPropertyType_String> email;
+    static const obx::Property<ObxClient, OBXPropertyType_String> phone_number;
+    static const obx::Property<ObxClient, OBXPropertyType_Bool> client_active;
 };
 
 struct ObxEventStatus; 

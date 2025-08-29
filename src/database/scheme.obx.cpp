@@ -8,6 +8,9 @@ const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::last_name(3);
 const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::additional_info(4);
 const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::diagnosis(5);
 const obx::Property<ObxClient, OBXPropertyType_Date> ObxClient_::birthday_date(6);
+const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::email(7);
+const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::phone_number(8);
+const obx::Property<ObxClient, OBXPropertyType_Bool> ObxClient_::client_active(9);
 
 void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxClient& object) {
     fbb.Clear();
@@ -15,6 +18,8 @@ void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
     auto offsetlast_name = fbb.CreateString(object.last_name);
     auto offsetadditional_info = fbb.CreateString(object.additional_info);
     auto offsetdiagnosis = fbb.CreateString(object.diagnosis);
+    auto offsetemail = fbb.CreateString(object.email);
+    auto offsetphone_number = fbb.CreateString(object.phone_number);
     flatbuffers::uoffset_t fbStart = fbb.StartTable();
     fbb.AddElement(4, object.id);
     fbb.AddOffset(6, offsetname);
@@ -22,6 +27,9 @@ void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
     fbb.AddOffset(10, offsetadditional_info);
     fbb.AddOffset(12, offsetdiagnosis);
     fbb.AddElement(14, object.birthday_date);
+    fbb.AddOffset(16, offsetemail);
+    fbb.AddOffset(18, offsetphone_number);
+    fbb.AddElement(20, object.client_active ? 1 : 0);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -76,6 +84,23 @@ void ObxClient::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, ObxClien
         }
     }
     outObject.birthday_date = table->GetField<int64_t>(14, 0);
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(16);
+        if (ptr) {
+            outObject.email.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.email.clear();
+        }
+    }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(18);
+        if (ptr) {
+            outObject.phone_number.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.phone_number.clear();
+        }
+    }
+    outObject.client_active = table->GetField<uint8_t>(20, 0) != 0;
 }
 
 const obx::Property<ObxEvent, OBXPropertyType_Long> ObxEvent_::id(1);

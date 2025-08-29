@@ -14,6 +14,7 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
 
   mUi->listView->setModel(mClientModel.get());
   mUi->listView->setViewMode(QListView::ListMode);
+  mUi->listView->setItemDelegate(new QClientDelegate(mUi->listView));
 
   // Initialize UI
   clearUi();
@@ -184,7 +185,7 @@ ObxClient ClientInfo::getClientFromUi() const {
   return client;
 }
 
-int ClientInfo::countAge(const QDate &birthDate) const {
+int ClientInfo::countAge(const QDate &birthDate) {
   const QDate now = QDate::currentDate();
   int age = now.year() - birthDate.year();
   if (now.month() < birthDate.month() ||

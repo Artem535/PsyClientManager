@@ -15,6 +15,7 @@
 
 // === Local ===
 #include "clientmodel.h"
+#include "clientdelegate.h"
 #include "database.h"
 
 namespace Ui {
@@ -46,8 +47,8 @@ private:
   void updateUiFromClient(const ObxClient &client);
   void clearUi();
   bool validateInput();
-  ObxClient getClientFromUi() const;
-  int countAge(const QDate &birthDate) const;
+  [[nodiscard]] ObxClient getClientFromUi() const;
+  static int countAge(const QDate &birthDate);
 
   std::unique_ptr<Ui::ClientInfo> mUi;
   std::shared_ptr<QClientModel> mClientModel;

@@ -31,7 +31,10 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "additional_info", OBXPropertyType_String, 4, 1032589761500929099);
     obx_model_property(model, "diagnosis", OBXPropertyType_String, 5, 4653121431483938636);
     obx_model_property(model, "birthday_date", OBXPropertyType_Date, 6, 7650197688374967512);
-    obx_model_entity_last_property_id(model, 6, 7650197688374967512);
+    obx_model_property(model, "email", OBXPropertyType_String, 7, 1130666697636446956);
+    obx_model_property(model, "phone_number", OBXPropertyType_String, 8, 8026992687549155118);
+    obx_model_property(model, "client_active", OBXPropertyType_Bool, 9, 4999055469204569816);
+    obx_model_entity_last_property_id(model, 9, 4999055469204569816);
     
     obx_model_entity(model, "ObxEvent", 2, 6602257003920660585);
     obx_model_property(model, "id", OBXPropertyType_Long, 1, 1863236555416346146);

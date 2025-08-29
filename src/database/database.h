@@ -13,12 +13,11 @@
 #include "scheme.obx.hpp"
 
 #include "config.h"
-#include "constance.hpp"
+#include "constants.hpp"
+#include "plog/Initializers/RollingFileInitializer.h"
 #include <Poco/File.h>
 #include <Poco/Timestamp.h>
 #include <plog/Log.h>
-#include "plog/Initializers/RollingFileInitializer.h"
-
 
 namespace pcm::database {
 

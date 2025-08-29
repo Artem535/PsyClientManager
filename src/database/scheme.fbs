@@ -7,6 +7,9 @@ table ObxClient {
     diagnosis: string;
     /// objectbox: date
     birthday_date: int64;
+    email: string;
+    phone_number: string;
+    client_active: bool;
 }
 
 table ObxEventClient {

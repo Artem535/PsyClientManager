@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:9222488863877849404",
-      "lastPropertyId": "6:7650197688374967512",
+      "lastPropertyId": "9:4999055469204569816",
       "name": "ObxClient",
       "properties": [
         {
@@ -38,6 +38,21 @@
           "id": "6:7650197688374967512",
           "name": "birthday_date",
           "type": 10
+        },
+        {
+          "id": "7:1130666697636446956",
+          "name": "email",
+          "type": 9
+        },
+        {
+          "id": "8:8026992687549155118",
+          "name": "phone_number",
+          "type": 9
+        },
+        {
+          "id": "9:4999055469204569816",
+          "name": "client_active",
+          "type": 1
         }
       ]
     },
