@@ -34,7 +34,10 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "email", OBXPropertyType_String, 7, 1130666697636446956);
     obx_model_property(model, "phone_number", OBXPropertyType_String, 8, 8026992687549155118);
     obx_model_property(model, "client_active", OBXPropertyType_Bool, 9, 4999055469204569816);
-    obx_model_entity_last_property_id(model, 9, 4999055469204569816);
+    obx_model_property(model, "country", OBXPropertyType_String, 10, 5581960358917280040);
+    obx_model_property(model, "city", OBXPropertyType_String, 11, 8006821059546166440);
+    obx_model_property(model, "time_zone", OBXPropertyType_String, 12, 5660384026665908964);
+    obx_model_entity_last_property_id(model, 12, 5660384026665908964);
     
     obx_model_entity(model, "ObxEvent", 2, 6602257003920660585);
     obx_model_property(model, "id", OBXPropertyType_Long, 1, 1863236555416346146);

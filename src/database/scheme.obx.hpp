@@ -22,6 +22,9 @@ struct ObxClient {
     std::string email;
     std::string phone_number;
     bool client_active;
+    std::string country;
+    std::string city;
+    std::string time_zone;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 1; }
@@ -52,6 +55,9 @@ struct ObxClient_ {
     static const obx::Property<ObxClient, OBXPropertyType_String> email;
     static const obx::Property<ObxClient, OBXPropertyType_String> phone_number;
     static const obx::Property<ObxClient, OBXPropertyType_Bool> client_active;
+    static const obx::Property<ObxClient, OBXPropertyType_String> country;
+    static const obx::Property<ObxClient, OBXPropertyType_String> city;
+    static const obx::Property<ObxClient, OBXPropertyType_String> time_zone;
 };
 
 struct ObxEventStatus; 

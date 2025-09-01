@@ -10,6 +10,9 @@ table ObxClient {
     email: string;
     phone_number: string;
     client_active: bool;
+    country: string;
+    city: string;
+    time_zone: string;
 }
 
 table ObxEventClient {

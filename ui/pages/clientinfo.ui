@@ -27,11 +27,15 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>Information</string>
-     </property>
+    <widget class="QFrame" name="mClientInfoGroup">
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>PushButton</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QCheckBox" name="mAddUpdateCheckBox">
         <property name="text">

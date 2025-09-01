@@ -11,6 +11,9 @@ const obx::Property<ObxClient, OBXPropertyType_Date> ObxClient_::birthday_date(6
 const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::email(7);
 const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::phone_number(8);
 const obx::Property<ObxClient, OBXPropertyType_Bool> ObxClient_::client_active(9);
+const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::country(10);
+const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::city(11);
+const obx::Property<ObxClient, OBXPropertyType_String> ObxClient_::time_zone(12);
 
 void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxClient& object) {
     fbb.Clear();
@@ -20,6 +23,9 @@ void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
     auto offsetdiagnosis = fbb.CreateString(object.diagnosis);
     auto offsetemail = fbb.CreateString(object.email);
     auto offsetphone_number = fbb.CreateString(object.phone_number);
+    auto offsetcountry = fbb.CreateString(object.country);
+    auto offsetcity = fbb.CreateString(object.city);
+    auto offsettime_zone = fbb.CreateString(object.time_zone);
     flatbuffers::uoffset_t fbStart = fbb.StartTable();
     fbb.AddElement(4, object.id);
     fbb.AddOffset(6, offsetname);
@@ -30,6 +36,9 @@ void ObxClient::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
     fbb.AddOffset(16, offsetemail);
     fbb.AddOffset(18, offsetphone_number);
     fbb.AddElement(20, object.client_active ? 1 : 0);
+    fbb.AddOffset(22, offsetcountry);
+    fbb.AddOffset(24, offsetcity);
+    fbb.AddOffset(26, offsettime_zone);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -101,6 +110,30 @@ void ObxClient::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, ObxClien
         }
     }
     outObject.client_active = table->GetField<uint8_t>(20, 0) != 0;
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(22);
+        if (ptr) {
+            outObject.country.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.country.clear();
+        }
+    }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(24);
+        if (ptr) {
+            outObject.city.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.city.clear();
+        }
+    }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(26);
+        if (ptr) {
+            outObject.time_zone.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.time_zone.clear();
+        }
+    }
 }
 
 const obx::Property<ObxEvent, OBXPropertyType_Long> ObxEvent_::id(1);

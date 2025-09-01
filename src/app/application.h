@@ -9,9 +9,9 @@
 
 namespace pcm {
 
-class Application {
+class application {
 public:
-  Application();
+  application();
   int run(int argc, char *argv[]);
 
 private:

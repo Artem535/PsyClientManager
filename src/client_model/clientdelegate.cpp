@@ -4,8 +4,6 @@
 
 #include "clientdelegate.h"
 
-#include <QPainter>
-#include <cmath>
 
 namespace {
 // Convenience aliases
@@ -35,6 +33,14 @@ void QClientDelegate::paint(QPainter *painter,
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::TextAntialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+  // Draw background
+  QStyleOptionViewItem opt(option);
+  initStyleOption(&opt, index);
+  if (opt.widget) {
+    opt.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+  }
+
 
   const QVariant clientVal = index.data(QClientModel::ClientRoles::Full_object);
   const auto client = clientVal.value<ObxClient>();

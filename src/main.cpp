@@ -1,5 +1,5 @@
-#include "app.h"
+#include "application.h"
 
-int main(int argc, char *argv[]) {
-  return pcm::Application().run(argc, argv);
+int main(const int argc, char *argv[]) {
+  return pcm::application().run(argc, argv);
 }

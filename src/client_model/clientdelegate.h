@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <QDateTime>
+#include <QPainter>
+#include <QStyledItemDelegate>
+#include <cmath>
+
 #include "clientmodel.h"
 #include "constants.hpp"
-
-#include <QDateTime>
-#include <QStyledItemDelegate>
 
 /**
  * @class QClientDelegate
@@ -46,8 +48,7 @@ public:
    * @param option Style options for the item.
    * @param index Model index of the item.
    */
-  void paint(QPainter *painter,
-             const QStyleOptionViewItem &option,
+  void paint(QPainter *painter, const QStyleOptionViewItem &option,
              const QModelIndex &index) const override;
 
   /**
@@ -96,8 +97,7 @@ public:
    * @param option Style options for the item.
    * @param client The client data (not used here, reserved for future).
    */
-  static void drawActions(QPainter *painter,
-                          const QStyleOptionViewItem &option,
+  static void drawActions(QPainter *painter, const QStyleOptionViewItem &option,
                           const ObxClient &client);
 
 private:
