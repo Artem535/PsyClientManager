@@ -1,12 +1,15 @@
 #pragma once
 
 // === Qt ===
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QDateTime>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QModelIndex>
 #include <QPointer>
 #include <QPushButton>
+#include <QVariant>
 #include <QWidget>
 
 // === STL ===
@@ -14,9 +17,9 @@
 #include <optional>
 
 // === Local ===
-#include "clientmodel.h"
-#include "clientdelegate.h"
 #include "database.h"
+#include "qclient_delegate.h"
+#include "qclient_model.h"
 
 namespace Ui {
 class ClientInfo;

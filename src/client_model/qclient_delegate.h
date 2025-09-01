@@ -7,9 +7,10 @@
 #include <QDateTime>
 #include <QPainter>
 #include <QStyledItemDelegate>
+
 #include <cmath>
 
-#include "clientmodel.h"
+#include "qclient_model.h"
 #include "constants.hpp"
 
 /**

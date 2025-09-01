@@ -1,12 +1,7 @@
-#include "eventinfo.h"
-#include "timelinewidget.h"
+#include "event_info.h"
 #include "ui/pages/ui_eventinfo.h"
 
-#include <QAbstractButton>
-#include <QMessageBox>
-#include <QPointer>
-#include <memory>
-#include <utility>
+
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 

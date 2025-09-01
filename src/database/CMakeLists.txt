@@ -2,9 +2,9 @@ set(TARGET_NAME ${PROJECT_NAME}_database)
 
 include(FetchContent)
 FetchContent_Declare(
-    objectbox
-    GIT_REPOSITORY https://github.com/objectbox/objectbox-c.git
-    GIT_TAG v4.3.1
+        objectbox
+        GIT_REPOSITORY https://github.com/objectbox/objectbox-c.git
+        GIT_TAG v4.3.1
 )
 
 FetchContent_MakeAvailable(objectbox)
@@ -13,11 +13,11 @@ find_package(ObjectBoxGenerator 4.0.0 REQUIRED)
 find_package(Poco REQUIRED COMPONENTS Foundation)
 find_package(plog CONFIG REQUIRED)
 
-add_library(${TARGET_NAME} STATIC 
-    database.cpp
+add_library(${TARGET_NAME} STATIC
+        database.cpp
         constants.hpp
-    scheme.obx.cpp
-    datetime.hpp
+        scheme.obx.cpp
+        datetime.hpp
 )
 
 # Include directories
@@ -31,4 +31,4 @@ add_dependencies(${TARGET_NAME} ${PROJECT_NAME}_config objectbox)
 #    INSOURCE # Opt-in: Generate in source directory
 #)
 
-target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Foundation  plog::plog)
+target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Foundation plog::plog)

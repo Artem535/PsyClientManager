@@ -10,8 +10,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-        clientmodel.cpp
-        clientdelegate.cpp
+        qclient_delegate.cpp
+        qclient_model.cpp
         constants.hpp
 )
 

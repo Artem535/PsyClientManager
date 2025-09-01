@@ -16,8 +16,8 @@ find_package_handle_standard_args(reflectcpp DEFAULT_MSG reflectcpp_FOUND)
 
 # Add the library for the config module
 qt_add_library(${TARGET_NAME} STATIC
-    config.cpp
-    rfl_path.hpp
+        config.cpp
+        rfl_path.hpp
 )
 
 # Include directories

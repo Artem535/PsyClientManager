@@ -1,7 +1,4 @@
-#include "clientmodel.h"
-#include <qabstractitemmodel.h>
-#include <qloggingcategory.h>
-#include <qnamespace.h>
+#include "qclient_model.h"
 
 Q_LOGGING_CATEGORY(logClientModel, "pcm.ClientModel")
 

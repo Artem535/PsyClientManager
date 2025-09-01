@@ -18,8 +18,8 @@
 
 // === Local ===
 #include "database.h"
-#include "eventitem.h"
-#include "timelinewidget.h"
+#include "event_item.h"
+#include "timeline_widget.h"
 
 namespace Ui {
 class EventInfo;

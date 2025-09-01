@@ -1,18 +1,22 @@
 #pragma once
-#include "database.h"
-#include "eventitem.h"
+
+#include <QDateTime>
 #include <QGraphicsScene>
 #include <QHash>
 #include <QLoggingCategory>
 #include <QObject>
-#include <memory>
-#include <qhash.h>
+#include <QTimeZone>
 
-class QEventDataManager : public QObject {
+#include <memory>
+
+#include "database.h"
+#include "event_item.h"
+
+class QEventDataManager final : public QObject {
   Q_OBJECT
 public:
   explicit QEventDataManager(std::shared_ptr<pcm::database::Database> db,
-                            QGraphicsScene *scene, QObject *parent = nullptr);
+                             QGraphicsScene *scene, QObject *parent = nullptr);
 
   void selectDay(const long long int &day);
 

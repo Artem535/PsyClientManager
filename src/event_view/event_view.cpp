@@ -1,13 +1,5 @@
-#include "eventview.h"
-#include "constants.hpp"
-#include "eventitem.h"
-#include <qdatetime.h>
-#include <qgraphicsscene.h>
-#include <qline.h>
-#include <qlogging.h>
-#include <qloggingcategory.h>
-#include <qminmax.h>
-#include <qnamespace.h>
+#include "event_view.h"
+
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 

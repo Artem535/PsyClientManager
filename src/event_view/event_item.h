@@ -2,10 +2,17 @@
 
 #include <QDateTime>
 #include <QGraphicsObject>
+#include <QGraphicsScene>
+#include <QLoggingCategory>
+#include <QPainter>
 #include <QSize>
 #include <QString>
+#include <QStyleOptionGraphicsItem>
 #include <QVariant>
 
+#include <cmath>
+
+#include "constants.hpp"
 /**
  * @brief The EventItem class represents a graphical item for displaying an
  * event in a timeline or calendar view.
@@ -28,7 +35,7 @@ public:
    * @param isWorkItem True if the event is a work-related item.
    */
   QEventItem(long long id, const QString &title, const QDateTime &startTime,
-            const QDateTime &endTime, bool isWorkItem = false);
+             const QDateTime &endTime, bool isWorkItem = false);
 
   /**
    * @brief Returns the bounding rectangle of the item.
@@ -137,13 +144,13 @@ protected:
   void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
-  bool mIsWorkItem = false;     ///< True if the event is a work-related item.
-  QSize mSize;                  ///< The size of the event item.
-  QString mTitle;               ///< The title of the event.
-  QDateTime mStartTime;         ///< The start time of the event.
-  QDateTime mEndTime;           ///< The end time of the event.
-  unsigned long mId;            ///< Unique identifier of the event.
-  unsigned int mDuration = 0;            ///< Duration of the event in minutes.
+  bool mIsWorkItem = false;   ///< True if the event is a work-related item.
+  QSize mSize;                ///< The size of the event item.
+  QString mTitle;             ///< The title of the event.
+  QDateTime mStartTime;       ///< The start time of the event.
+  QDateTime mEndTime;         ///< The end time of the event.
+  unsigned long mId;          ///< Unique identifier of the event.
+  unsigned int mDuration = 0; ///< Duration of the event in minutes.
 
   void updateDuration();
 };

@@ -1,14 +1,5 @@
-#include "timelinewidget.h"
-#include "eventdatamanager.h"
-#include "eventview.h"
-#include "scheme.obx.hpp"
-#include <QGraphicsScene>
-#include <memory>
-#include <qboxlayout.h>
-#include <qdatetime.h>
-#include <qgraphicsscene.h>
-#include <qtimezone.h>
-#include <utility>
+#include "timeline_widget.h"
+
 
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 

@@ -2,11 +2,11 @@
 
 namespace pcm {
 
-application::application() {
+Application::Application() {
   mDb = std::make_shared<database::Database>(mConf);
 }
 
-int application::run(int argc, char *argv[]) {
+int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   MainWindow window;
 

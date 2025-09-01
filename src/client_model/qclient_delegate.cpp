@@ -2,7 +2,7 @@
 // Created by a.durynin on 29.08.2025.
 //
 
-#include "clientdelegate.h"
+#include "qclient_delegate.h"
 
 
 namespace {

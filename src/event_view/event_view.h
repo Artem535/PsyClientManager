@@ -1,17 +1,16 @@
 #pragma once
 
-#include "constants.hpp"
-#include "eventitem.h"
-
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLoggingCategory>
 #include <QPainter>
 #include <QVector>
 #include <QWidget>
+
 #include <memory>
-#include <qgraphicsscene.h>
-#include <qgraphicsview.h>
+
+#include "constants.hpp"
+#include "event_item.h"
 
 class QEventView final : public QGraphicsView {
   Q_OBJECT

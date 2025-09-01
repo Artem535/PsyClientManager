@@ -1,17 +1,19 @@
 #pragma once
 
-#include "clientmodel.h"
+#include <QApplication>
+
+#include <memory>
+
 #include "config.h"
 #include "database.h"
-#include "mainwindow.h"
-#include <QApplication>
-#include <memory>
+#include "main_window.h"
+#include "qclient_model.h"
 
 namespace pcm {
 
-class application {
+class Application {
 public:
-  application();
+  Application();
   int run(int argc, char *argv[]);
 
 private:

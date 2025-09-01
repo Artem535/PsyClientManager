@@ -10,7 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-        clientinfocard.cpp
+        client_info_card.cpp
         qclient.cpp
         qclient.h
 )

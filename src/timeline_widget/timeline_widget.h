@@ -1,16 +1,17 @@
 #pragma once
-#include "eventdatamanager.h"
-#include "eventitem.h"
-#include "eventview.h"
+
 #include <QLoggingCategory>
 #include <QObject>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QTimeZone>
+#include <QDateTime>
+
 #include <memory>
-#include <qboxlayout.h>
-#include <qlogging.h>
-#include <qloggingcategory.h>
-#include <qtmetamacros.h>
+
+#include "event_item.h"
+#include "event_view.h"
+#include "qevent_data_manager.h"
 
 class QTimelineWidget final : public QWidget {
   Q_OBJECT

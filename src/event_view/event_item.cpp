@@ -1,12 +1,4 @@
-#include "eventitem.h"
-
-#include "constants.hpp"
-
-#include <QGraphicsScene>
-#include <QLoggingCategory>
-#include <QPainter>
-#include <QStyleOptionGraphicsItem>
-#include <cmath>
+#include "event_item.h"
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 

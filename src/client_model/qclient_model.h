@@ -1,23 +1,23 @@
 #pragma once
 
-#include "database.h"
 #include <QAbstractListModel>
+#include <QLoggingCategory>
 #include <QMetaType>
 #include <QVariant>
+
 #include <memory>
-#include <qnamespace.h>
-#include <qvariant.h>
-#include <QLoggingCategory>
+
+#include "database.h"
 
 Q_DECLARE_METATYPE(ObxClient)
 
-class QClientModel : public QAbstractListModel {
+class QClientModel final : public QAbstractListModel {
   Q_OBJECT
 
 public:
   enum ClientRoles { Id = Qt::UserRole + 1, Full_object };
   explicit QClientModel(std::shared_ptr<pcm::database::Database> db,
-                       QObject *parent = nullptr);
+                        QObject *parent = nullptr);
 
   int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 

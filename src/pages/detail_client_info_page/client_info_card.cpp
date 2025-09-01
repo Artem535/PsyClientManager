@@ -1,4 +1,4 @@
-#include "clientinfocard.h"
+#include "client_info_card.h"
 #include "ui/pages/ui_detailclientinfo.h"
 
 Q_LOGGING_CATEGORY(logClientInfoCard, "pcm.ClientInfoCard");

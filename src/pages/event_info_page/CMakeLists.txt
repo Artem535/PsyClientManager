@@ -10,7 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets PrintSupport Gui)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-    eventinfo.cpp
+    event_info.cpp
 )
 
 qt_add_ui(${TARGET_NAME} SOURCES

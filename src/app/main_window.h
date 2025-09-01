@@ -1,9 +1,9 @@
 #pragma once
 
-#include "clientinfo.h"
-#include "eventinfo.h"
+#include "client_info.h"
+#include "event_info.h"
 #include "database.h"
-#include "clientinfocard.h"
+#include "client_info_card.h"
 #include <QMainWindow>
 #include <memory>
 
@@ -13,7 +13,7 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow {
+class MainWindow final : public QMainWindow {
   Q_OBJECT
 
 public:

@@ -1,14 +1,10 @@
-#include "eventdatamanager.h"
-#include "eventitem.h"
-#include <memory>
-#include <utility>
-#include <qloggingcategory.h>
-#include <qtimezone.h>
+#include "qevent_data_manager.h"
 
 Q_LOGGING_CATEGORY(logEventDataManager, "pcm.event_data_manager")
 
-QEventDataManager::QEventDataManager(std::shared_ptr<pcm::database::Database> db,
-                                   QGraphicsScene *scene, QObject *parent)
+QEventDataManager::QEventDataManager(
+    std::shared_ptr<pcm::database::Database> db, QGraphicsScene *scene,
+    QObject *parent)
     : QObject(parent), mDb(std::move(db)), mScene(scene) {
 
   connect(this, &QEventDataManager::selectedDayChanged, this,
@@ -77,8 +73,10 @@ void QEventDataManager::onEventSelected() {
 
 QEventItem *QEventDataManager::toEventItem(const ObxEvent &event) {
   // Parse start and end times from UTC (as stored in the database)
-  const QDateTime startUtc = QDateTime::fromMSecsSinceEpoch(event.start_date, QTimeZone::UTC);
-  const QDateTime endUtc = QDateTime::fromMSecsSinceEpoch(event.end_date, QTimeZone::UTC);
+  const QDateTime startUtc =
+      QDateTime::fromMSecsSinceEpoch(event.start_date, QTimeZone::UTC);
+  const QDateTime endUtc =
+      QDateTime::fromMSecsSinceEpoch(event.end_date, QTimeZone::UTC);
 
   // Convert UTC times to local time for display
   const QDateTime startLocal = startUtc.toLocalTime();
@@ -88,13 +86,8 @@ QEventItem *QEventDataManager::toEventItem(const ObxEvent &event) {
   const QString title = QString::fromStdString(event.name);
 
   // Create and return a new EventItem using local time
-  const auto item = new QEventItem(
-      event.id,
-      title,
-      startLocal,
-      endLocal,
-      event.is_work_event
-  );
+  const auto item = new QEventItem(event.id, title, startLocal, endLocal,
+                                   event.is_work_event);
 
   return item;
 }
@@ -113,8 +106,6 @@ ObxEvent QEventDataManager::toEvent(const QEventItem *item) {
   // Convert local time from UI to UTC for storage
   const QDateTime startUtc = item->getStartTime().toUTC();
   const QDateTime endUtc = item->getEndTime().toUTC();
-
-
 
   event.start_date = startUtc.toMSecsSinceEpoch(); // Store in UTC
   event.end_date = endUtc.toMSecsSinceEpoch();     // Store in UTC

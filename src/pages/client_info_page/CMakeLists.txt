@@ -10,27 +10,27 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-    clientinfo.cpp
+        client_info.cpp
 )
 
 
 qt_add_ui(${TARGET_NAME} SOURCES
-    ../../../ui/pages/clientinfo.ui
-    INCLUDE_PREFIX ui/pages
+        ../../../ui/pages/clientinfo.ui
+        INCLUDE_PREFIX ui/pages
 )
 
 add_dependencies(${TARGET_NAME}
-    ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
-    ${PROJECT_NAME}_client_model
+        ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_client_model
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
-    ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
-    ${PROJECT_NAME}_client_model
-    Qt6::Widgets
+        ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_client_model
+        Qt6::Widgets
 )
 
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

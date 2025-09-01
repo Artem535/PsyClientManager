@@ -1,9 +1,7 @@
-#include "clientinfo.h"
+#include "client_info.h"
 #include "ui/pages/ui_clientinfo.h"
 
-#include <QAbstractItemView>
-#include <QMessageBox>
-#include <QVariant>
+
 
 Q_LOGGING_CATEGORY(logClientInfo, "pcm.ClientInfo")
 

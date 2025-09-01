@@ -11,7 +11,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
         application.cpp
-        mainwindow.cpp
+        main_window.cpp
 )
 
 

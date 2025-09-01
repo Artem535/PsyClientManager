@@ -10,7 +10,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-    timelinewidget.cpp
+    timeline_widget.cpp
 )
 
 add_dependencies(${TARGET_NAME}
