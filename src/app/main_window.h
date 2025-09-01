@@ -21,9 +21,9 @@ public:
   ~MainWindow() override;
 
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
-  void add_client_info_page(std::shared_ptr<QClientModel> model);
-  void add_event_info_page(std::shared_ptr<pcm::database::Database> db);
-  void add_detail_client_info_page();
+  void addClientInfoPage(std::shared_ptr<QClientModel> model);
+  void addEventInfoPage(std::shared_ptr<pcm::database::Database> db);
+  void addClientCardPage();
   
 private:
   std::unique_ptr<Ui::MainWindow> mUi;
