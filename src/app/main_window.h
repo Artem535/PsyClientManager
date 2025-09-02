@@ -17,15 +17,19 @@ class MainWindow final : public QMainWindow {
   Q_OBJECT
 
 public:
+  enum class Pages {clientInfo, eventInfo, clientCard};
+
   explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow() override;
 
-  void setDatabase(std::shared_ptr<pcm::database::Database> db);
   void addClientInfoPage(std::shared_ptr<QClientModel> model);
   void addEventInfoPage(std::shared_ptr<pcm::database::Database> db);
   void addClientCardPage();
-  
+  void connectSignals();
+
 private:
+  QHash<Pages, QWidget*> mPages;
+  QHash<Pages, int> mPagesIndex;
   std::unique_ptr<Ui::MainWindow> mUi;
   std::shared_ptr<pcm::database::Database> mDb{nullptr};
 };

@@ -1,8 +1,6 @@
 #include "client_info.h"
 #include "ui/pages/ui_clientinfo.h"
 
-
-
 Q_LOGGING_CATEGORY(logClientInfo, "pcm.ClientInfo")
 
 ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
@@ -12,7 +10,25 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
 
   mUi->listView->setModel(mClientModel.get());
   mUi->listView->setViewMode(QListView::ListMode);
-  mUi->listView->setItemDelegate(new QClientDelegate(mUi->listView));
+
+  const auto delegate = new QClientDelegate(mUi->listView);
+  connect(
+      delegate, &QClientDelegate::displayButtonClicked, [&](const auto index) {
+        qCDebug(logClientInfo) << "Display button clicked for index: " << index;
+
+        const QVariant clientVar =
+            index.data(QClientModel::ClientRoles::Full_object);
+        const auto client = clientVar.value<ObxClient>();
+
+        emit displayButtonClicked(client);
+      });
+
+  connect(
+      delegate, &QClientDelegate::removeButtonClicked, [&](const auto index) {
+        qCDebug(logClientInfo) << "Remove button clicked for index: " << index;
+      });
+
+  mUi->listView->setItemDelegate(delegate);
 
   // Initialize UI
   clearUi();

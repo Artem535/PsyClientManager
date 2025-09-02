@@ -12,7 +12,7 @@
 
 class QClient {
 public:
-  QClient() = default;
+  QClient();
   explicit QClient(const ObxClient &client);
 
   void update(const ObxClient &client);
@@ -44,9 +44,10 @@ public:
   void setTimezone(const QString& timezone);
   void setAdditionalInfo(const QString& info);
   void setDiagnosis(const QString& diagnosis);
+  void setId(const obx_id id);
 
 private:
-  obx_id mId {};
+  obx_id mId = 0;
   QString mName;
   QString mLastName;
   QString mPhoneNumber;
@@ -60,5 +61,4 @@ private:
   QString mDiagnosis;
 
   static int countAge(const QDate &birthDate);
-  void setId(obx_id id);
 };

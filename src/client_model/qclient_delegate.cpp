@@ -4,7 +4,6 @@
 
 #include "qclient_delegate.h"
 
-
 namespace {
 // Convenience aliases
 namespace cst = pcm::widgets::constants;
@@ -38,9 +37,9 @@ void QClientDelegate::paint(QPainter *painter,
   QStyleOptionViewItem opt(option);
   initStyleOption(&opt, index);
   if (opt.widget) {
-    opt.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+    opt.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt,
+                                       painter, opt.widget);
   }
-
 
   const QVariant clientVal = index.data(QClientModel::ClientRoles::Full_object);
   const auto client = clientVal.value<ObxClient>();
@@ -177,8 +176,9 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
   const int fourthW = widthBy(cst::kFourthColumnWidth, cardWidth);
 
   // Fourth column rectangle
-  const QRect fourthRect(cardRect.left() + firstW + secondW + thirdW + sideMargin,
-                   cardRect.top(), fourthW - sideMargin * 2, cardHeight);
+  const QRect fourthRect(cardRect.left() + firstW + secondW + thirdW +
+                             sideMargin,
+                         cardRect.top(), fourthW - sideMargin * 2, cardHeight);
 
   const QString chipText = client.client_active ? "Активен" : "Неактивен";
   const QColor chipColor =
@@ -189,7 +189,7 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
   constexpr int chipH = cst::kChipHeight;
 
   const QRect chipRect(fourthRect.center().x() - chipW / 2,
-                 fourthRect.center().y() - chipH / 2, chipW, chipH);
+                       fourthRect.center().y() - chipH / 2, chipW, chipH);
 
   painter->setBrush(chipColor);
   painter->setPen(Qt::NoPen);
@@ -201,8 +201,25 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
 
 // ---------------- Fifth column (Action buttons) ----------------
 void QClientDelegate::drawActions(QPainter *painter,
-                                  const QStyleOptionViewItem &option,
-                                  const ObxClient & /*client*/) {
+                                         const QStyleOptionViewItem &option,
+                                         const ObxClient & /*client*/) {
+  const auto [btn1Rect, btn2Rect] = calculateButtonRects(option);
+
+  painter->setBrush(QColor(200, 200, 200));
+  painter->setPen(Qt::NoPen);
+
+  painter->drawEllipse(btn1Rect);
+  painter->drawEllipse(btn2Rect);
+
+  painter->setPen(Qt::black);
+  // Edit button
+  painter->drawText(btn1Rect, Qt::AlignCenter, "E");
+  // Delete button
+  painter->drawText(btn2Rect, Qt::AlignCenter, "D");
+}
+
+std::pair<QRect, QRect>
+QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
   const int cardHeight = cardRect.height();
@@ -216,25 +233,42 @@ void QClientDelegate::drawActions(QPainter *painter,
 
   // Fifth column rectangle
   const QRect fifthRect(cardRect.left() + firstW + secondW + thirdW + fourthW +
-                      sideMargin,
-                  cardRect.top(), fifthW - sideMargin * 2, cardHeight);
+                            sideMargin,
+                        cardRect.top(), fifthW - sideMargin * 2, cardHeight);
 
   // Two action buttons aligned to the right
   constexpr int btnSize = cst::kActionBtnSize;
   constexpr int btnMargin = cst::kActionBtnMargin;
 
   const QRect btn2Rect(fifthRect.right() - btnSize,
-                 fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
+                       fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
 
   const QRect btn1Rect(btn2Rect.left() - btnMargin - btnSize,
-                 fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
+                       fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
 
-  painter->setBrush(QColor(200, 200, 200));
-  painter->setPen(Qt::NoPen);
-  painter->drawEllipse(btn1Rect);
-  painter->drawEllipse(btn2Rect);
+  return {btn1Rect, btn2Rect};
+}
 
-  // (Editor interactions deliberately omitted for now)
+bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
+                                  const QStyleOptionViewItem &option,
+                                  const QModelIndex &index) {
+  const auto [button1Rect, button2Rect] = calculateButtonRects(option);
+
+  const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
+  if (const auto pos = mouseEvent->pos();
+      event->type() == QEvent::MouseButtonPress) {
+    if (button1Rect.contains(pos)) {
+      // Edit button clicked
+      emit displayButtonClicked(index);
+      return true;
+    } else if (button2Rect.contains(pos)) {
+      // Delete button clicked
+      emit removeButtonClicked(index);
+      return true;
+    }
+  }
+
+  return QStyledItemDelegate::editorEvent(event, model, option, index);
 }
 
 // ---------------- Helper ----------------

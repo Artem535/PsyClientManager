@@ -35,6 +35,9 @@ public:
 
 signals:
   void end_edit();
+  void item_selected();
+  void displayButtonClicked(const std::optional<ObxClient> &client);
+  void begin_create_item(const std::optional<ObxClient> &client = std::nullopt);
 
 private slots:
   void onClientSelected(const QModelIndex &index);

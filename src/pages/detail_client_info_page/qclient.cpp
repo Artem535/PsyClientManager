@@ -4,6 +4,8 @@
 
 #include "qclient.h"
 
+QClient::QClient() {}
+
 // ---- Constructors ----
 QClient::QClient(const ObxClient &client) { update(client); }
 
@@ -14,7 +16,7 @@ void QClient::update(const ObxClient &client) {
   setLastName(QString::fromStdString(client.last_name));
   setPhoneNumber(QString::fromStdString(client.phone_number));
   setEmail(QString::fromStdString(client.email));
-  setBirthDate(QDate::fromJulianDay(client.birthday_date));
+  setBirthDate(QDateTime::fromSecsSinceEpoch(client.birthday_date).date());
   setCountry(QString::fromStdString(client.country));
   setCity(QString::fromStdString(client.city));
   setTimezone(QString::fromStdString(client.time_zone));

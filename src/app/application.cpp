@@ -13,6 +13,7 @@ int Application::run(int argc, char *argv[]) {
   window.addEventInfoPage(mDb);
   window.addClientInfoPage(std::make_shared<QClientModel>(mDb));
   window.addClientCardPage();
+  window.connectSignals();
 
   window.show();
 

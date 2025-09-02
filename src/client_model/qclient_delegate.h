@@ -5,13 +5,15 @@
 #pragma once
 
 #include <QDateTime>
+#include <QEvent>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QStyledItemDelegate>
 
 #include <cmath>
 
-#include "qclient_model.h"
 #include "constants.hpp"
+#include "qclient_model.h"
 
 /**
  * @class QClientDelegate
@@ -26,6 +28,10 @@
  */
 class QClientDelegate final : public QStyledItemDelegate {
   Q_OBJECT
+
+signals:
+  void displayButtonClicked(const QModelIndex &index);
+  void removeButtonClicked(const QModelIndex &index);
 
 public:
   /**
@@ -93,7 +99,8 @@ public:
                              const ObxClient &client);
 
   /**
-   * @brief Draws the fifth column (two action buttons).
+   * @brief Draws the fifth column (two action buttons) and update them coords
+   * in buttonRects.
    * @param painter The painter used for drawing.
    * @param option Style options for the item.
    * @param client The client data (not used here, reserved for future).
@@ -101,9 +108,16 @@ public:
   static void drawActions(QPainter *painter, const QStyleOptionViewItem &option,
                           const ObxClient &client);
 
+  static std::pair<QRect, QRect>
+  calculateButtonRects(const QStyleOptionViewItem &option);
+
+  bool editorEvent(QEvent *event, QAbstractItemModel *model,
+                   const QStyleOptionViewItem &option,
+                   const QModelIndex &index) override;
+
 private:
   /**
-   * @brief Helper to calculate age based on a birth date.
+   * @brief Helper to calculate age based on a birthdate.
    * @param birthDate Date of birth.
    * @return int Calculated age.
    */
