@@ -4,11 +4,12 @@
 #include <QCheckBox>
 #include <QDateTime>
 #include <QLineEdit>
+#include <QLoggingCategory>
+#include <QMessageBox>
 #include <QModelIndex>
 #include <QPointer>
 #include <QPushButton>
 #include <QWidget>
-#include <QLoggingCategory>
 
 // === STL ===
 #include <memory>
@@ -19,40 +20,58 @@
 #include "qclient.h"
 
 namespace Ui {
-    class ClientInfoCard;
+class ClientInfoCard;
 }
 
 class QClientInfoCardPage final : public QWidget {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit QClientInfoCardPage(QWidget *parent = nullptr);
+  explicit QClientInfoCardPage(QWidget *parent = nullptr);
 
-    ~QClientInfoCardPage() override;
+  ~QClientInfoCardPage() override;
 
 signals:
-    void provideUpdateUI();
+  void provideUpdateUI();
 
-    void provideClearUI();
+  void provideClearUI();
+
+  void provideDefaultStyle();
+
+  void provideEditModeStyle();
+
+  void endEditMode();
 
 public slots:
-    void setClientInfo(const std::optional<ObxClient> &client);
+  void setClientInfo(const std::optional<ObxClient> &client);
 
-    void updateUiProperty() const;
+  void enterInEditMode();
 
-    void updateAgeInput(const QDate &date) const;
+  void cancelEditMode();
 
-    void updateAvatar() const;
+  void leaveEditMode();
 
-    void clearUI() const;
+  void updateUiProperty() const;
+
+  void updateAgeInput(const QDate &date) const;
+
+  void updateAvatar() const;
+
+  void clearUI() const;
+
+  void initDefaultStyle();
+
+  void initEditModeStyle() const;
 
 private:
-    std::unique_ptr<Ui::ClientInfoCard> mUi;
-    QClient mClientInfo;
+  std::unique_ptr<Ui::ClientInfoCard> mUi;
+  QClient mClientInfo;
 
-    static int countAge(const QDate &birthDate);
+  static int countAge(const QDate &birthDate);
 
-    void connectReactiveSignals();
+  void connectReactiveSignals();
 
-    void connectSignals();
+  void connectSignals() const;
+
+  void setReadOnly(bool readOnly) const;
 };

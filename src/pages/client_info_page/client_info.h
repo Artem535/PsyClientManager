@@ -34,30 +34,11 @@ public:
   ~ClientInfo() override;
 
 signals:
-  void end_edit();
-  void item_selected();
   void displayButtonClicked(const std::optional<ObxClient> &client);
-  void begin_create_item(const std::optional<ObxClient> &client = std::nullopt);
-
-private slots:
-  void onClientSelected(const QModelIndex &index);
-  void onEditModeToggled(bool checked);
-  void onUpdateClicked();
-  void onAddClicked();
-  void onClearClicked();
-  void onDateChanged(const QDate &date);
-  void updateButtonState();
 
 private:
-  void connectSignals();
-  void updateUiFromClient(const ObxClient &client);
-  void clearUi();
-  bool validateInput();
-  [[nodiscard]] ObxClient getClientFromUi() const;
-  static int countAge(const QDate &birthDate);
-
   std::unique_ptr<Ui::ClientInfo> mUi;
   std::shared_ptr<QClientModel> mClientModel;
-  std::optional<ObxClient> mEditingClient;
-  bool mInEditMode = false;
+
+  void connectSignals(const QClientDelegate *delegate);
 };

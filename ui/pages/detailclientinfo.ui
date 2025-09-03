@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>807</width>
-    <height>612</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,6 +26,42 @@
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <layout class="QHBoxLayout" name="buttonsLayout">
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="editButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>PushButton</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
@@ -52,14 +88,14 @@
                </property>
                <property name="styleSheet">
                 <string notr="true">background-color: #d3d3d3;
-                          border-radius: 60%;
-                          width: 60px;
-                          height: 60px;
-                          color: #333;
-                          text-align: center;
-                          line-height: 60px;
-                          font-size: 18px;
-                          font-weight: bold;</string>
+                 border-radius: 60%;
+                 width: 60px;
+                 height: 60px;
+                 color: #333;
+                 text-align: center;
+                 line-height: 60px;
+                 font-size: 18px;
+                 font-weight: bold;</string>
                </property>
                <property name="text">
                 <string>AI</string>
@@ -143,6 +179,9 @@
                </item>
                <item row="3" column="2">
                 <widget class="QLineEdit" name="ageInput">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
                  <property name="placeholderText">
                   <string>28</string>
                  </property>
@@ -318,6 +357,13 @@
              <widget class="QTextEdit" name="additionalInfoTextEdit">
               <property name="placeholderText">
                <string>Введите дополнительную информацию...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDialogButtonBox" name="buttonBox">
+              <property name="standardButtons">
+               <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
               </property>
              </widget>
             </item>
