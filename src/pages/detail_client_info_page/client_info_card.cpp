@@ -61,6 +61,7 @@ void QClientInfoCardPage::leaveEditMode() {
   emit provideDefaultStyle();
   emit provideUpdateUI();
   emit endEditMode();
+  emit provideSaveClient(mClientInfo.toObxClient());
 }
 
 void QClientInfoCardPage::updateUiProperty() const {
@@ -100,6 +101,14 @@ void QClientInfoCardPage::connectReactiveSignals() {
           &QClientInfoCardPage::updateAvatar);
   connect(mUi->lastNameInput, &QLineEdit::textChanged, this,
           &QClientInfoCardPage::updateAvatar);
+
+  // Update text in isActive checkbox
+  // clang-format off
+  connect(mUi->isActive, &QCheckBox::checkStateChanged, [this](const auto state) {
+    const auto text = state == Qt::CheckState::Checked ? "Активен" : "Не активен";
+    mUi->isActive->setText(QString(text));
+  });
+  // clang-format on
 }
 
 void QClientInfoCardPage::connectSignals() const {
@@ -121,6 +130,7 @@ void QClientInfoCardPage::connectSignals() const {
   // Button "Cancel"
   connect(mUi->buttonBox, &QDialogButtonBox::rejected, this,
           &QClientInfoCardPage::cancelEditMode);
+
 }
 void QClientInfoCardPage::setReadOnly(const bool readOnly) const {
   mUi->nameInput->setReadOnly(readOnly);
@@ -192,4 +202,5 @@ void QClientInfoCardPage::clearUI() const {
   mUi->diagnosisTextEdit->clear();
   mUi->additionalInfoTextEdit->clear();
   mUi->avatarLabel->setText("??");
+  mUi->isActive->setChecked(Qt::CheckState::Unchecked);
 }

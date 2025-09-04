@@ -42,6 +42,8 @@ signals:
 
   void endEditMode();
 
+  void provideSaveClient(const ObxClient &client);
+
 public slots:
   void setClientInfo(const std::optional<ObxClient> &client);
 

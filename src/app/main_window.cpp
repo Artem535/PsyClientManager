@@ -39,6 +39,10 @@ void MainWindow::connectSignals() {
   connect(clientInfoPage, &ClientInfo::displayButtonClicked, [&]() {
     mUi->tab_widget->setCurrentIndex(mPagesIndex[Pages::clientCard]);
   });
+
+  connect(clientCardPage, &QClientInfoCardPage::provideSaveClient, [&](const auto &client) {
+    emit provideSaveClient(client);
+  });
 }
 
 MainWindow::~MainWindow() = default;

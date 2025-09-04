@@ -4,6 +4,8 @@
 
 #include "qclient.h"
 
+#include <QTimeZone>
+
 QClient::QClient() {}
 
 // ---- Constructors ----
@@ -52,6 +54,7 @@ QString QClient::getCity() const { return mCity; }
 QString QClient::getTimezone() const { return mTimezone; }
 QString QClient::getAdditionalInfo() const { return mAdditionalInfo; }
 QString QClient::getDiagnosis() const { return mDiagnosis; }
+bool QClient::isActive() const { return mIsActive; }
 
 // ---- Setters ----
 void QClient::setName(const QString &name) { mName = name; }
@@ -73,6 +76,38 @@ void QClient::setTimezone(const QString &timezone) { mTimezone = timezone; }
 void QClient::setAdditionalInfo(const QString &info) { mAdditionalInfo = info; }
 void QClient::setDiagnosis(const QString &diagnosis) { mDiagnosis = diagnosis; }
 
+void QClient::setId(const obx_id id) { mId = id; }
+void QClient::setIsActive(const bool isActive) { mIsActive = isActive; }
+
+// ---- Convert to database entity ----
+ObxClient QClient::toObxClient() const {
+  ObxClient client;
+
+  // Basic info
+  client.id = getId();
+  client.name = getName().toStdString();
+  client.last_name = getLastName().toStdString();
+  client.phone_number = getPhoneNumber().toStdString();
+  client.email = getEmail().toStdString();
+
+  // Birthdate stored as UTC seconds since epoch
+  client.birthday_date = QDateTime(getBirthDate(), QTime(12, 0), QTimeZone::UTC)
+                             .toSecsSinceEpoch();
+
+  // Location info
+  client.country = getCountry().toStdString();
+  client.city = getCity().toStdString();
+  client.time_zone = getTimezone().toStdString();
+
+  // Additional info
+  client.additional_info = getAdditionalInfo().toStdString();
+  client.diagnosis = getDiagnosis().toStdString();
+
+  client.client_active = mIsActive;
+
+  return client;
+}
+
 // ---- Helpers ----
 int QClient::countAge(const QDate &birthDate) {
   if (!birthDate.isValid())
@@ -85,5 +120,3 @@ int QClient::countAge(const QDate &birthDate) {
   }
   return years;
 }
-
-void QClient::setId(const obx_id id) { mId = id; }

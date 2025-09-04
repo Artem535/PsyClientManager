@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>807</width>
-    <height>700</height>
+    <height>703</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -298,6 +298,25 @@
                 <widget class="QLineEdit" name="emailInput">
                  <property name="placeholderText">
                   <string>anna.m@email.com</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="9" column="0">
+                <widget class="QCheckBox" name="isActive">
+                 <property name="text">
+                  <string>Неактивен</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="8" column="0">
+                <widget class="QLabel" name="label">
+                 <property name="font">
+                  <font>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Статус клиента</string>
                  </property>
                 </widget>
                </item>

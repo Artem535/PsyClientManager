@@ -31,6 +31,7 @@ public:
   QString getTimezone() const;
   QString getAdditionalInfo() const;
   QString getDiagnosis() const;
+  bool isActive() const;
 
   // ---- Setters ----
   void setName(const QString& name);
@@ -45,6 +46,10 @@ public:
   void setAdditionalInfo(const QString& info);
   void setDiagnosis(const QString& diagnosis);
   void setId(const obx_id id);
+  void setIsActive(const bool isActive);
+
+  // ---- Others ----
+  [[nodiscard]] ObxClient toObxClient() const;
 
 private:
   obx_id mId = 0;
@@ -59,6 +64,7 @@ private:
   QString mTimezone;
   QString mAdditionalInfo;
   QString mDiagnosis;
+  bool mIsActive = false;
 
   static int countAge(const QDate &birthDate);
 };

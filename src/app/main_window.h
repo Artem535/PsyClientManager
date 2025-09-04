@@ -27,6 +27,9 @@ public:
   void addClientCardPage();
   void connectSignals();
 
+signals:
+  void provideSaveClient(const ObxClient &client);
+
 private:
   QHash<Pages, QWidget*> mPages;
   QHash<Pages, int> mPagesIndex;
