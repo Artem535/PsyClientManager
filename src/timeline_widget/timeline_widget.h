@@ -10,8 +10,8 @@
 #include <memory>
 
 #include "event_item.h"
+#include "database.h"
 #include "event_view.h"
-#include "qevent_data_manager.h"
 
 class QTimelineWidget final : public QWidget {
   Q_OBJECT
@@ -36,5 +36,5 @@ private slots:
 private:
   QVBoxLayout *mLayout;
   QEventView *mEventView;
-  QEventDataManager *mDataManager;
+  QEvenModel *mModel;
 };

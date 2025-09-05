@@ -20,7 +20,6 @@ add_subdirectory(src/pages/event_info_page)
 add_subdirectory(src/pages/detail_client_info_page)
 add_subdirectory(src/timeline_widget)
 add_subdirectory(src/event_view)
-add_subdirectory(src/event_data_manager)
 add_subdirectory(src/app)
 
 include_directories(src/app)

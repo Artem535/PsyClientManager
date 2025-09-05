@@ -1,5 +1,5 @@
 // src/timeline_widget/timeline_model.cpp
-#include "../timeline_widget/qtimeline_model.h"
+#include "qtimeline_model.h"
 #include <QDateTime>
 #include <QTimeZone>
 
@@ -82,13 +82,14 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   emit eventsLoaded();
 }
 
-void QTimelineModel::addEvent(const ObxEvent &event) {
+obx_id QTimelineModel::addEvent(const ObxEvent &event) {
   const int row = mEvents.size();
   beginInsertRows({}, row, row);
   ObxEvent newEvent = event;
   newEvent.id = mDb->add_event(event); // сохраняем в БД
   mEvents.append(newEvent);
   endInsertRows();
+  return newEvent.id;
 }
 
 void QTimelineModel::removeEvent(obx_id id) {
@@ -114,4 +115,12 @@ void QTimelineModel::updateEvent(const ObxEvent &event) {
       break;
     }
   }
+}
+QModelIndex QTimelineModel::indexForEventId(obx_id id) const {
+  for (int i = 0; i < mEvents.size(); ++i) {
+    if (mEvents[i].id == id) {
+      return index(i, 0, QModelIndex());
+    }
+  }
+  return {};
 }

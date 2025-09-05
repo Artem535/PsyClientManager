@@ -1,5 +1,8 @@
 #include "event_view.h"
 
+#include "qobxevent.h"
+#include "qtimeline_model.h"
+#include "scheme.obx.hpp"
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 
@@ -14,6 +17,17 @@ QEventView::QEventView(QWidget *parent) : QGraphicsView(parent) {
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   updateSceneSize();
+}
+void QEventView::loadEvents(const QVector<QModelIndex> &items) {
+  for (const auto &item : items) {
+    const auto var = item.data(QTimelineModel::Roles::EventDataRole);
+    const auto event = var.value<ObxEvent>();
+
+    auto *eventItem = new QEventItem(event, this);
+    connect(eventItem, &QEventItem::selected, this,
+            &QEventView::onEventSelected);
+    mScene->addItem(eventItem);
+  }
 }
 
 QGraphicsScene *QEventView::getScene() const { return mScene; }

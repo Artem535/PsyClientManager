@@ -17,7 +17,7 @@ class QEventView final : public QGraphicsView {
 
 public:
   explicit QEventView(QWidget *parent = nullptr);
-  [[nodiscard]] QGraphicsScene *getScene() const;
+  void loadEvents(const QVector<QModelIndex> &items);
 
 signals:
   void eventSelected(QEventItem *item);
@@ -28,6 +28,9 @@ public slots:
 protected:
   void resizeEvent(QResizeEvent *event) override;
 
+private slots:
+  void onEventSelected();
+
 private:
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
@@ -37,7 +40,4 @@ private:
   void updateSceneSize();
   void updateItemsSize() const;
   void updateItemsCords() const;
-
-private slots:
-  void onEventSelected();
 };

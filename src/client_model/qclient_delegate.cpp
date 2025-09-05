@@ -213,7 +213,7 @@ void QClientDelegate::drawActions(QPainter *painter,
 
   painter->setPen(Qt::black);
   // Edit button
-  painter->drawText(btn1Rect, Qt::AlignCenter, "E");
+  painter->drawText(btn1Rect, Qt::AlignCenter, "S");
   // Delete button
   painter->drawText(btn2Rect, Qt::AlignCenter, "D");
 }
@@ -249,14 +249,14 @@ QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
   return {btn1Rect, btn2Rect};
 }
 
-bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
+bool QClientDelegate::editorEvent(QtEvent *event, QAbstractItemModel *model,
                                   const QStyleOptionViewItem &option,
                                   const QModelIndex &index) {
   const auto [button1Rect, button2Rect] = calculateButtonRects(option);
 
   const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
   if (const auto pos = mouseEvent->pos();
-      event->type() == QEvent::MouseButtonPress) {
+      event->type() == QtEvent::MouseButtonPress) {
     if (button1Rect.contains(pos)) {
       // Edit button clicked
       emit displayButtonClicked(index);

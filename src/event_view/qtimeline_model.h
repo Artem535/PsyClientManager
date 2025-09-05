@@ -40,9 +40,11 @@ public:
 
   // API
   void loadEventsForDay(const QDate &date);
-  void addEvent(const ObxEvent &event);
+  obx_id addEvent(const ObxEvent &event);
   void removeEvent(obx_id id);
   void updateEvent(const ObxEvent &event);
+
+  QModelIndex indexForEventId(obx_id id) const;
 
 signals:
   void eventsLoaded();

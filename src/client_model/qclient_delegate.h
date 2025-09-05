@@ -111,7 +111,7 @@ public:
   static std::pair<QRect, QRect>
   calculateButtonRects(const QStyleOptionViewItem &option);
 
-  bool editorEvent(QEvent *event, QAbstractItemModel *model,
+  bool editorEvent(QtEvent *event, QAbstractItemModel *model,
                    const QStyleOptionViewItem &option,
                    const QModelIndex &index) override;
 

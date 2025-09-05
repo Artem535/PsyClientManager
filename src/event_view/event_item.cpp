@@ -19,6 +19,15 @@ QEventItem::QEventItem(const long long id, const QString &title,
 
   updateDuration();
 }
+QEventItem::QEventItem(const ObxEvent &event) {
+  mIsWorkItem = event.is_work_event();
+  mSize = QSize(100, 100);
+  mTitle = QString::fromStdString(event.name);
+  mStartTime = event.startTime();
+  mEndTime = event.endTime();
+  mId = event.id();
+  updateDuration();
+}
 
 QRectF QEventItem::boundingRect() const {
   constexpr qreal penWidth = 1.0;
