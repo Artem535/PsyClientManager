@@ -249,14 +249,14 @@ QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
   return {btn1Rect, btn2Rect};
 }
 
-bool QClientDelegate::editorEvent(QtEvent *event, QAbstractItemModel *model,
+bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
                                   const QStyleOptionViewItem &option,
                                   const QModelIndex &index) {
   const auto [button1Rect, button2Rect] = calculateButtonRects(option);
 
   const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
   if (const auto pos = mouseEvent->pos();
-      event->type() == QtEvent::MouseButtonPress) {
+      event->type() == QEvent::MouseButtonPress) {
     if (button1Rect.contains(pos)) {
       // Edit button clicked
       emit displayButtonClicked(index);

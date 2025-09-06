@@ -1,40 +1,46 @@
+// src/timeline_widget/timeline_widget.h
 #pragma once
 
 #include <QLoggingCategory>
 #include <QObject>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QTimeZone>
-#include <QDateTime>
-
-#include <memory>
+#include <QDate>
+#include <QPointer>
 
 #include "event_item.h"
 #include "database.h"
 #include "event_view.h"
+#include "qtimeline_model.h"
+
 
 class QTimelineWidget final : public QWidget {
-  Q_OBJECT
+    Q_OBJECT
+
 public:
-  explicit QTimelineWidget(const std::shared_ptr<pcm::database::Database> &db,
-                           QWidget *parent = nullptr);
-  ~QTimelineWidget() override;
+    explicit QTimelineWidget(const std::shared_ptr<pcm::database::Database> &db, QWidget *parent = nullptr);
+
+    ~QTimelineWidget() override;
 
 public slots:
-  void onSelectedDayChanged(const QDate &date) const;
-  [[nodiscard]] obx_id addEvent(QEventItem *item) const;
-  void updateScene();
+    void onSelectedDayChanged(const QDate &date) const;
+
+    // Возвращаем ID события, если нужно
+    [[nodiscard]] obx_id addEvent(const ObxEvent &event) const;
+
+
+    // Сигнал для обновления сцены (если нужно вручную)
+    void updateScene();
+
+    void updateEvent(const ObxEvent &event) const;
 
 signals:
-  void eventSelected(QEventItem *event);
-  void needSceneUpdate();
+    void eventSelected(QEventItem *event);
 
-private slots:
-  void onEventSelected(QEventItem *event);
-  void addEvent(const ObxEvent &event) const;
+    void needSceneUpdate();
 
 private:
-  QVBoxLayout *mLayout;
-  QEventView *mEventView;
-  QEvenModel *mModel;
+    QVBoxLayout *mLayout = nullptr;
+    QEventView *mEventView = nullptr;
+    QTimelineModel *mModel = nullptr; // вместо QEventDataManager
 };

@@ -38,6 +38,8 @@ public:
   QEventItem(long long id, const QString &title, const QDateTime &startTime,
              const QDateTime &endTime, bool isWorkItem = false);
 
+  void updateFromEvent(const ObxEvent &data);
+
   QEventItem(const ObxEvent &event);
 
   /**
