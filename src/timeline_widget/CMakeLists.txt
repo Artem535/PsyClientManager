@@ -17,14 +17,12 @@ add_dependencies(${TARGET_NAME}
     ${PROJECT_NAME}_config
     ${PROJECT_NAME}_database
     ${PROJECT_NAME}_event_view
-    ${PROJECT_NAME}_event_data_manager
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
     ${PROJECT_NAME}_config
     ${PROJECT_NAME}_database
-    ${PROJECT_NAME}_event_data_manager
     ${PROJECT_NAME}_event_view
     Qt6::Widgets
     Qt6::Gui

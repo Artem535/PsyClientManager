@@ -213,7 +213,7 @@ void QClientDelegate::drawActions(QPainter *painter,
 
   painter->setPen(Qt::black);
   // Edit button
-  painter->drawText(btn1Rect, Qt::AlignCenter, "E");
+  painter->drawText(btn1Rect, Qt::AlignCenter, "S");
   // Delete button
   painter->drawText(btn2Rect, Qt::AlignCenter, "D");
 }

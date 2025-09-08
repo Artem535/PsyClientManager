@@ -12,15 +12,20 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 qt_add_library(${TARGET_NAME} STATIC
         event_view.cpp
         event_item.cpp
+        qtimeline_model.cpp
+        qobxevent.cpp
+        qobxevent.h
 )
 
 add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
         Qt6::Widgets
         Qt6::Gui
 )

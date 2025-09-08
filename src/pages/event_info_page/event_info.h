@@ -51,6 +51,7 @@ signals:
 
 private slots:
   void onEventClicked(QEventItem *event);
+  void saveEvent();
 
 private:
   void connectCalendar();

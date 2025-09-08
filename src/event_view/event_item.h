@@ -13,6 +13,7 @@
 #include <cmath>
 
 #include "constants.hpp"
+#include "scheme.obx.hpp"
 /**
  * @brief The EventItem class represents a graphical item for displaying an
  * event in a timeline or calendar view.
@@ -36,6 +37,10 @@ public:
    */
   QEventItem(long long id, const QString &title, const QDateTime &startTime,
              const QDateTime &endTime, bool isWorkItem = false);
+
+  void updateFromEvent(const ObxEvent &data);
+
+  QEventItem(const ObxEvent &event);
 
   /**
    * @brief Returns the bounding rectangle of the item.
