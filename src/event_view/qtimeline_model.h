@@ -23,7 +23,7 @@ public:
     StartDateTimeRole,
     EndDateTimeRole,
     DurationRole,
-    EventDataRole // для передачи всего ObxEvent
+    EventDataRole
   };
 
   explicit QTimelineModel(const std::shared_ptr<pcm::database::Database> &db,

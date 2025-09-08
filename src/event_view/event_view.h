@@ -18,9 +18,7 @@ class QEventView final : public QGraphicsView {
 
 public:
   explicit QEventView(QWidget *parent = nullptr);
-  void loadEvents();
   void setModel(QTimelineModel *model);
-
 
 signals:
   void eventSelected(QEventItem *item);

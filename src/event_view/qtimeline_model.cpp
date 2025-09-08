@@ -20,7 +20,8 @@ QModelIndex QTimelineModel::parent(const QModelIndex &child) const {
 }
 
 int QTimelineModel::rowCount(const QModelIndex &parent) const {
-  return parent.isValid() ? 0 : mEvents.size();
+  const auto rowCount = parent.isValid() ? 0 : mEvents.size();
+  return rowCount;
 }
 
 int QTimelineModel::columnCount(const QModelIndex &parent) const {
@@ -116,6 +117,7 @@ void QTimelineModel::updateEvent(const ObxEvent &event) {
     }
   }
 }
+
 QModelIndex QTimelineModel::indexForEventId(obx_id id) const {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
