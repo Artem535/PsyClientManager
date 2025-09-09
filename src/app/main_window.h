@@ -23,7 +23,7 @@ public:
   ~MainWindow() override;
 
   void addClientInfoPage(std::shared_ptr<QClientModel> model);
-  void addEventInfoPage(std::shared_ptr<pcm::database::Database> db);
+  void addEventInfoPage(QTimelineModel *model);
   void addClientCardPage();
   void connectSignals();
   QWidget* getPage(Pages page);

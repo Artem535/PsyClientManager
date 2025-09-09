@@ -4,24 +4,22 @@
 
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 
-QTimelineWidget::QTimelineWidget(
-    const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
-    : QWidget(parent) {
+QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
+    : QWidget(parent), mModel(model) {
   mLayout = new QVBoxLayout(this);
   setLayout(mLayout);
-
-  mModel = new QTimelineModel(db, this);
 
   mEventView = new QEventView(this);
   mEventView->setModel(mModel);
 
   mLayout->addWidget(mEventView);
 
-
   connect(mModel, &QTimelineModel::eventsLoaded, this,
           &QTimelineWidget::updateScene);
   connect(mEventView, &QEventView::eventSelected, this,
           &QTimelineWidget::eventSelected);
+  // Defaults
+  mModel->loadEventsForDay(QDate::currentDate());
 
   qCDebug(logTimelineWidget)
       << "QTimelineWidget initialized with QTimelineModel";

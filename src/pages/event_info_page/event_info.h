@@ -14,8 +14,7 @@ class QEventInfoPage final : public QWidget {
   Q_OBJECT
 
 public:
-  explicit QEventInfoPage(const std::shared_ptr<pcm::database::Database> &db,
-                          QWidget *parent = nullptr);
+  QEventInfoPage(QTimelineModel *model, QWidget *parent);
   ~QEventInfoPage() override;
 
 signals:
@@ -38,7 +37,6 @@ private:
   void initDefaultStates();
 
   std::unique_ptr<Ui::EventInfo> mUi;
-  std::shared_ptr<pcm::database::Database> mDb;
   QTimelineWidget *mTimelineWidget = nullptr;
   QEventDetailsWidget *mEventDetailsWidget = nullptr;
 

@@ -12,7 +12,7 @@ int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   mMainWindow = std::make_unique<MainWindow>();
 
-  mMainWindow->addEventInfoPage(mDb);
+  mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
   mMainWindow->addClientInfoPage(std::make_shared<QClientModel>(mDb));
   mMainWindow->addClientCardPage();
   mMainWindow->connectSignals();
@@ -59,10 +59,11 @@ void Application::connectSignals() {
     const auto page = dynamic_cast<QEventInfoPage *>(widget);
     connect(page, &QEventInfoPage::provideFillClientComboBox, this,
             &Application::fillClientComboBox);
-    connect(page, &QEventInfoPage::provideClientByEventId, [&](obx_id eventId) {
+    connect(page, &QEventInfoPage::provideClientByEventId, [page, this](obx_id eventId) {
       const auto client = mDb->get_client_by_event(eventId);
       emit page->clientResolved(client.id);
     });
+
   }
 }
 

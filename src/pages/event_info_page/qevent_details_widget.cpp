@@ -17,9 +17,7 @@ QEventDetailsWidget::QEventDetailsWidget(QWidget *parent)
 
 QEventDetailsWidget::~QEventDetailsWidget() = default;
 
-void QEventDetailsWidget::initUi() {
-  emit provideFillClientComboBox(mUI->mClientComboBox);
-}
+void QEventDetailsWidget::initUi() {}
 
 void QEventDetailsWidget::initConnections() {
   // --- Button Connections ---
@@ -41,7 +39,7 @@ void QEventDetailsWidget::initConnections() {
           &QEventDetailsWidget::onTimeToChanged);
 }
 
-void QEventDetailsWidget::initDefaultStyle() const {
+void QEventDetailsWidget::initDefaultStyle() {
   const auto isVisible = mCurrentEvent ? mCurrentEvent->isWorkItem() : false;
   mUI->mClientComboBox->setVisible(isVisible);
   mUI->mClientComboxBoxLabel->setVisible(isVisible);
@@ -49,9 +47,10 @@ void QEventDetailsWidget::initDefaultStyle() const {
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
   mUI->mAddButton->setVisible(true);
+  emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
-void QEventDetailsWidget::initEditStyle() const {
+void QEventDetailsWidget::initEditStyle() {
   mUI->mButtonBox->setVisible(true);
   mUI->mChangeButton->setVisible(false);
   mUI->mAddButton->setVisible(false);

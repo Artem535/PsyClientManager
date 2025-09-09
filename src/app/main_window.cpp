@@ -14,8 +14,8 @@ void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
   mPagesIndex.insertOrAssign(Pages::clientInfo, index);
 }
 
-void MainWindow::addEventInfoPage(std::shared_ptr<pcm::database::Database> db) {
-  const auto page = new QEventInfoPage(db, this);
+void MainWindow::addEventInfoPage(QTimelineModel *model) {
+  const auto page = new QEventInfoPage(model, this);
   mPages.insertOrAssign(Pages::eventInfo, page);
 
   const int index = mUi->tab_widget->addTab(page, "Event info");

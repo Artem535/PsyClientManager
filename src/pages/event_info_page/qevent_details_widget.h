@@ -82,40 +82,40 @@ signals:
    */
   void provideEditModeChanged();
 
-  void provideFillClientComboBox(QComboBox *combobox) const;
+  void provideFillClientComboBox(QComboBox *combobox);
 
-  private slots:
-    // --- Button Slots ---
-    void onApplyClicked();
-    void onCancelClicked();
-    void onAddClicked();
-    void onChangeClicked();
+private slots:
+  // --- Button Slots ---
+  void onApplyClicked();
+  void onCancelClicked();
+  void onAddClicked();
+  void onChangeClicked();
 
-    // --- Input Change Slots ---
-    void onEventTypeToggled(bool checked);
-    void onTimeFromChanged(const QDateTime &dt);
-    void onTimeToChanged(const QDateTime &dt);
+  // --- Input Change Slots ---
+  void onEventTypeToggled(bool checked);
+  void onTimeFromChanged(const QDateTime &dt);
+  void onTimeToChanged(const QDateTime &dt);
 
-  private:
-    // --- Initialization ---
-    void initUi();
-    void initConnections();
-    void initDefaultStyle() const;
-    void initEditStyle() const;
-    void initDefaultStates() const;
-    void initDefaultTimes() const;
-    void updateButtonState() const;
+private:
+  // --- Initialization ---
+  void initUi();
+  void initConnections();
+  void initDefaultStyle();
+  void initEditStyle();
+  void initDefaultStates() const;
+  void initDefaultTimes() const;
+  void updateButtonState() const;
 
-    // --- Validation & Data Collection ---
-    bool validateInput();
-    ObxEvent collectEventData() const;
+  // --- Validation & Data Collection ---
+  bool validateInput();
+  ObxEvent collectEventData() const;
 
-    // --- UI ---
-    std::unique_ptr<Ui::EventDetails> mUI;
+  // --- UI ---
+  std::unique_ptr<Ui::EventDetails> mUI;
 
-    // --- Data ---
-    QPointer<QEventItem> mCurrentEvent;
-    QHash<obx_id, QString> mClientList;
-    bool mInEditMode = false;
-    bool mCreatingNewEvent = false;
-  };
+  // --- Data ---
+  QPointer<QEventItem> mCurrentEvent;
+  QHash<obx_id, QString> mClientList;
+  bool mInEditMode = false;
+  bool mCreatingNewEvent = false;
+};

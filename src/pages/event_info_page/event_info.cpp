@@ -5,12 +5,11 @@
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
-QEventInfoPage::QEventInfoPage(
-    const std::shared_ptr<pcm::database::Database> &db, QWidget *parent)
-    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()), mDb(db) {
+QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
+    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
-  mTimelineWidget = new QTimelineWidget(mDb, this);
+  mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
   mEventDetailsWidget = new QEventDetailsWidget(this);
@@ -48,10 +47,13 @@ void QEventInfoPage::connectSignals() {
           [this](QComboBox *comboBox) {
             emit provideFillClientComboBox(comboBox);
           });
+
+  connect(this, &QEventInfoPage::clientResolved, this,
+          &QEventInfoPage::onClientResolved);
 }
 
 void QEventInfoPage::initDefaultStates() {
-  // You can add initialization logic here if needed
+  mUi->calendar_widget->setSelectedDate(QDate::currentDate());
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
