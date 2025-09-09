@@ -27,7 +27,7 @@ public:
   };
 
   explicit QTimelineModel(const std::shared_ptr<pcm::database::Database> &db,
-                         QObject *parent = nullptr);
+                          QObject *parent = nullptr);
 
   // Обязательные методы модели
   QModelIndex index(int row, int column,

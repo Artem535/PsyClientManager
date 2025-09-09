@@ -35,12 +35,14 @@ public:
    * @param endTime The end time of the event.
    * @param isWorkItem True if the event is a work-related item.
    */
-  QEventItem(long long id, const QString &title, const QDateTime &startTime,
+  QEventItem(unsigned long id, const QString &title, const QDateTime &startTime,
              const QDateTime &endTime, bool isWorkItem = false);
 
   void updateFromEvent(const ObxEvent &data);
 
-  QEventItem(const ObxEvent &event);
+  explicit QEventItem(const ObxEvent &event);
+
+  ObxEvent toEvent() const;
 
   /**
    * @brief Returns the bounding rectangle of the item.

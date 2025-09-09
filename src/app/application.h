@@ -22,6 +22,7 @@ public:
 
 private slots:
   void saveClient(const ObxClient &client) const;
+  void saveClientEventPair(const obx_id clientId, const obx_id eventId) const;
 
 private:
   std::unique_ptr<MainWindow> mMainWindow;

@@ -29,6 +29,7 @@ public:
 
 signals:
   void provideSaveClient(const ObxClient &client);
+  void provideClientEventPairSave(const obx_id clientId, const obx_id eventId);
 
 private:
   QHash<Pages, QWidget*> mPages;

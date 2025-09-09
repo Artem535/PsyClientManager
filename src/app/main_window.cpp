@@ -33,6 +33,8 @@ void MainWindow::connectSignals() {
       dynamic_cast<ClientInfo *>(mPages[Pages::clientInfo]);
   const auto clientCardPage =
       dynamic_cast<QClientInfoCardPage *>(mPages[Pages::clientCard]);
+  const auto eventInfoPage =
+      dynamic_cast<QEventInfoPage *>(mPages[Pages::eventInfo]);
 
   connect(clientInfoPage, &ClientInfo::displayButtonClicked, clientCardPage,
           &QClientInfoCardPage::setClientInfo);
@@ -40,9 +42,13 @@ void MainWindow::connectSignals() {
     mUi->tab_widget->setCurrentIndex(mPagesIndex[Pages::clientCard]);
   });
 
-  connect(clientCardPage, &QClientInfoCardPage::provideSaveClient, [&](const auto &client) {
-    emit provideSaveClient(client);
-  });
+  connect(clientCardPage, &QClientInfoCardPage::provideSaveClient,
+          [&](const auto &client) { emit provideSaveClient(client); });
+
+  connect(eventInfoPage, &QEventInfoPage::provideClientEventPairSave,
+          [this](const obx_id clientId, const obx_id eventId) {
+            emit provideClientEventPairSave(clientId, eventId);
+          });
 }
 
 MainWindow::~MainWindow() = default;

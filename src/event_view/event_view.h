@@ -27,7 +27,8 @@ public slots:
   void updateScene();
   void onRowsInserted(const QModelIndex &parent, int first, int last);
   void onRowsRemoved(const QModelIndex &parent, int first, int last);
-  void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles);
+  void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                     const QList<int> &roles);
   void onModelReset();
 
 protected:
@@ -41,8 +42,7 @@ private:
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
   qreal mPixelPerMin = pcm::widgets::constants::kPixelPerMin;
-  QMap<obx_id, QEventItem*> mSceneItems;
-
+  QMap<obx_id, QEventItem *> mSceneItems;
 
   void drawBackground(QPainter *painter, const QRectF &rect) override;
   void updateSceneSize();

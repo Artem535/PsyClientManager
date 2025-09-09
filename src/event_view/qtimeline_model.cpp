@@ -3,12 +3,12 @@
 #include <QDateTime>
 #include <QTimeZone>
 
-QTimelineModel::QTimelineModel(const std::shared_ptr<pcm::database::Database> &db,
-                             QObject *parent)
+QTimelineModel::QTimelineModel(
+    const std::shared_ptr<pcm::database::Database> &db, QObject *parent)
     : QAbstractItemModel(parent), mDb(db) {}
 
 QModelIndex QTimelineModel::index(int row, int column,
-                                 const QModelIndex &parent) const {
+                                  const QModelIndex &parent) const {
   if (!parent.isValid() && row >= 0 && row < mEvents.size() && column == 0)
     return createIndex(row, column);
   return {};

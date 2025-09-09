@@ -10,31 +10,34 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets PrintSupport Gui)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
-    event_info.cpp
+        event_info.cpp
+        qevent_details_widget.cpp
+        qevent_details_widget.h
 )
 
 qt_add_ui(${TARGET_NAME} SOURCES
-    ../../../ui/pages/eventinfo.ui
-    INCLUDE_PREFIX ui/pages
+        ../../../ui/pages/eventinfo.ui
+        ../../../ui/pages/eventdetails.ui
+        INCLUDE_PREFIX ui/pages
 )
 
 add_dependencies(${TARGET_NAME}
-    ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
-    ${PROJECT_NAME}_client_model
-    ${PROJECT_NAME}_event_view
-    ${PROJECT_NAME}_timeline_widget
+        ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_client_model
+        ${PROJECT_NAME}_event_view
+        ${PROJECT_NAME}_timeline_widget
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
-    ${PROJECT_NAME}_config
-    ${PROJECT_NAME}_database
-    ${PROJECT_NAME}_client_model
-    ${PROJECT_NAME}_event_view
-    ${PROJECT_NAME}_timeline_widget
-    Qt6::Widgets
-    Qt6::Gui
+        ${PROJECT_NAME}_config
+        ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_client_model
+        ${PROJECT_NAME}_event_view
+        ${PROJECT_NAME}_timeline_widget
+        Qt6::Widgets
+        Qt6::Gui
 )
 
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
