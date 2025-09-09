@@ -26,6 +26,20 @@ void Application::saveClient(const ObxClient &client) const {
   qCDebug(logApplication) << "Application::saveClient| Client id:" << client.id;
   mDb->add_client(client);
 }
+
+void Application::fillClientComboBox(QComboBox *box) const {
+  box->clear();
+  const auto clients = mDb->get_clients();
+  for (const auto &client : clients) {
+    QString title{"%1 %2"};
+    const auto name = QString::fromStdString(client->name);
+    const auto lastname = QString::fromStdString(client->last_name);
+    title = title.arg(name).arg(lastname);
+    const auto var = QVariant::fromValue(client->id);
+    box->addItem(title, var);
+  }
+}
+
 void Application::saveClientEventPair(const obx_id clientId,
                                       const obx_id eventId) const {
   qCDebug(logApplication) << "Application::saveClientEventPair| Client id:"
@@ -39,6 +53,17 @@ void Application::connectSignals() {
           &Application::saveClient);
   connect(mMainWindow.get(), &MainWindow::provideClientEventPairSave, this,
           &Application::saveClientEventPair);
+
+  {
+    const auto widget = mMainWindow->getPage(MainWindow::Pages::eventInfo);
+    const auto page = dynamic_cast<QEventInfoPage *>(widget);
+    connect(page, &QEventInfoPage::provideFillClientComboBox, this,
+            &Application::fillClientComboBox);
+    connect(page, &QEventInfoPage::provideClientByEventId, [&](obx_id eventId) {
+      const auto client = mDb->get_client_by_event(eventId);
+      emit page->clientResolved(client.id);
+    });
+  }
 }
 
 } // namespace pcm

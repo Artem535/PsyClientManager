@@ -16,20 +16,6 @@ QEventInfoPage::QEventInfoPage(
   mEventDetailsWidget = new QEventDetailsWidget(this);
   mUi->detailsContainer->layout()->addWidget(mEventDetailsWidget);
 
-  // TODO: Move to separate function
-  {
-    QHash<obx_id, QString> clientList;
-
-    for (const auto &client : mDb->get_clients()) {
-      QString title = "%1 %2";
-      const auto name = QString::fromStdString(client->name);
-      const auto lastName = QString::fromStdString(client->last_name);
-      title = title.arg(name, lastName);
-      clientList.insertOrAssign(client->id, title);
-    }
-
-    mEventDetailsWidget->setClientList(clientList);
-  }
   connectSignals();
   initDefaultStates();
 }
@@ -40,15 +26,15 @@ void QEventInfoPage::connectSignals() {
   // CalendarWidget -> TimelineWidget
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
           &QTimelineWidget::onSelectedDayChanged);
-  // CalendarWidget -> EventDetailsWidget (date update)
+  // CalendarWidget -> EventDetailsWidget (update date)
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, this,
           &QEventInfoPage::onCalendarClicked);
 
-  // TimelineWidget -> EventDetailsWidget (выбор события)
+  // TimelineWidget -> EventDetailsWidget (select event)
   connect(mTimelineWidget, &QTimelineWidget::eventSelected, this,
           &QEventInfoPage::onTimelineEventSelected);
 
-  // EventDetailsWidget -> QEventInfoPage (сохранение/отмена)
+  // EventDetailsWidget -> QEventInfoPage (save/cancel)
   connect(mEventDetailsWidget, &QEventDetailsWidget::provideEventSave, this,
           &QEventInfoPage::onEventSaved);
   connect(mEventDetailsWidget, &QEventDetailsWidget::provideEditingCanceled,
@@ -57,14 +43,19 @@ void QEventInfoPage::connectSignals() {
           [this](const obx_id clientId, const obx_id eventId) {
             emit provideClientEventPairSave(clientId, eventId);
           });
+
+  connect(mEventDetailsWidget, &QEventDetailsWidget::provideFillClientComboBox,
+          [this](QComboBox *comboBox) {
+            emit provideFillClientComboBox(comboBox);
+          });
 }
 
 void QEventInfoPage::initDefaultStates() {
-  // Можно добавить инициализацию, если нужно
+  // You can add initialization logic here if needed
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
-  // Обновляем дату в виджете деталей
+  // Update the date in the details widget
   mEventDetailsWidget->findChild<QDateEdit *>("mEventDate")
       ->setDateTime(QDateTime(date, QTime::currentTime()));
 }
@@ -77,9 +68,8 @@ void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
 
   std::optional<obx_id> clientId{std::nullopt};
   if (event->isWorkItem()) {
-    const auto tmpClient = mDb->get_client_by_event(event->getId());
-    const auto tmpClientId = tmpClient.id;
-    clientId = tmpClientId;
+    emit provideClientByEventId(event->getId());
+    clientId = mClientId;
   }
 
   mEventDetailsWidget->loadEvent(event, clientId);
@@ -92,19 +82,20 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 
   auto eventDetails = event->toEvent();
 
-  // Если это новое событие, добавляем его на сцену
+  // If it's a new event, add it to the scene
   if (mEventDetailsWidget->isCreatingNewEvent()) {
     const auto id = mTimelineWidget->addEvent(eventDetails);
     eventDetails.id = id;
     // TODO: Change it later.
     event->setId(id);
   } else {
-    // Иначе обновляем существующее
+    // Otherwise, update the existing one
     mTimelineWidget->updateEvent(eventDetails);
   }
 
-  // Запрашиваем обновление сцены
+  // Request scene update
   mTimelineWidget->updateScene();
 }
 
 void QEventInfoPage::onEditingCanceled() {}
+void QEventInfoPage::onClientResolved(obx_id clientId) { mClientId = clientId; }

@@ -20,6 +20,12 @@ public:
 
 signals:
   void provideClientEventPairSave(obx_id clientId, obx_id eventId);
+  void provideFillClientComboBox(QComboBox *comboBox);
+  void provideClientByEventId(obx_id eventId);
+  void clientResolved(obx_id clientId);
+
+public slots:
+  void onClientResolved(obx_id clientId);
 
 private slots:
   void onCalendarClicked(const QDate &date);
@@ -35,4 +41,6 @@ private:
   std::shared_ptr<pcm::database::Database> mDb;
   QTimelineWidget *mTimelineWidget = nullptr;
   QEventDetailsWidget *mEventDetailsWidget = nullptr;
+
+  obx_id mClientId = 0;
 };

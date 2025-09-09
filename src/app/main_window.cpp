@@ -50,5 +50,6 @@ void MainWindow::connectSignals() {
             emit provideClientEventPairSave(clientId, eventId);
           });
 }
+QWidget *MainWindow::getPage(const Pages page) { return mPages[page]; }
 
 MainWindow::~MainWindow() = default;

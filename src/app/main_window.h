@@ -26,6 +26,7 @@ public:
   void addEventInfoPage(std::shared_ptr<pcm::database::Database> db);
   void addClientCardPage();
   void connectSignals();
+  QWidget* getPage(Pages page);
 
 signals:
   void provideSaveClient(const ObxClient &client);

@@ -18,7 +18,7 @@ QEventDetailsWidget::QEventDetailsWidget(QWidget *parent)
 QEventDetailsWidget::~QEventDetailsWidget() = default;
 
 void QEventDetailsWidget::initUi() {
-  // Additional widget setup can be added here if needed
+  emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
 void QEventDetailsWidget::initConnections() {
@@ -56,6 +56,7 @@ void QEventDetailsWidget::initEditStyle() const {
   mUI->mChangeButton->setVisible(false);
   mUI->mAddButton->setVisible(false);
   mUI->mEventType->setEnabled(true);
+  emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
 void QEventDetailsWidget::initDefaultStates() const {
@@ -95,7 +96,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   const bool isWorkItem = event->isWorkItem();
   mUI->mEventType->setChecked(isWorkItem);
 
-  if (isWorkItem && event->getId() != 0 && !mClientList.isEmpty()) {
+  if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
     if (clientId) {
       const auto varClientId = QVariant::fromValue(clientId.value());

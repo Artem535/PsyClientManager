@@ -10,6 +10,7 @@
 #include "database.h"
 #include "main_window.h"
 #include "qclient_model.h"
+#include "event_info.h"
 
 namespace pcm {
 
@@ -22,6 +23,7 @@ public:
 
 private slots:
   void saveClient(const ObxClient &client) const;
+  void fillClientComboBox(QComboBox *box) const;
   void saveClientEventPair(const obx_id clientId, const obx_id eventId) const;
 
 private:
