@@ -98,6 +98,8 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
     if (clientId) {
+      // TODO: Find a way to avoid this
+      emit provideFillClientComboBox(mUI->mClientComboBox);
       const auto varClientId = QVariant::fromValue(clientId.value());
       if (const int index = mUI->mClientComboBox->findData(varClientId);
           index != -1) {
