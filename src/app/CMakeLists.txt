@@ -27,6 +27,8 @@ add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_client_page
         ${PROJECT_NAME}_client_info_card_page
         ${PROJECT_NAME}_event_page
+        ${PROJECT_NAME}_widgets
+
 )
 
 # Link Slint to the module
@@ -36,5 +38,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_client_page
         ${PROJECT_NAME}_client_info_card_page
         ${PROJECT_NAME}_event_page
+        ${PROJECT_NAME}_widgets
         Qt6::Widgets
 )

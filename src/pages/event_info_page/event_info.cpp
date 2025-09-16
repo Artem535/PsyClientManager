@@ -14,6 +14,7 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
 
   mEventDetailsWidget = new QEventDetailsWidget(this);
   mUi->detailsContainer->layout()->addWidget(mEventDetailsWidget);
+  mEventDetailsWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   connectSignals();
   initDefaultStates();

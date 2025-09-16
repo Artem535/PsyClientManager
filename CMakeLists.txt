@@ -12,6 +12,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 qt_standard_project_setup()
 
 # Include subdirectories for modules
+add_subdirectory(src/widgets)
 add_subdirectory(src/config)
 add_subdirectory(src/database)
 add_subdirectory(src/client_model)
@@ -29,7 +30,10 @@ enable_testing()
 add_subdirectory(test)
 
 # Add the main executable
-qt_add_executable(PsyClientManager src/main.cpp)
+qt_add_executable(PsyClientManager src/main.cpp
+        src/widgets/tab_button.cpp
+        src/widgets/tab_button.h
+        src/widgets/constants.hpp)
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
