@@ -13,7 +13,7 @@
   <property name="sizePolicy">
    <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
     <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
+    <verstretch>1</verstretch>
    </sizepolicy>
   </property>
   <property name="windowTitle">
