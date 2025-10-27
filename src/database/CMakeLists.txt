@@ -9,9 +9,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(objectbox)
 
-find_package(ObjectBoxGenerator 4.0.0 REQUIRED)
 find_package(Poco REQUIRED COMPONENTS Foundation)
 find_package(plog CONFIG REQUIRED)
+find_package(DuckDB CONFIG REQUIRED)
 
 add_library(${TARGET_NAME} STATIC
         database.cpp
@@ -31,4 +31,4 @@ add_dependencies(${TARGET_NAME} ${PROJECT_NAME}_config objectbox)
 #    INSOURCE # Opt-in: Generate in source directory
 #)
 
-target_link_libraries(${TARGET_NAME} objectbox ${PROJECT_NAME}_config Poco::Foundation plog::plog)
+target_link_libraries(${TARGET_NAME} objectbox  ${PROJECT_NAME}_config Poco::Foundation plog::plog duckdb_static)
