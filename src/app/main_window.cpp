@@ -97,7 +97,9 @@ void MainWindow::connectSignals() {
 
 QWidget *MainWindow::getPage(const Pages page) { return mPages[page]; }
 
-void MainWindow::initDefaultStyle() {}
+void MainWindow::initDefaultStyle() const {
+  checkButton(mBtnCalendar);
+}
 
 void MainWindow::checkButton(QPushButton *btn) const {
   mBtnCalendar->setChecked(false);

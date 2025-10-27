@@ -11,6 +11,7 @@ TabButton::TabButton(const QString &text, QWidget *parent)
   setCheckable(true);
   setFlat(true); // removes native border
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+  setFont(QFont("Inter", pcm::widgets::constants::kFontSize));
 }
 
 void TabButton::paintEvent(QPaintEvent *event) {
@@ -22,16 +23,13 @@ void TabButton::paintEvent(QPaintEvent *event) {
   painter.setPen(Qt::NoPen);
   painter.drawRect(rect());
 
-  constexpr auto circleDiameter = pcm::widgets::constants::kCircleDiameter;
-  constexpr auto circleMargin = pcm::widgets::constants::kCircleMargin;
-
-  // Draw the indicator circle if this button is selected
   if (isChecked()) {
-    painter.setBrush(pcm::widgets::constants::kCircleColor);
-    painter.setPen(Qt::NoPen);
-    const QRect circleRect(circleMargin, (height() - circleDiameter) / 2,
-                           circleDiameter, circleDiameter);
-    painter.drawEllipse(circleRect);
+    const QPen pen{palette().color(QPalette::Highlight), 2};
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    // Draw rounded rect
+    const QRect rect{2, 2, width() - 4, height() - 4};
+    painter.drawRoundedRect(rect,  10, 10);
   }
 
   // Text
@@ -39,17 +37,15 @@ void TabButton::paintEvent(QPaintEvent *event) {
     painter.setPen(isChecked() ? palette().color(QPalette::Highlight)
                                : palette().color(QPalette::WindowText));
 
-    constexpr auto textX = circleDiameter + 2 * circleMargin;
+    constexpr auto textX = 10;
     const QRect textRect(textX, 0, width() - textX, height());
-    painter.drawText(textRect, Qt::AlignCenter, mText);
+    painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mText);
   }
 }
 
 QSize TabButton::sizeHint() const {
   const QFontMetrics fm(font());
-  constexpr auto circleDiameter = pcm::widgets::constants::kCircleDiameter;
-  constexpr auto circleMargin = pcm::widgets::constants::kCircleMargin;
-  const int w = fm.horizontalAdvance(mText) + circleDiameter + 3 * circleMargin;
+  const int w = fm.horizontalAdvance(mText);
   const int h = fm.height() + 4; // some padding at top and bottom
   return {w, h};
 }

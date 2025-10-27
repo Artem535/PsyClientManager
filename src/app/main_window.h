@@ -7,6 +7,8 @@
 #include "tab_button.h"
 
 #include <QMainWindow>
+#include <QLabel>
+
 #include <memory>
 
 QT_BEGIN_NAMESPACE
@@ -101,7 +103,7 @@ private:
   /**
    * @brief Initializes default UI style (colors, fonts, etc.).
    */
-  void initDefaultStyle();
+  void initDefaultStyle() const;
 
   /**
    * @brief Highlights the currently active navigation button.
