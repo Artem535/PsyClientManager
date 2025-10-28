@@ -4,9 +4,10 @@
 namespace pcm::database {
 
 Database::Database(const pcm::config::Config &conf) {
-  plog::init(plog::verbose, "database.log");
-
   const auto db_pth = conf.db_conf.value_.db_pth;
+
+  plog::init(plog::verbose, (db_pth.toString() + "/database.log").c_str());
+
   bool it_first_init = false;
   if (auto dir = Poco::File(db_pth); !dir.exists()) {
     dir.createDirectories();
@@ -16,14 +17,10 @@ Database::Database(const pcm::config::Config &conf) {
   auto options = obx::Options(create_obx_model());
   options.directory(db_pth.toString());
 
-  m_store = std::make_unique<obx::Store>(options);
-  m_events_box = std::make_unique<obx::Box<ObxEvent>>(*m_store);
-  m_client_box = std::make_unique<obx::Box<ObxClient>>(*m_store);
-  m_payment_status_box = std::make_unique<obx::Box<ObxPaymentStatus>>(*m_store);
-  m_event_status_box = std::make_unique<obx::Box<ObxEventStatus>>(*m_store);
-  m_event_client_box = std::make_unique<obx::Box<ObxEventClient>>(*m_store);
+  mDb = std::make_unique<duckdb::DuckDB>(db_pth.toString() + "/database.db");
 
   if (it_first_init) {
+    init_tables();
     init_payment_status_table();
     init_event_status_table();
     add_demo_data();
@@ -82,15 +79,28 @@ void Database::add_demo_data() {
   m_client_box->put(ObxClient{
       .name = "John", .last_name = "Doe", .additional_info = "Some add info"});
 }
+void Database::init_tables() {
+  auto connection = duckdb::Connection(*mDb);
+  if (const auto result = connection.Query(constance::kCreateTables);
+      result->HasError()) {
+    PLOGE << "Error| Create tables: " << result->GetError();
+  }
+}
 
 void Database::init_payment_status_table() {
-  for (const auto &status : constance::payment_statuses)
-    m_payment_status_box->put(status);
+  auto connection = duckdb::Connection(*mDb);
+  if (const auto result = connection.Query(constance::kPaymentStatus);
+      result->HasError()) {
+    PLOGE << "Error| Insert payment status: " << result->GetError();
+  }
 }
 
 void Database::init_event_status_table() {
-  for (const auto &status : constance::event_statuses)
-    m_event_status_box->put(status);
+  auto connection = duckdb::Connection(*mDb);
+  if (const auto result = connection.Query(constance::kEventStatus);
+      result->HasError()) {
+    PLOGE << "Error| Insert event status: " << result->GetError();
+  }
 }
 
 std::vector<obx_id> Database::get_event_ids(const int64_t date) {

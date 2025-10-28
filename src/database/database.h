@@ -18,6 +18,8 @@
 #include <Poco/File.h>
 #include <Poco/Timestamp.h>
 #include <plog/Log.h>
+#include <duckdb.hpp>
+
 
 namespace pcm::database {
 
@@ -48,9 +50,12 @@ public:
 
 private:
   void add_demo_data();
+  void init_tables();
   void init_payment_status_table();
   void init_event_status_table();
 
+
+  std::unique_ptr<duckdb::DuckDB> mDb;
   std::unique_ptr<obx::Store> m_store;
   std::unique_ptr<obx::Box<ObxEvent>> m_events_box;
   std::unique_ptr<obx::Box<ObxClient>> m_client_box;
