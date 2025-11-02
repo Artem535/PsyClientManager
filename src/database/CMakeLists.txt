@@ -18,6 +18,8 @@ add_library(${TARGET_NAME} STATIC
         constants.hpp
         scheme.obx.cpp
         datetime.hpp
+        schema.hpp
+        db_utils.hpp
 )
 
 # Include directories
