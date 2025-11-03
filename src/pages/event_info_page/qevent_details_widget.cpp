@@ -17,6 +17,7 @@ QEventDetailsWidget::QEventDetailsWidget(QWidget *parent)
 
 QEventDetailsWidget::~QEventDetailsWidget() = default;
 
+
 void QEventDetailsWidget::initUi() {}
 
 void QEventDetailsWidget::initConnections() {
@@ -70,7 +71,7 @@ void QEventDetailsWidget::initDefaultTimes() const {
   mUI->mTimeTo->setDateTime(crtDateTime.addSecs(3600)); // +1 hour
 }
 
-void QEventDetailsWidget::setClientList(const QHash<obx_id, QString> &clients) {
+void QEventDetailsWidget::setClientList(const QHash<int64_t, QString> &clients) {
   mClientList = clients;
   mUI->mClientComboBox->clear();
   for (auto it = mClientList.constBegin(); it != mClientList.constEnd(); ++it) {
@@ -79,7 +80,7 @@ void QEventDetailsWidget::setClientList(const QHash<obx_id, QString> &clients) {
 }
 
 void QEventDetailsWidget::loadEvent(QEventItem *event,
-                                    const std::optional<obx_id> clientId) {
+                                    const std::optional<int64_t> clientId) {
   if (!event)
     return;
 
@@ -155,7 +156,7 @@ void QEventDetailsWidget::onApplyClicked() {
   // user data
   if (mUI->mEventType->isChecked()) {
     const auto var = mUI->mClientComboBox->currentData();
-    const obx_id selectedClientId = var.toULongLong();
+    const int64_t selectedClientId = var.toLongLong();
     emit provideClientEventPairSave(selectedClientId, mCurrentEvent->getId());
     qCDebug(logEventDetails)
         << "Selected client ID for event:" << selectedClientId;
@@ -245,6 +246,6 @@ ObxEvent QEventDetailsWidget::collectEventData() const {
   event.end_date = QDateTime(mUI->mEventDate->date(), mUI->mTimeTo->time())
                        .toMSecsSinceEpoch();
   event.is_work_event = mUI->mEventType->isChecked();
-  event.duration = (event.end_date - event.start_date) / 1000; // in seconds
+  event.duration = (event.end_date.value_or(0) - event.start_date.value_or(0)) / 1000; // in seconds
   return event;
 }

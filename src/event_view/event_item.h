@@ -13,7 +13,7 @@
 #include <cmath>
 
 #include "constants.hpp"
-#include "scheme.obx.hpp"
+#include "schema.hpp"
 /**
  * @brief The EventItem class represents a graphical item for displaying an
  * event in a timeline or calendar view.

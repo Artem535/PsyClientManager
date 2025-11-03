@@ -1,7 +1,7 @@
 #include "event_view.h"
 
 #include "qtimeline_model.h"
-#include "scheme.obx.hpp"
+#include "schema.hpp"
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 

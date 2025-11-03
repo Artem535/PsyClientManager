@@ -22,9 +22,10 @@ QEventItem::QEventItem(const unsigned long id, const QString &title,
 void QEventItem::updateFromEvent(const ObxEvent &event) {
   mIsWorkItem = event.is_work_event;
   mSize = QSize(100, 100);
-  mTitle = QString::fromStdString(event.name);
-  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date);
-  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date);
+
+  mTitle = QString::fromStdString(event.name.value_or(""));
+  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
+  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
   mId = event.id;
 
   qCInfo(logPcmEventItem) << "QEventItem::QEventItem"
@@ -43,9 +44,9 @@ void QEventItem::updateFromEvent(const ObxEvent &event) {
 QEventItem::QEventItem(const ObxEvent &event) {
   mIsWorkItem = event.is_work_event;
   mSize = QSize(100, 100);
-  mTitle = QString::fromStdString(event.name);
-  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date);
-  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date);
+  mTitle = QString::fromStdString(event.name.value_or("Undefined"));
+  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
+  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
   mId = event.id;
 
   qCInfo(logPcmEventItem) << "QEventItem::QEventItem"
@@ -61,12 +62,14 @@ QEventItem::QEventItem(const ObxEvent &event) {
 }
 
 ObxEvent QEventItem::toEvent() const {
-  return {.id = mId,
-          .name = mTitle.toStdString(),
-          .is_work_event = mIsWorkItem,
-          .start_date = mStartTime.toMSecsSinceEpoch(),
-          .end_date = mEndTime.toMSecsSinceEpoch(),
-          .duration = mDuration};
+  ObxEvent event;
+  event.id = mId;
+  event.name = mTitle.toStdString();
+  event.is_work_event = mIsWorkItem;
+  event.start_date = mStartTime.toMSecsSinceEpoch();
+  event.end_date = mEndTime.toMSecsSinceEpoch();
+  event.duration = mDuration;
+  return event;
 }
 
 QRectF QEventItem::boundingRect() const {

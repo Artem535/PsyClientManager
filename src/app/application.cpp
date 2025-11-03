@@ -32,9 +32,9 @@ void Application::fillClientComboBox(QComboBox *box) const {
   const auto clients = mDb->get_clients();
   for (const auto &client : clients) {
     QString title{"%1 %2"};
-    const auto name = QString::fromStdString(client->name);
-    const auto lastname = QString::fromStdString(client->last_name);
-    title = title.arg(name).arg(lastname);
+    const auto name = QString::fromStdString(client->name.value_or("Undefined"));
+    const auto lastname = QString::fromStdString(client->last_name.value_or("Undefined"));
+    title = title.arg(name, lastname);
     const auto var = QVariant::fromValue(client->id);
     box->addItem(title, var);
   }

@@ -77,15 +77,18 @@ void QClientDelegate::drawFirstColumn(QPainter *painter,
   painter->setFont(font);
 
   // ---- Name + Surname ----
-  const QString fullName = QString("%1 %2").arg(client.name, client.last_name);
+  const auto name = client.name.value_or("Undefined");
+  const auto last_name = client.last_name.value_or("Undefined");
+  const QString fullName = QString("%1 %2").arg(name, last_name);
   painter->drawText(firstRect, Qt::AlignLeft | Qt::AlignTop, fullName);
 
   // ---- Age ----
   font.setBold(false);
   painter->setFont(font);
 
+  const auto birthday_date_ms = client.birthday_date.value_or(0);
   const QDate birthDate =
-      QDateTime::fromSecsSinceEpoch(client.birthday_date).date();
+      QDateTime::fromSecsSinceEpoch(birthday_date_ms).date();
   const int age = countAge(birthDate);
   const QString ageStr = QString("%1 лет").arg(age);
 
@@ -119,15 +122,16 @@ void QClientDelegate::drawContacts(QPainter *painter,
   painter->setFont(font);
 
   // ---- Email ----
-  const QString email = client.email.empty()
-                            ? QString("Нет")
-                            : QString::fromStdString(client.email);
+  const auto email_std = client.email.value_or("");
+  const QString email =
+      email_std.empty() ? QString("Нет") : QString::fromStdString(email_std);
   painter->drawText(contactsRect, Qt::AlignLeft | Qt::AlignTop, email);
 
   // ---- Phone ----
-  const QString phone = client.phone_number.empty()
-                            ? QString("Нет")
-                            : QString::fromStdString(client.phone_number);
+  const auto phone_std = client.phone_number.value_or("");
+  const QString phone =
+      phone_std.empty() ? QString("Нет") : QString::fromStdString(phone_std);
+
   const int halfH = cardHeight / 2;
   const QRect phoneRect = contactsRect.adjusted(0, halfH, 0, 0);
   painter->drawText(phoneRect, Qt::AlignLeft | Qt::AlignTop, phone);
@@ -201,8 +205,8 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
 
 // ---------------- Fifth column (Action buttons) ----------------
 void QClientDelegate::drawActions(QPainter *painter,
-                                         const QStyleOptionViewItem &option,
-                                         const ObxClient & /*client*/) {
+                                  const QStyleOptionViewItem &option,
+                                  const ObxClient & /*client*/) {
   const auto [btn1Rect, btn2Rect] = calculateButtonRects(option);
 
   painter->setBrush(QColor(200, 200, 200));

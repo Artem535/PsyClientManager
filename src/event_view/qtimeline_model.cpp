@@ -39,15 +39,15 @@ QVariant QTimelineModel::data(const QModelIndex &index, int role) const {
   case IdRole:
     return static_cast<qint64>(event.id);
   case TitleRole:
-    return QString::fromStdString(event.name);
+    return QString::fromStdString(event.name.value_or("Undefined"));
   case DescriptionRole:
-    return QString::fromStdString(event.description);
+    return QString::fromStdString(event.description.value_or("Undefined"));
   case IsWorkRole:
     return event.is_work_event;
   case StartDateTimeRole:
-    return QDateTime::fromMSecsSinceEpoch(event.start_date);
+    return QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
   case EndDateTimeRole:
-    return QDateTime::fromMSecsSinceEpoch(event.end_date);
+    return QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
   case DurationRole:
     return QVariant::fromValue(event.duration);
   case EventDataRole:

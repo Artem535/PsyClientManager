@@ -14,16 +14,16 @@ QClient::QClient(const ObxClient &client) { update(client); }
 // ---- Update from database ----
 void QClient::update(const ObxClient &client) {
   setId(client.id);
-  setName(QString::fromStdString(client.name));
-  setLastName(QString::fromStdString(client.last_name));
-  setPhoneNumber(QString::fromStdString(client.phone_number));
-  setEmail(QString::fromStdString(client.email));
-  setBirthDate(QDateTime::fromSecsSinceEpoch(client.birthday_date).date());
-  setCountry(QString::fromStdString(client.country));
-  setCity(QString::fromStdString(client.city));
-  setTimezone(QString::fromStdString(client.time_zone));
-  setAdditionalInfo(QString::fromStdString(client.additional_info));
-  setDiagnosis(QString::fromStdString(client.diagnosis));
+  setName(QString::fromStdString(client.name != std::nullopt ? client.name.value() : ""));
+  setLastName(QString::fromStdString(client.last_name != std::nullopt ? client.last_name.value() : ""));
+  setPhoneNumber(QString::fromStdString(client.phone_number != std::nullopt ? client.phone_number.value() : ""));
+  setEmail(QString::fromStdString(client.email != std::nullopt ? client.email.value() : ""));
+  setBirthDate(client.birthday_date != std::nullopt ? QDateTime::fromMSecsSinceEpoch(client.birthday_date.value()).date() : QDate());
+  setCountry(QString::fromStdString(client.country != std::nullopt ? client.country.value() : ""));
+  setCity(QString::fromStdString(client.city != std::nullopt ? client.city.value() : ""));
+  setTimezone(QString::fromStdString(client.time_zone != std::nullopt ? client.time_zone.value() : ""));
+  setAdditionalInfo(QString::fromStdString(client.additional_info != std::nullopt ? client.additional_info.value() : ""));
+  setDiagnosis(QString::fromStdString(client.diagnosis != std::nullopt ? client.diagnosis.value() : ""));
 }
 
 void QClient::clear() {

@@ -40,8 +40,8 @@ obx_id QTimelineWidget::addEvent(const ObxEvent &event) const {
     return 0;
   }
 
-  qCDebug(logTimelineWidget)
-      << "QTimelineWidget::addEvent | Adding event:" << event.name.c_str();
+  qCDebug(logTimelineWidget) << "QTimelineWidget::addEvent | Adding event:"
+                             << QString::fromStdString(event.name.value_or(""));
 
   return mModel->addEvent(event);
 }

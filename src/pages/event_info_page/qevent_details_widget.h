@@ -30,7 +30,7 @@ public:
    * @param event Pointer to the event.
    */
   void loadEvent(QEventItem *event,
-                 std::optional<obx_id> clientId = std::nullopt);
+                 std::optional<int64_t> clientId = std::nullopt);
 
   /**
    * @brief Clears the form and switches to "create new event" mode.
@@ -61,10 +61,10 @@ public:
    * @param clients A hash map where key is client ID and value is client
    * display name.
    */
-  void setClientList(const QHash<obx_id, QString> &clients);
+  void setClientList(const QHash<int64_t, QString> &clients);
 
 signals:
-  void provideClientEventPairSave(obx_id clientId, obx_id eventId);
+  void provideClientEventPairSave(int64_t clientId, int64_t eventId);
 
   /**
    * @brief Signal emitted when user requests to save the event.
@@ -108,14 +108,14 @@ private:
 
   // --- Validation & Data Collection ---
   bool validateInput();
-  ObxEvent collectEventData() const;
+  [[nodiscard]] ObxEvent collectEventData() const;
 
   // --- UI ---
   std::unique_ptr<Ui::EventDetails> mUI;
 
   // --- Data ---
   QPointer<QEventItem> mCurrentEvent;
-  QHash<obx_id, QString> mClientList;
+  QHash<int64_t, QString> mClientList;
   bool mInEditMode = false;
   bool mCreatingNewEvent = false;
 };
