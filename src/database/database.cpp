@@ -25,7 +25,7 @@ Database::Database(const config::Config &conf) {
 
 // --- Event ---
 
-obx_id Database::add_event(const ObxEvent &event) {
+int64_t Database::add_event(const ObxEvent &event) {
   duckdb::Connection conn(*mDb);
   auto result =
       conn.Query(R"(
@@ -39,8 +39,8 @@ obx_id Database::add_event(const ObxEvent &event) {
                  db_utils::toDuckValue(event.name),
                  db_utils::toDuckValue(event.description), event.is_work_event,
                  event.event_stat_id, event.payment_stat_id,
-                 db_utils::toDuckTimestamp(event.start_date),
-                 db_utils::toDuckTimestamp(event.end_date),
+                 db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+                 db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
                  db_utils::toDuckValue(event.duration));
 
   if (result->HasError()) {
@@ -54,10 +54,10 @@ obx_id Database::add_event(const ObxEvent &event) {
     return 0;
   }
 
-  return static_cast<obx_id>(chunk->GetValue(0, 0).GetValue<int32_t>());
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
 }
 
-bool Database::remove_event(const obx_id &id) {
+bool Database::remove_event(const int64_t &id) {
   if (id <= 0) {
     PLOG_WARNING << "Attempt to remove event with invalid id: " << id;
     return false;
@@ -74,7 +74,7 @@ bool Database::remove_event(const obx_id &id) {
   return true;
 }
 
-std::unique_ptr<ObxEvent> Database::get_event(const obx_id &id) {
+std::unique_ptr<ObxEvent> Database::get_event(const int64_t &id) {
   if (id <= 0) {
     PLOG_WARNING << "Attempt to get event with invalid id: " << id;
     return nullptr;
@@ -99,7 +99,7 @@ std::unique_ptr<ObxEvent> Database::get_event(const obx_id &id) {
 
 // --- Client ---
 
-obx_id Database::add_client(const ObxClient &client) {
+int64_t Database::add_client(const ObxClient &client) {
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(
       R"(
@@ -131,10 +131,10 @@ obx_id Database::add_client(const ObxClient &client) {
     return 0;
   }
 
-  return static_cast<obx_id>(chunk->GetValue(0, 0).GetValue<int32_t>());
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
 }
 
-std::unique_ptr<ObxClient> Database::get_client(const obx_id &id) {
+std::unique_ptr<ObxClient> Database::get_client(const int64_t &id) {
   if (id <= 0) {
     PLOG_WARNING << "Attempt to get client with invalid id: " << id;
     return nullptr;
@@ -175,7 +175,7 @@ std::vector<std::unique_ptr<ObxClient>> Database::get_clients() {
   return clients;
 }
 
-std::vector<obx_id> Database::get_client_ids() {
+std::vector<int64_t> Database::get_client_ids() {
   duckdb::Connection conn(*mDb);
   auto result = conn.Query("SELECT id FROM Client");
   if (result->HasError()) {
@@ -183,17 +183,17 @@ std::vector<obx_id> Database::get_client_ids() {
     return {};
   }
 
-  std::vector<obx_id> ids;
+  std::vector<int64_t> ids;
   while (auto chunk = result->Fetch()) {
     for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
       ids.push_back(
-          static_cast<obx_id>(chunk->GetValue(0, i).GetValue<int32_t>()));
+          static_cast<int64_t>(chunk->GetValue(0, i).GetValue<int32_t>()));
     }
   }
   return ids;
 }
 
-bool Database::remove_client(const obx_id &id) {
+bool Database::remove_client(const int64_t &id) {
   if (id <= 0) {
     PLOG_WARNING << "Attempt to remove client with invalid id: " << id;
     return false;
@@ -212,8 +212,8 @@ bool Database::remove_client(const obx_id &id) {
 
 // --- EventClient ---
 
-obx_id Database::add_event_client(const obx_id &event_id,
-                                  const obx_id &client_id) {
+int64_t Database::add_event_client(const int64_t &event_id,
+                                  const int64_t &client_id) {
   if (event_id <= 0 || client_id <= 0) {
     PLOG_WARNING << "Invalid IDs for EventClient: event_id=" << event_id
                  << ", client_id=" << client_id;
@@ -242,12 +242,12 @@ obx_id Database::add_event_client(const obx_id &event_id,
     return 0;
   }
 
-  return static_cast<obx_id>(chunk->GetValue(0, 0).GetValue<int32_t>());
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
 }
 
 // --- Events by date / conflict ---
 
-// std::vector<obx_id> Database::get_event_ids(const int64_t date_microseconds) {
+// std::vector<int64_t> Database::get_event_ids(const int64_t date_microseconds) {
 //   // date_microseconds — уже в микросекундах (как у вас в ObxEvent)
 //   duckdb::Connection conn(*mDb);
 //
@@ -262,11 +262,11 @@ obx_id Database::add_event_client(const obx_id &event_id,
 //     return {};
 //   }
 //
-//   std::vector<obx_id> ids;
+//   std::vector<int64_t> ids;
 //   while (auto chunk = result->Fetch()) {
 //     for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
 //       ids.push_back(
-//           static_cast<obx_id>(chunk->GetValue(0, i).GetValue<int32_t>()));
+//           static_cast<int64_t>(chunk->GetValue(0, i).GetValue<int32_t>()));
 //     }
 //   }
 //   return ids;
@@ -296,8 +296,8 @@ bool Database::has_conflict(const ObxEvent &event) {
 }
 
 std::vector<ObxEvent>
-Database::get_day_events(const int64_t &date_microseconds) {
-  const auto[start_day, end_day] = get_time_range(date_microseconds);
+Database::get_day_events(const int64_t &date_ms) {
+  const auto[start_day, end_day] = get_time_range(date_ms);
 
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(
@@ -305,8 +305,8 @@ Database::get_day_events(const int64_t &date_microseconds) {
         SELECT * FROM Event
         WHERE start_date <= $1 AND end_date >= $2
     )",
-      db_utils::toDuckTimestamp(std::make_optional(end_day)),
-      db_utils::toDuckTimestamp(std::make_optional(start_day)));
+      db_utils::toDuckTimestamp(std::make_optional(end_day * 1000)),
+      db_utils::toDuckTimestamp(std::make_optional(start_day * 1000)));
 
   if (result->HasError()) {
     PLOG_ERROR << "Failed to get day events: " << result->GetError();
@@ -322,7 +322,7 @@ Database::get_day_events(const int64_t &date_microseconds) {
   return events;
 }
 
-ObxClient Database::get_client_by_event(const obx_id &event_id) {
+ObxClient Database::get_client_by_event(const int64_t &event_id) {
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(R"(
         SELECT c.*

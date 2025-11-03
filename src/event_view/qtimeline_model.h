@@ -29,7 +29,6 @@ public:
   explicit QTimelineModel(const std::shared_ptr<pcm::database::Database> &db,
                           QObject *parent = nullptr);
 
-  // Обязательные методы модели
   QModelIndex index(int row, int column,
                     const QModelIndex &parent) const override;
   QModelIndex parent(const QModelIndex &child) const override;
@@ -40,11 +39,11 @@ public:
 
   // API
   void loadEventsForDay(const QDate &date);
-  obx_id addEvent(const ObxEvent &event);
-  void removeEvent(obx_id id);
+  int64_t addEvent(const ObxEvent &event);
+  void removeEvent(int64_t id);
   void updateEvent(const ObxEvent &event);
 
-  QModelIndex indexForEventId(obx_id id) const;
+  QModelIndex indexForEventId(int64_t id) const;
 
 signals:
   void eventsLoaded();

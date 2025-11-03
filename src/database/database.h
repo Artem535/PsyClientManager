@@ -4,7 +4,6 @@
 #define PLOG_NO_LOG_MACROS
 
 #include <memory>
-#include <objectbox.h>
 #include <vector>
 
 #include "config.h"
@@ -24,24 +23,24 @@ class Database {
 public:
   explicit Database(const pcm::config::Config &conf);
 
-  obx_id add_event(const ObxEvent &event);
-  std::unique_ptr<ObxEvent> get_event(const obx_id &id);
-  bool remove_event(const obx_id &id);
+  int64_t add_event(const ObxEvent &event);
+  std::unique_ptr<ObxEvent> get_event(const int64_t &id);
+  bool remove_event(const int64_t &id);
 
-  obx_id add_client(const ObxClient &client);
-  bool remove_client(const obx_id &id);
-  std::unique_ptr<ObxClient> get_client(const obx_id &id);
+  int64_t add_client(const ObxClient &client);
+  bool remove_client(const int64_t &id);
+  std::unique_ptr<ObxClient> get_client(const int64_t &id);
   std::vector<std::unique_ptr<ObxClient>> get_clients();
-  std::vector<obx_id> get_client_ids();
+  std::vector<int64_t> get_client_ids();
 
-  obx_id add_event_client(const obx_id &event_id, const obx_id &client_id);
+  int64_t add_event_client(const int64_t &event_id, const int64_t &client_id);
 
-  // std::vector<obx_id> get_event_ids(int64_t date);
+  // std::vector<int64_t> get_event_ids(int64_t date);
 
   bool has_conflict(const ObxEvent &event);
-  std::vector<ObxEvent> get_day_events(const int64_t &date_microseconds);
+  std::vector<ObxEvent> get_day_events(const int64_t &date_ms);
 
-  ObxClient get_client_by_event(const obx_id &event_id);
+  ObxClient get_client_by_event(const int64_t &event_id);
 
 private:
   void add_demo_data();

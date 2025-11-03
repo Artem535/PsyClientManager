@@ -24,7 +24,7 @@ QVariant QClientModel::data(const QModelIndex &index, int role) const {
     return QVariant();
   }
 
-  const obx_id client_id{m_client_ids.at(index.row())};
+  const int64_t client_id{m_client_ids.at(index.row())};
   const auto client = m_db->get_client(client_id);
 
   QVariant result;

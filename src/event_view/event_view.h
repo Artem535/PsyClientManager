@@ -42,7 +42,7 @@ private:
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
   qreal mPixelPerMin = pcm::widgets::constants::kPixelPerMin;
-  QMap<obx_id, QEventItem *> mSceneItems;
+  QMap<int64_t, QEventItem *> mSceneItems;
 
   void drawBackground(QPainter *painter, const QRectF &rect) override;
   void updateSceneSize();

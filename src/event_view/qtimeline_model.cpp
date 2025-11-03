@@ -83,7 +83,7 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   emit eventsLoaded();
 }
 
-obx_id QTimelineModel::addEvent(const ObxEvent &event) {
+int64_t QTimelineModel::addEvent(const ObxEvent &event) {
   const int row = mEvents.size();
   beginInsertRows({}, row, row);
   ObxEvent newEvent = event;
@@ -93,7 +93,7 @@ obx_id QTimelineModel::addEvent(const ObxEvent &event) {
   return newEvent.id;
 }
 
-void QTimelineModel::removeEvent(obx_id id) {
+void QTimelineModel::removeEvent(int64_t id) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
       beginRemoveRows({}, i, i);
@@ -118,7 +118,7 @@ void QTimelineModel::updateEvent(const ObxEvent &event) {
   }
 }
 
-QModelIndex QTimelineModel::indexForEventId(obx_id id) const {
+QModelIndex QTimelineModel::indexForEventId(int64_t id) const {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
       return index(i, 0, QModelIndex());

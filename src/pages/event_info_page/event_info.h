@@ -18,13 +18,13 @@ public:
   ~QEventInfoPage() override;
 
 signals:
-  void provideClientEventPairSave(obx_id clientId, obx_id eventId);
+  void provideClientEventPairSave(int64_t clientId, int64_t eventId);
   void provideFillClientComboBox(QComboBox *comboBox);
-  void provideClientByEventId(obx_id eventId);
-  void clientResolved(obx_id clientId);
+  void provideClientByEventId(int64_t eventId);
+  void clientResolved(int64_t clientId);
 
 public slots:
-  void onClientResolved(obx_id clientId);
+  void onClientResolved(int64_t clientId);
 
 private slots:
   void onCalendarClicked(const QDate &date);
@@ -40,5 +40,5 @@ private:
   QTimelineWidget *mTimelineWidget = nullptr;
   QEventDetailsWidget *mEventDetailsWidget = nullptr;
 
-  obx_id mClientId = 0;
+  int64_t mClientId = 0;
 };

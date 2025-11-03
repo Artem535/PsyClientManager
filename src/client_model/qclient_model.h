@@ -31,5 +31,5 @@ public:
 
 private:
   std::shared_ptr<pcm::database::Database> m_db;
-  std::vector<obx_id> m_client_ids;
+  std::vector<int64_t> m_client_ids;
 };

@@ -40,8 +40,8 @@ void Application::fillClientComboBox(QComboBox *box) const {
   }
 }
 
-void Application::saveClientEventPair(const obx_id clientId,
-                                      const obx_id eventId) const {
+void Application::saveClientEventPair(const int64_t clientId,
+                                      const int64_t eventId) const {
   qCDebug(logApplication) << "Application::saveClientEventPair| Client id:"
                           << clientId << " Event id:" << eventId;
 
@@ -59,7 +59,7 @@ void Application::connectSignals() {
     const auto page = dynamic_cast<QEventInfoPage *>(widget);
     connect(page, &QEventInfoPage::provideFillClientComboBox, this,
             &Application::fillClientComboBox);
-    connect(page, &QEventInfoPage::provideClientByEventId, [page, this](obx_id eventId) {
+    connect(page, &QEventInfoPage::provideClientByEventId, [page, this](int64_t eventId) {
       const auto client = mDb->get_client_by_event(eventId);
       emit page->clientResolved(client.id);
     });

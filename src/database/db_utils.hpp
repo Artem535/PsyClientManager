@@ -8,7 +8,6 @@
 
 namespace pcm::database::db_utils {
 
-// --- Чтение из DuckDB Value -> C++ типы ---
 
 inline std::optional<std::string> toOptionalString(const duckdb::Value &val) {
   if (val.IsNull()) return std::nullopt;
@@ -32,6 +31,12 @@ inline std::optional<std::int64_t> toOptionalTimestampMicros(const duckdb::Value
   if (val.IsNull()) return std::nullopt;
   auto ts = val.GetValue<duckdb::timestamp_t>();
   return duckdb::Timestamp::GetEpochMicroSeconds(ts);
+}
+
+inline std::optional<std::int64_t> toOptionalTimestampMs(const duckdb::Value &val) {
+  if (val.IsNull()) return std::nullopt;
+  auto ts = val.GetValue<duckdb::timestamp_t>();
+  return duckdb::Timestamp::GetEpochMicroSeconds(ts) / 1000;
 }
 
 inline duckdb::Value toDuckValue(const std::optional<std::string>& opt) {

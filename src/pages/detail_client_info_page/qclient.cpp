@@ -42,7 +42,7 @@ void QClient::clear() {
 }
 
 // ---- Getters ----
-obx_id QClient::getId() const { return mId; }
+int64_t QClient::getId() const { return mId; }
 QString QClient::getName() const { return mName; }
 QString QClient::getLastName() const { return mLastName; }
 QString QClient::getPhoneNumber() const { return mPhoneNumber; }
@@ -76,7 +76,7 @@ void QClient::setTimezone(const QString &timezone) { mTimezone = timezone; }
 void QClient::setAdditionalInfo(const QString &info) { mAdditionalInfo = info; }
 void QClient::setDiagnosis(const QString &diagnosis) { mDiagnosis = diagnosis; }
 
-void QClient::setId(const obx_id id) { mId = id; }
+void QClient::setId(const int64_t id) { mId = id; }
 void QClient::setIsActive(const bool isActive) { mIsActive = isActive; }
 
 // ---- Convert to database entity ----

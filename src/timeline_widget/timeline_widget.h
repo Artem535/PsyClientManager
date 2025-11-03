@@ -24,7 +24,7 @@ public:
 public slots:
     void onSelectedDayChanged(const QDate &date) const;
 
-    [[nodiscard]] obx_id addEvent(const ObxEvent &event) const;
+    [[nodiscard]] int64_t addEvent(const ObxEvent &event) const;
 
     void updateScene();
 

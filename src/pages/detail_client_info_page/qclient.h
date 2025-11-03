@@ -19,7 +19,7 @@ public:
   void clear();
 
   // ---- Getters ----
-  obx_id getId() const;
+  int64_t getId() const;
   QString getName() const;
   QString getLastName() const;
   QString getPhoneNumber() const;
@@ -45,14 +45,14 @@ public:
   void setTimezone(const QString& timezone);
   void setAdditionalInfo(const QString& info);
   void setDiagnosis(const QString& diagnosis);
-  void setId(const obx_id id);
+  void setId(const int64_t id);
   void setIsActive(const bool isActive);
 
   // ---- Others ----
   [[nodiscard]] ObxClient toObxClient() const;
 
 private:
-  obx_id mId = 0;
+  int64_t mId = 0;
   QString mName;
   QString mLastName;
   QString mPhoneNumber;

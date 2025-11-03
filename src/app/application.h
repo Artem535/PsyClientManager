@@ -24,7 +24,7 @@ public:
 private slots:
   void saveClient(const ObxClient &client) const;
   void fillClientComboBox(QComboBox *box) const;
-  void saveClientEventPair(const obx_id clientId, const obx_id eventId) const;
+  void saveClientEventPair(const int64_t clientId, const int64_t eventId) const;
 
 private:
   std::unique_ptr<MainWindow> mMainWindow;

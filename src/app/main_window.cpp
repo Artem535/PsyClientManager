@@ -90,7 +90,7 @@ void MainWindow::connectSignals() {
 
   // Forward the client-event pair save signal from event info to main window
   connect(eventInfoPage, &QEventInfoPage::provideClientEventPairSave,
-          [this](const obx_id clientId, const obx_id eventId) {
+          [this](const int64_t clientId, const int64_t eventId) {
             emit provideClientEventPairSave(clientId, eventId);
           });
 }

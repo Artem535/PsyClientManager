@@ -71,7 +71,7 @@ void QEventView::onRowsRemoved(const QModelIndex &parent, int first, int last) {
       continue;
 
     QVariant var = index.data(QTimelineModel::IdRole);
-    obx_id eventId = var.value<qint64>();
+    int64_t eventId = var.value<int64_t>();
 
     auto it = mSceneItems.find(eventId);
     if (it != mSceneItems.end()) {
@@ -96,7 +96,7 @@ void QEventView::onDataChanged(const QModelIndex &topLeft,
       continue;
 
     QVariant idVar = index.data(QTimelineModel::IdRole);
-    obx_id eventId = idVar.value<qint64>();
+    int64_t eventId = idVar.value<qint64>();
 
     auto it = mSceneItems.find(eventId);
     if (it != mSceneItems.end()) {

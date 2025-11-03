@@ -34,7 +34,7 @@ void QTimelineWidget::onSelectedDayChanged(const QDate &date) const {
   mModel->loadEventsForDay(date);
 }
 
-obx_id QTimelineWidget::addEvent(const ObxEvent &event) const {
+int64_t QTimelineWidget::addEvent(const ObxEvent &event) const {
   if (!mModel) {
     qCWarning(logTimelineWidget) << "QTimelineWidget::addEvent | Model is null";
     return 0;

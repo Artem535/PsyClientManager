@@ -26,7 +26,7 @@ inline std::ostream &print_optional(std::ostream &os,
 // --- ObxPaymentStatus ---
 struct ObxPaymentStatus {
   std::int64_t id = -1;
-  std::string name = "";
+  std::string name;
   ObxPaymentStatus() = default;
   ObxPaymentStatus(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     auto id_val = chunk.GetValue(0, index);
@@ -42,7 +42,7 @@ inline std::ostream &operator<<(std::ostream &os, const ObxPaymentStatus &s) {
 // --- ObxEventStatus ---
 struct ObxEventStatus {
   std::int64_t id = -1;
-  std::string name = "";
+  std::string name;
   ObxEventStatus() = default;
   ObxEventStatus(const DataChunk &chunk, idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -75,7 +75,7 @@ struct ObxClient {
     additional_info = db_utils::toOptionalString(chunk.GetValue(3, index));
     diagnosis = db_utils::toOptionalString(chunk.GetValue(4, index));
     birthday_date =
-        db_utils::toOptionalTimestampMicros(chunk.GetValue(5, index));
+        db_utils::toOptionalTimestampMs(chunk.GetValue(5, index));
     email = db_utils::toOptionalString(chunk.GetValue(6, index));
     phone_number = db_utils::toOptionalString(chunk.GetValue(7, index));
     client_active = db_utils::toBool(chunk.GetValue(8, index));
@@ -124,8 +124,8 @@ struct ObxEvent {
     is_work_event = db_utils::toBool(chunk.GetValue(3, index));
     event_stat_id = db_utils::toInt32AsInt64(chunk.GetValue(4, index));
     payment_stat_id = db_utils::toInt32AsInt64(chunk.GetValue(5, index));
-    start_date = db_utils::toOptionalTimestampMicros(chunk.GetValue(6, index));
-    end_date = db_utils::toOptionalTimestampMicros(chunk.GetValue(7, index));
+    start_date = db_utils::toOptionalTimestampMs(chunk.GetValue(6, index));
+    end_date = db_utils::toOptionalTimestampMs(chunk.GetValue(7, index));
     duration = db_utils::toOptionalInt32AsInt64(chunk.GetValue(8, index));
   }
 };

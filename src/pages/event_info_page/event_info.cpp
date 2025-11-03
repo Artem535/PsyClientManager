@@ -40,7 +40,7 @@ void QEventInfoPage::connectSignals() {
   connect(mEventDetailsWidget, &QEventDetailsWidget::provideEditingCanceled,
           this, &QEventInfoPage::onEditingCanceled);
   connect(mEventDetailsWidget, &QEventDetailsWidget::provideClientEventPairSave,
-          [this](const obx_id clientId, const obx_id eventId) {
+          [this](const int64_t clientId, const int64_t eventId) {
             emit provideClientEventPairSave(clientId, eventId);
           });
 
@@ -69,7 +69,7 @@ void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
 
   qCDebug(logEventInfo) << "Selected event with ID:" << event->getId();
 
-  std::optional<obx_id> clientId{std::nullopt};
+  std::optional<int64_t> clientId{std::nullopt};
   if (event->isWorkItem()) {
     emit provideClientByEventId(event->getId());
     clientId = mClientId;
@@ -101,4 +101,4 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 }
 
 void QEventInfoPage::onEditingCanceled() {}
-void QEventInfoPage::onClientResolved(obx_id clientId) { mClientId = clientId; }
+void QEventInfoPage::onClientResolved(int64_t clientId) { mClientId = clientId; }

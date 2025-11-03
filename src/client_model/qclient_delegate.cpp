@@ -88,7 +88,7 @@ void QClientDelegate::drawFirstColumn(QPainter *painter,
 
   const auto birthday_date_ms = client.birthday_date.value_or(0);
   const QDate birthDate =
-      QDateTime::fromSecsSinceEpoch(birthday_date_ms).date();
+      QDateTime::fromMSecsSinceEpoch(birthday_date_ms).date();
   const int age = countAge(birthDate);
   const QString ageStr = QString("%1 лет").arg(age);
 

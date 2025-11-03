@@ -82,7 +82,7 @@ signals:
    * @param clientId ID of the client.
    * @param eventId ID of the event.
    */
-  void provideClientEventPairSave(const obx_id clientId, const obx_id eventId);
+  void provideClientEventPairSave(const int64_t clientId, const int64_t eventId);
 
 private:
   // Map of pages by type
