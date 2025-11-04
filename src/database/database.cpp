@@ -297,7 +297,7 @@ bool Database::has_conflict(const ObxEvent &event) {
 
 std::vector<ObxEvent>
 Database::get_day_events(const int64_t &date_ms) {
-  const auto[start_day, end_day] = get_time_range(date_ms);
+  const auto[start_day, end_day] = get_time_range(date_ms * 1000);
 
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(
@@ -305,8 +305,8 @@ Database::get_day_events(const int64_t &date_ms) {
         SELECT * FROM Event
         WHERE start_date <= $1 AND end_date >= $2
     )",
-      db_utils::toDuckTimestamp(std::make_optional(end_day * 1000)),
-      db_utils::toDuckTimestamp(std::make_optional(start_day * 1000)));
+      db_utils::toDuckTimestamp(std::make_optional(end_day)),
+      db_utils::toDuckTimestamp(std::make_optional(start_day)));
 
   if (result->HasError()) {
     PLOG_ERROR << "Failed to get day events: " << result->GetError();
