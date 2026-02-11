@@ -4,6 +4,13 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mUi(std::make_unique<Ui::MainWindow>()) {
   mUi->setupUi(this);
+  mUi->gridLayout->setColumnStretch(0, 0);
+  mUi->gridLayout->setColumnStretch(1, 1);
+  mUi->gridLayout->setRowStretch(0, 0);
+  mUi->gridLayout->setRowStretch(1, 1);
+  mPageCustomWidgetLayout = new QHBoxLayout(mUi->pageCustomWidgetHost);
+  mPageCustomWidgetLayout->setContentsMargins(0, 0, 0, 0);
+  mPageCustomWidgetLayout->setSpacing(0);
 
   // Create navigation buttons
   mBtnCalendar = new TabButton(tr(": NAV_CALENDAR"), this);
@@ -59,30 +66,22 @@ void MainWindow::connectSignals() {
       dynamic_cast<QEventInfoPage *>(mPages[Pages::eventInfo]);
 
   // Connect navigation buttons to switch pages
-  connect(mBtnCalendar, &QPushButton::clicked, [&]() {
-    mUi->stackedWidget->setCurrentIndex(mPagesIndex[Pages::eventInfo]);
-    checkButton(mBtnCalendar);
-  });
+  connect(mBtnCalendar, &QPushButton::clicked,
+          [this]() { showPage(Pages::eventInfo, mBtnCalendar); });
 
-  connect(mBtnClients, &QPushButton::clicked, [&]() {
-    mUi->stackedWidget->setCurrentIndex(mPagesIndex[Pages::clientInfo]);
-    checkButton(mBtnClients);
-  });
+  connect(mBtnClients, &QPushButton::clicked,
+          [this]() { showPage(Pages::clientInfo, mBtnClients); });
 
-  connect(mBtnProfile, &QPushButton::clicked, [&]() {
-    mUi->stackedWidget->setCurrentIndex(mPagesIndex[Pages::clientCard]);
-    checkButton(mBtnProfile);
-  });
+  connect(mBtnProfile, &QPushButton::clicked,
+          [this]() { showPage(Pages::clientCard, mBtnProfile); });
 
   // When a client is selected in the list, show its info in the client card page
   connect(clientInfoPage, &ClientInfo::displayButtonClicked, clientCardPage,
           &QClientInfoCardPage::setClientInfo);
 
   // Switch to the client card page after selecting a client
-  connect(clientInfoPage, &ClientInfo::displayButtonClicked, [&]() {
-    mUi->stackedWidget->setCurrentIndex(mPagesIndex[Pages::clientCard]);
-    checkButton(mBtnProfile);
-  });
+  connect(clientInfoPage, &ClientInfo::displayButtonClicked,
+          [this]() { showPage(Pages::clientCard, mBtnProfile); });
 
   // Forward the save client signal from the client card to the main window
   connect(clientCardPage, &QClientInfoCardPage::provideSaveClient,
@@ -93,9 +92,23 @@ void MainWindow::connectSignals() {
           [this](const int64_t clientId, const int64_t eventId) {
             emit provideClientEventPairSave(clientId, eventId);
           });
+
+  showPage(Pages::eventInfo, mBtnCalendar);
 }
 
 QWidget *MainWindow::getPage(const Pages page) { return mPages[page]; }
+
+void MainWindow::setPageCustomWidget(const Pages page, QWidget *widget) {
+  if (widget != nullptr) {
+    widget->setParent(mUi->pageCustomWidgetHost);
+  }
+
+  mPageCustomWidgets.insertOrAssign(page, widget);
+
+  if (mCurrentPage == page) {
+    applyPageCustomWidget(page);
+  }
+}
 
 void MainWindow::initDefaultStyle() const {
   checkButton(mBtnCalendar);
@@ -106,6 +119,32 @@ void MainWindow::checkButton(QPushButton *btn) const {
   mBtnClients->setChecked(false);
   mBtnProfile->setChecked(false);
   btn->setChecked(true);
+}
+
+void MainWindow::showPage(const Pages page, QPushButton *btn) {
+  if (!mPagesIndex.contains(page)) {
+    return;
+  }
+
+  mUi->stackedWidget->setCurrentIndex(mPagesIndex[page]);
+  mCurrentPage = page;
+  applyPageCustomWidget(page);
+  checkButton(btn);
+}
+
+void MainWindow::applyPageCustomWidget(const Pages page) {
+  while (const auto item = mPageCustomWidgetLayout->takeAt(0)) {
+    if (const auto widget = item->widget()) {
+      widget->hide();
+    }
+    delete item;
+  }
+
+  if (const auto widget = mPageCustomWidgets.value(page, nullptr)) {
+    widget->setParent(mUi->pageCustomWidgetHost);
+    widget->show();
+    mPageCustomWidgetLayout->addWidget(widget);
+  }
 }
 
 

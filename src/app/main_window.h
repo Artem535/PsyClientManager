@@ -8,6 +8,7 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <QHBoxLayout>
 
 #include <memory>
 
@@ -70,6 +71,13 @@ public:
    */
   QWidget* getPage(Pages page);
 
+  /**
+   * @brief Sets an optional custom widget for the top-right grid cell.
+   * @param page The page to bind the widget to.
+   * @param widget The widget to show for that page (can be nullptr).
+   */
+  void setPageCustomWidget(Pages page, QWidget *widget);
+
 signals:
   /**
    * @brief Emitted when a client should be saved.
@@ -99,6 +107,9 @@ private:
   TabButton *mBtnCalendar{nullptr};
   TabButton *mBtnClients{nullptr};
   TabButton *mBtnProfile{nullptr};
+  QHBoxLayout *mPageCustomWidgetLayout{nullptr};
+  QHash<Pages, QWidget*> mPageCustomWidgets;
+  Pages mCurrentPage{Pages::eventInfo};
 
   /**
    * @brief Initializes default UI style (colors, fonts, etc.).
@@ -110,4 +121,17 @@ private:
    * @param btn The button to mark as active.
    */
   void checkButton(QPushButton *btn) const;
+
+  /**
+   * @brief Switches current page and synchronizes all related UI areas.
+   * @param page Target page.
+   * @param btn Navigation button associated with the page.
+   */
+  void showPage(Pages page, QPushButton *btn);
+
+  /**
+   * @brief Applies page-specific widget to the top-right grid cell.
+   * @param page Target page.
+   */
+  void applyPageCustomWidget(Pages page);
 };

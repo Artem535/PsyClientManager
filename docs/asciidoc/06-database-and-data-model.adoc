@@ -1,0 +1,57 @@
+== Database And Data Model
+
+=== Storage
+
+`Database` uses embedded DuckDB file:
+
+- `<config>/PsyClientManager/database/database.db`
+
+On first initialization, it:
+
+1. creates schema,
+2. inserts payment statuses,
+3. inserts event statuses,
+4. inserts demo data.
+
+=== Tables
+
+Defined in `src/database/constants.hpp`:
+
+- `Client`
+- `Event`
+- `EventClient` (link table)
+- `PaymentStatus`
+- `EventStatus`
+
+=== C++ Data Objects
+
+Defined in `src/database/schema.hpp`:
+
+- `ObxClient`
+- `ObxEvent`
+- `ObxEventClient`
+- `ObxPaymentStatus`
+- `ObxEventStatus`
+
+All parse rows from `duckdb::DataChunk`.
+
+=== Key Database API
+
+`src/database/database.h`:
+
+- Events:
+  - `add_event`, `update_event`, `get_event`, `remove_event`
+  - `has_conflict`, `get_day_events`
+- Clients:
+  - `add_client`, `get_client`, `get_clients`, `remove_client`, `get_client_ids`
+- Linking:
+  - `add_event_client`
+  - `get_client_by_event`
+
+=== Time Handling Notes
+
+- Several flows use millisecond epoch values in Qt (`QDateTime::toMSecsSinceEpoch`).
+- DuckDB conversion helpers use microsecond timestamps (`toDuckTimestamp`).
+- Day range helper (`get_time_range`) computes start/end day in microseconds.
+
+When touching scheduling logic, verify unit consistency (`ms` vs `us` vs seconds fields like `duration`).
