@@ -102,7 +102,7 @@ void QEventView::onDataChanged(const QModelIndex &topLeft,
     if (it != mSceneItems.end()) {
       ObxEvent updatedEvent =
           index.data(QTimelineModel::EventDataRole).value<ObxEvent>();
-      it.value()->updateFromEvent(updatedEvent); // Метод в QEventItem
+      it.value()->updateFromEvent(updatedEvent); // Method in QEventItem
     }
   }
 

@@ -32,7 +32,7 @@ struct ObxPaymentStatus {
     auto id_val = chunk.GetValue(0, index);
     auto name_val = chunk.GetValue(1, index);
     id = db_utils::toInt32AsInt64(id_val);
-    name = name_val.ToString(); // NOT NULL в схеме
+    name = name_val.ToString(); // NOT NULL in schema
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const ObxPaymentStatus &s) {

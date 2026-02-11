@@ -11,9 +11,10 @@ Application::Application() {
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   mMainWindow = std::make_unique<MainWindow>();
+  mClientModel = std::make_shared<QClientModel>(mDb);
 
   mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
-  mMainWindow->addClientInfoPage(std::make_shared<QClientModel>(mDb));
+  mMainWindow->addClientInfoPage(mClientModel);
   mMainWindow->addClientCardPage();
   mMainWindow->connectSignals();
   connectSignals();
@@ -22,18 +23,25 @@ int Application::run(int argc, char *argv[]) {
 
   return app.exec();
 }
-void Application::saveClient(const ObxClient &client) const {
+void Application::saveClient(const ObxClient &client) {
   qCDebug(logApplication) << "Application::saveClient| Client id:" << client.id;
   mDb->add_client(client);
+  if (mClientModel) {
+    mClientModel->reload();
+  }
 }
 
-void Application::fillClientComboBox(QComboBox *box) const {
+void Application::fillClientComboBox(QComboBox *box) {
   box->clear();
   const auto clients = mDb->get_clients();
   for (const auto &client : clients) {
     QString title{"%1 %2"};
-    const auto name = QString::fromStdString(client->name.value_or("Undefined"));
-    const auto lastname = QString::fromStdString(client->last_name.value_or("Undefined"));
+    const auto name = client->name != std::nullopt
+                          ? QString::fromStdString(client->name.value())
+                          : tr(": VALUE_UNDEFINED");
+    const auto lastname = client->last_name != std::nullopt
+                              ? QString::fromStdString(client->last_name.value())
+                              : tr(": VALUE_UNDEFINED");
     title = title.arg(name, lastname);
     const auto var = QVariant::fromValue(client->id);
     box->addItem(title, var);
@@ -41,7 +49,7 @@ void Application::fillClientComboBox(QComboBox *box) const {
 }
 
 void Application::saveClientEventPair(const int64_t clientId,
-                                      const int64_t eventId) const {
+                                      const int64_t eventId) {
   qCDebug(logApplication) << "Application::saveClientEventPair| Client id:"
                           << clientId << " Event id:" << eventId;
 

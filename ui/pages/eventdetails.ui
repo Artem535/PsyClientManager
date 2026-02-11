@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Детали события</string>
+   <string>: EVENT_DETAILS_TITLE</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -25,7 +25,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Название события</string>
+        <string>: EVENT_TITLE_LABEL</string>
        </property>
       </widget>
      </item>
@@ -35,7 +35,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_7">
        <property name="text">
-        <string>Дата события</string>
+        <string>: EVENT_DATE_LABEL</string>
        </property>
       </widget>
      </item>
@@ -49,7 +49,7 @@
      <item row="2" column="0">
       <widget class="QLabel" name="label_4">
        <property name="text">
-        <string>Время события</string>
+        <string>: EVENT_TIME_LABEL</string>
        </property>
       </widget>
      </item>
@@ -58,7 +58,7 @@
        <item>
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>с</string>
+          <string>: FROM_LABEL</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -75,7 +75,7 @@
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>до</string>
+          <string>: TO_LABEL</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -94,21 +94,21 @@
      <item row="3" column="0">
       <widget class="QLabel" name="mEventTypeLabel">
        <property name="text">
-        <string>Тип события</string>
+        <string>: EVENT_TYPE_LABEL</string>
        </property>
       </widget>
      </item>
      <item row="3" column="1">
       <widget class="QCheckBox" name="mEventType">
        <property name="text">
-        <string>Это рабочее событие</string>
+        <string>: EVENT_IS_WORK_CHECKBOX</string>
        </property>
       </widget>
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="mClientComboxBoxLabel">
        <property name="text">
-        <string>Выбрать клиента</string>
+        <string>: CLIENT_SELECT_LABEL</string>
        </property>
       </widget>
      </item>
@@ -161,14 +161,14 @@
      <item>
       <widget class="QPushButton" name="mAddButton">
        <property name="text">
-        <string>Добавить новое событие</string>
+        <string>: EVENT_ADD_BUTTON</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="mChangeButton">
        <property name="text">
-        <string>Изменить</string>
+        <string>: EVENT_EDIT_BUTTON</string>
        </property>
       </widget>
      </item>

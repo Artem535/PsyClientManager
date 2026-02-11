@@ -248,11 +248,11 @@ int64_t Database::add_event_client(const int64_t &event_id,
 // --- Events by date / conflict ---
 
 // std::vector<int64_t> Database::get_event_ids(const int64_t date_microseconds) {
-//   // date_microseconds — уже в микросекундах (как у вас в ObxEvent)
+//   // date_microseconds is already in microseconds (as in ObxEvent)
 //   duckdb::Connection conn(*mDb);
 //
-//   // Предположим, что вы хотите события, которые начинаются в этот день.
-//   // Но лучше уточнить логику. Пока — точное совпадение по start_date.
+//   // Assume we need events that start on this day.
+//   // The exact rule should be clarified. For now: exact match by start_date.
 //   auto result = conn.Query(
 //       "SELECT id FROM Event",
 //       db_utils::toDuckTimestamp(std::make_optional(date_microseconds)));
@@ -291,7 +291,7 @@ bool Database::has_conflict(const ObxEvent &event) {
     return false;
   }
 
-  // Если есть хотя бы одна строка — конфликт есть
+  // If there is at least one row, a conflict exists.
   return result->Fetch() != nullptr;
 }
 

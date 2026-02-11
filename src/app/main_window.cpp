@@ -6,9 +6,9 @@ MainWindow::MainWindow(QWidget *parent)
   mUi->setupUi(this);
 
   // Create navigation buttons
-  mBtnCalendar = new TabButton("Calendar", this);
-  mBtnClients = new TabButton("Clients", this);
-  mBtnProfile = new TabButton("Details", this);
+  mBtnCalendar = new TabButton(tr(": NAV_CALENDAR"), this);
+  mBtnClients = new TabButton(tr(": NAV_CLIENTS"), this);
+  mBtnProfile = new TabButton(tr(": NAV_DETAILS"), this);
 
   // Add buttons to the vertical layout
   mUi->verticalLayout->addWidget(mBtnCalendar);

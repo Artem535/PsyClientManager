@@ -87,7 +87,7 @@ int64_t QTimelineModel::addEvent(const ObxEvent &event) {
   const int row = mEvents.size();
   beginInsertRows({}, row, row);
   ObxEvent newEvent = event;
-  newEvent.id = mDb->add_event(event); // сохраняем в БД
+  newEvent.id = mDb->add_event(event); // save to DB
   mEvents.append(newEvent);
   endInsertRows();
   return newEvent.id;

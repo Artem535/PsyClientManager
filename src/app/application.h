@@ -22,13 +22,14 @@ public:
   int run(int argc, char *argv[]);
 
 private slots:
-  void saveClient(const ObxClient &client) const;
-  void fillClientComboBox(QComboBox *box) const;
-  void saveClientEventPair(const int64_t clientId, const int64_t eventId) const;
+  void saveClient(const ObxClient &client);
+  void fillClientComboBox(QComboBox *box);
+  void saveClientEventPair(const int64_t clientId, const int64_t eventId);
 
 private:
   std::unique_ptr<MainWindow> mMainWindow;
   std::shared_ptr<database::Database> mDb;
+  std::shared_ptr<QClientModel> mClientModel;
   config::Config mConf;
 
   void connectSignals();

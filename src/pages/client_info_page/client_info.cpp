@@ -8,6 +8,10 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
       mClientModel(std::move(model)) {
   mUi->setupUi(this);
 
+  mLoadingLabel = new QLabel(tr(": CLIENTS_LOADING"), this);
+  mLoadingLabel->setAlignment(Qt::AlignCenter);
+  mUi->verticalLayout->insertWidget(0, mLoadingLabel);
+
   mUi->listView->setModel(mClientModel.get());
   mUi->listView->setViewMode(QListView::ListMode);
 
@@ -15,6 +19,25 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
   connectSignals(delegate);
 
   mUi->listView->setItemDelegate(delegate);
+
+  connect(mClientModel.get(), &QClientModel::loadingStateChanged, this,
+          [this](const bool isLoading) {
+            if (isLoading) {
+              mLoadingLabel->setText(tr(": CLIENTS_LOADING"));
+            }
+            mLoadingLabel->setVisible(isLoading);
+            mUi->listView->setEnabled(!isLoading);
+          });
+
+  connect(mClientModel.get(), &QClientModel::loadFailed, this,
+          [this](const QString &message) {
+            mLoadingLabel->setText(tr(": CLIENTS_LOADING_ERROR %1")
+                                       .arg(message));
+            mLoadingLabel->setVisible(true);
+          });
+
+  mLoadingLabel->setVisible(mClientModel->isLoading());
+  mUi->listView->setEnabled(!mClientModel->isLoading());
 }
 
 ClientInfo::~ClientInfo() = default;

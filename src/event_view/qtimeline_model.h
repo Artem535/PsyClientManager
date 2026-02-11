@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "database.h"
-#include "event_item.h" // для ObxEvent
+#include "event_item.h" // for ObxEvent
 
 Q_DECLARE_METATYPE(ObxEvent)
 

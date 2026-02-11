@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>: EVENT_INFO_FORM_TITLE</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
@@ -47,8 +47,8 @@
       </item>
       <item>
        <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Место под свободные слоты</string>
+       <property name="text">
+         <string>: FREE_SLOTS_PLACEHOLDER</string>
         </property>
        </widget>
       </item>

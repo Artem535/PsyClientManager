@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Информация о клиенте</string>
+   <string>: CLIENT_INFO_TITLE</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -21,7 +21,7 @@
      </property>
      <widget class="QWidget" name="informationTab">
       <attribute name="title">
-       <string>Информация</string>
+       <string>: CLIENT_INFORMATION_TAB</string>
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
@@ -56,7 +56,7 @@
               </size>
              </property>
              <property name="text">
-              <string>PushButton</string>
+              <string>: CLIENT_EDIT_BUTTON</string>
              </property>
             </widget>
            </item>
@@ -98,7 +98,7 @@
                  font-weight: bold;</string>
                </property>
                <property name="text">
-                <string>AI</string>
+                <string>: AVATAR_PLACEHOLDER</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -132,7 +132,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Фамилия</string>
+                  <string>: CLIENT_LAST_NAME_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -144,14 +144,14 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Город</string>
+                  <string>: CLIENT_CITY_LABEL</string>
                  </property>
                 </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QLineEdit" name="nameInput">
                  <property name="placeholderText">
-                  <string>Введите имя</string>
+                  <string>: INPUT_FIRST_NAME</string>
                  </property>
                 </widget>
                </item>
@@ -163,7 +163,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Возраст</string>
+                  <string>: CLIENT_AGE_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -183,7 +183,7 @@
                   <bool>true</bool>
                  </property>
                  <property name="placeholderText">
-                  <string>28</string>
+                  <string>: CLIENT_AGE_VALUE</string>
                  </property>
                 </widget>
                </item>
@@ -195,7 +195,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Телефон</string>
+                  <string>: CLIENT_PHONE_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -207,21 +207,21 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Часовой пояс</string>
+                  <string>: CLIENT_TIMEZONE_LABEL</string>
                  </property>
                 </widget>
                </item>
                <item row="3" column="0">
                 <widget class="QLineEdit" name="lastNameInput">
                  <property name="placeholderText">
-                  <string>Введите фамилию</string>
+                  <string>: INPUT_LAST_NAME</string>
                  </property>
                 </widget>
                </item>
                <item row="7" column="2">
                 <widget class="QLineEdit" name="cityInput">
                  <property name="placeholderText">
-                  <string>Казань</string>
+                  <string>: INPUT_CITY</string>
                  </property>
                 </widget>
                </item>
@@ -233,7 +233,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Дата рождения</string>
+                  <string>: CLIENT_BIRTH_DATE_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -245,7 +245,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Страна</string>
+                  <string>: CLIENT_COUNTRY_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -257,14 +257,14 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Почта</string>
+                  <string>: CLIENT_EMAIL_LABEL</string>
                  </property>
                 </widget>
                </item>
                <item row="5" column="0">
-                <widget class="QLineEdit" name="phoneInput">
+               <widget class="QLineEdit" name="phoneInput">
                  <property name="placeholderText">
-                  <string>+7 (912) 345-67-89</string>
+                  <string>: INPUT_PHONE</string>
                  </property>
                 </widget>
                </item>
@@ -276,35 +276,35 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Имя</string>
+                  <string>: CLIENT_FIRST_NAME_LABEL</string>
                  </property>
                 </widget>
                </item>
                <item row="5" column="2">
                 <widget class="QLineEdit" name="countryInput">
                  <property name="placeholderText">
-                  <string>Россия</string>
+                  <string>: INPUT_COUNTRY</string>
                  </property>
                 </widget>
                </item>
                <item row="9" column="2">
-                <widget class="QLineEdit" name="timezoneInput">
+               <widget class="QLineEdit" name="timezoneInput">
                  <property name="placeholderText">
-                  <string>MSK</string>
+                  <string>: INPUT_TIMEZONE</string>
                  </property>
                 </widget>
                </item>
                <item row="7" column="0">
-                <widget class="QLineEdit" name="emailInput">
+               <widget class="QLineEdit" name="emailInput">
                  <property name="placeholderText">
-                  <string>anna.m@email.com</string>
+                  <string>: INPUT_EMAIL</string>
                  </property>
                 </widget>
                </item>
                <item row="9" column="0">
                 <widget class="QCheckBox" name="isActive">
                  <property name="text">
-                  <string>Неактивен</string>
+                  <string>: CLIENT_STATUS_INACTIVE</string>
                  </property>
                 </widget>
                </item>
@@ -316,7 +316,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Статус клиента</string>
+                  <string>: CLIENT_STATUS_LABEL</string>
                  </property>
                 </widget>
                </item>
@@ -342,21 +342,21 @@
                </font>
               </property>
               <property name="text">
-               <string>Медицинская информация</string>
+               <string>: CLIENT_MEDICAL_INFO_LABEL</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QLabel" name="labelCurrentDiagnosis">
               <property name="text">
-               <string>Текущий диагноз</string>
+               <string>: CLIENT_CURRENT_DIAGNOSIS_LABEL</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QTextEdit" name="diagnosisTextEdit">
               <property name="placeholderText">
-               <string>Введите текущий диагноз...</string>
+               <string>: INPUT_CURRENT_DIAGNOSIS</string>
               </property>
              </widget>
             </item>
@@ -368,14 +368,14 @@
                </font>
               </property>
               <property name="text">
-               <string>Дополнительная информация</string>
+               <string>: CLIENT_ADDITIONAL_INFO_LABEL</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QTextEdit" name="additionalInfoTextEdit">
               <property name="placeholderText">
-               <string>Введите дополнительную информацию...</string>
+               <string>: INPUT_ADDITIONAL_INFO</string>
               </property>
              </widget>
             </item>
@@ -395,13 +395,13 @@
      </widget>
      <widget class="QWidget" name="graphicsTab">
       <attribute name="title">
-       <string>Графики</string>
+       <string>: CLIENT_CHARTS_TAB</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <widget class="QLabel" name="graphicsPlaceholder">
          <property name="text">
-          <string>Здесь будут отображаться графики</string>
+          <string>: CHARTS_PLACEHOLDER</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>

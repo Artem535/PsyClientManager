@@ -52,7 +52,8 @@ void QClientInfoCardPage::leaveEditMode() {
   tmpClient.setAdditionalInfo(mUi->additionalInfoTextEdit->toPlainText());
 
   if (tmpClient.getName().isEmpty() || tmpClient.getLastName().isEmpty()) {
-    QMessageBox::warning(this, "Warning", "Name and Last Name are required");
+    QMessageBox::warning(this, tr(": WARNING_TITLE"),
+                         tr(": CLIENT_NAME_AND_LAST_NAME_REQUIRED"));
     return;
   }
 
@@ -105,7 +106,8 @@ void QClientInfoCardPage::connectReactiveSignals() {
   // Update text in isActive checkbox
   // clang-format off
   connect(mUi->isActive, &QCheckBox::checkStateChanged, [this](const auto state) {
-    const auto text = state == Qt::CheckState::Checked ? "Активен" : "Не активен";
+    const auto text = state == Qt::CheckState::Checked ? tr(": CLIENT_STATUS_ACTIVE")
+                                                        : tr(": CLIENT_STATUS_INACTIVE");
     mUi->isActive->setText(QString(text));
   });
   // clang-format on

@@ -9,6 +9,7 @@
 #include <QModelIndex>
 #include <QPointer>
 #include <QPushButton>
+#include <QLabel>
 #include <QVariant>
 #include <QWidget>
 
@@ -39,6 +40,7 @@ signals:
 private:
   std::unique_ptr<Ui::ClientInfo> mUi;
   std::shared_ptr<QClientModel> mClientModel;
+  QLabel *mLoadingLabel{nullptr};
 
   void connectSignals(const QClientDelegate *delegate);
 };

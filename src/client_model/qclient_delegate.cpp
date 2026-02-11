@@ -77,8 +77,12 @@ void QClientDelegate::drawFirstColumn(QPainter *painter,
   painter->setFont(font);
 
   // ---- Name + Surname ----
-  const auto name = client.name.value_or("Undefined");
-  const auto last_name = client.last_name.value_or("Undefined");
+  const auto name = client.name != std::nullopt
+                        ? QString::fromStdString(client.name.value())
+                        : tr(": VALUE_UNDEFINED");
+  const auto last_name = client.last_name != std::nullopt
+                             ? QString::fromStdString(client.last_name.value())
+                             : tr(": VALUE_UNDEFINED");
   const QString fullName = QString("%1 %2").arg(name, last_name);
   painter->drawText(firstRect, Qt::AlignLeft | Qt::AlignTop, fullName);
 
@@ -90,7 +94,7 @@ void QClientDelegate::drawFirstColumn(QPainter *painter,
   const QDate birthDate =
       QDateTime::fromMSecsSinceEpoch(birthday_date_ms).date();
   const int age = countAge(birthDate);
-  const QString ageStr = QString("%1 лет").arg(age);
+  const QString ageStr = tr(": CLIENT_AGE_YEARS %1").arg(age);
 
   const int halfH = cardHeight / 2;
   const QRect ageRect = firstRect.adjusted(0, halfH, 0, 0);
@@ -124,13 +128,15 @@ void QClientDelegate::drawContacts(QPainter *painter,
   // ---- Email ----
   const auto email_std = client.email.value_or("");
   const QString email =
-      email_std.empty() ? QString("Нет") : QString::fromStdString(email_std);
+      email_std.empty() ? tr(": CLIENT_EMAIL_EMPTY")
+                        : QString::fromStdString(email_std);
   painter->drawText(contactsRect, Qt::AlignLeft | Qt::AlignTop, email);
 
   // ---- Phone ----
   const auto phone_std = client.phone_number.value_or("");
   const QString phone =
-      phone_std.empty() ? QString("Нет") : QString::fromStdString(phone_std);
+      phone_std.empty() ? tr(": CLIENT_PHONE_EMPTY")
+                        : QString::fromStdString(phone_std);
 
   const int halfH = cardHeight / 2;
   const QRect phoneRect = contactsRect.adjusted(0, halfH, 0, 0);
@@ -159,7 +165,8 @@ void QClientDelegate::drawLastSession(QPainter *painter,
 
   const QDate lastDate = QDate::currentDate();
   const QString dateStr =
-      lastDate.isValid() ? lastDate.toString("dd.MM.yyyy") : "-";
+      lastDate.isValid() ? lastDate.toString("dd.MM.yyyy")
+                         : tr(": VALUE_NOT_AVAILABLE");
 
   // Center text in the third column
   painter->drawText(thirdRect, Qt::AlignCenter, dateStr);
@@ -184,7 +191,8 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
                              sideMargin,
                          cardRect.top(), fourthW - sideMargin * 2, cardHeight);
 
-  const QString chipText = client.client_active ? "Активен" : "Неактивен";
+  const QString chipText = client.client_active ? tr(": CLIENT_STATUS_ACTIVE")
+                                                : tr(": CLIENT_STATUS_INACTIVE");
   const QColor chipColor =
       client.client_active ? QColor(0, 170, 120) : QColor(160, 160, 160);
 

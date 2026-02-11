@@ -61,7 +61,7 @@ void QEventDetailsWidget::initEditStyle() {
 
 void QEventDetailsWidget::initDefaultStates() const {
   // Set initial text for checkbox
-  mUI->mEventType->setText("Regular event");
+  mUI->mEventType->setText(tr(": EVENT_TYPE_REGULAR"));
 }
 
 void QEventDetailsWidget::initDefaultTimes() const {
@@ -120,7 +120,8 @@ void QEventDetailsWidget::startCreatingNewEvent() {
   const auto crtDateTime = QDateTime::currentDateTime().toLocalTime();
   // Create a temporary event for the form
   mCurrentEvent =
-      new QEventItem(0, "New Event", crtDateTime, crtDateTime.addSecs(3600));
+      new QEventItem(0, tr(": EVENT_NEW_TITLE"), crtDateTime,
+                     crtDateTime.addSecs(3600));
   loadEvent(mCurrentEvent.data());
   initEditStyle();
 }
@@ -192,7 +193,8 @@ void QEventDetailsWidget::onChangeClicked() {
 }
 
 void QEventDetailsWidget::onEventTypeToggled(bool checked) {
-  mUI->mEventType->setText(checked ? "Work event" : "Regular event");
+  mUI->mEventType->setText(
+      checked ? tr(": EVENT_TYPE_WORK") : tr(": EVENT_TYPE_REGULAR"));
   mUI->mClientComboBox->setVisible(checked);
   mUI->mClientComboxBoxLabel->setVisible(checked);
 }
@@ -225,12 +227,13 @@ bool QEventDetailsWidget::validateInput() {
       mUI->mTimeTo->dateTime() <= mUI->mTimeFrom->dateTime();
 
   if (isTitleEmpty) {
-    QMessageBox::warning(this, tr("Error"), tr("Event title cannot be empty"));
+    QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                         tr(": EVENT_TITLE_EMPTY_ERROR"));
     return false;
   }
   if (isZeroDuration) {
-    QMessageBox::warning(this, tr("Error"),
-                         tr("Event duration must be greater than zero"));
+    QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                         tr(": EVENT_DURATION_INVALID_ERROR"));
     return false;
   }
   return true;
