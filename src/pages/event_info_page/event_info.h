@@ -3,8 +3,12 @@
 #include "database.h"
 #include "qevent_details_widget.h"
 #include "timeline_widget.h"
+#include <QDate>
+#include <QPointer>
+#include <QPushButton>
 #include <QWidget>
 #include <memory>
+#include <optional>
 
 namespace Ui {
 class EventInfo;
@@ -28,6 +32,7 @@ public slots:
 
 private slots:
   void onCalendarClicked(const QDate &date);
+  void onCreateEventClicked();
   void onTimelineEventSelected(QEventItem *event);
   void onEventSaved(QEventItem *event);
   void onEditingCanceled();
@@ -35,10 +40,14 @@ private slots:
 private:
   void connectSignals();
   void initDefaultStates();
+  void openEventDialog(QEventItem *event,
+                       std::optional<int64_t> clientId = std::nullopt);
 
   std::unique_ptr<Ui::EventInfo> mUi;
   QTimelineWidget *mTimelineWidget = nullptr;
-  QEventDetailsWidget *mEventDetailsWidget = nullptr;
+  QPushButton *mCreateEventButton = nullptr;
+  QPointer<QEventDetailsWidget> mActiveEventDetailsWidget;
 
   int64_t mClientId = 0;
+  QDate mSelectedDate;
 };

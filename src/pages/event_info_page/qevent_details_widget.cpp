@@ -41,6 +41,11 @@ void QEventDetailsWidget::initConnections() {
 }
 
 void QEventDetailsWidget::initDefaultStyle() {
+  if (mDialogMode) {
+    initEditStyle();
+    return;
+  }
+
   const auto isVisible = mCurrentEvent ? mCurrentEvent->isWorkItem() : false;
   mUI->mClientComboBox->setVisible(isVisible);
   mUI->mClientComboxBoxLabel->setVisible(isVisible);
@@ -91,6 +96,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
 
   mCurrentEvent = event;
   mUI->mTitle->setText(event->getTitle());
+  mUI->mEventDate->setDate(event->getStartTime().date());
   mUI->mTimeFrom->setDateTime(event->getStartTime());
   mUI->mTimeTo->setDateTime(event->getEndTime());
   const bool isWorkItem = event->isWorkItem();
@@ -112,7 +118,21 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   updateButtonState();
 }
 
-void QEventDetailsWidget::startCreatingNewEvent() {
+void QEventDetailsWidget::startEditingEvent(
+    QEventItem *event, const std::optional<int64_t> clientId) {
+  if (!event) {
+    return;
+  }
+
+  mCreatingNewEvent = false;
+  mInEditMode = true;
+  emit provideEditModeChanged();
+
+  loadEvent(event, clientId);
+  initEditStyle();
+}
+
+void QEventDetailsWidget::startCreatingNewEvent(const QDate &date) {
   mCreatingNewEvent = true;
   mInEditMode = true;
   emit provideEditModeChanged();
@@ -123,7 +143,13 @@ void QEventDetailsWidget::startCreatingNewEvent() {
       new QEventItem(0, tr(": EVENT_NEW_TITLE"), crtDateTime,
                      crtDateTime.addSecs(3600));
   loadEvent(mCurrentEvent.data());
+  mUI->mEventDate->setDate(date);
   initEditStyle();
+}
+
+void QEventDetailsWidget::setDialogMode(bool enabled) {
+  mDialogMode = enabled;
+  initDefaultStyle();
 }
 
 bool QEventDetailsWidget::isInEditMode() const { return mInEditMode; }
@@ -150,17 +176,24 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setIsWorkItem(mUI->mEventType->isChecked());
   }
 
+  const bool isCreatingNewEvent = mCreatingNewEvent;
+
   // Emit signal to save the event
   emit provideEventSave(mCurrentEvent.data());
 
-  // If the event is work-related, store the selected client ID in the event's
-  // user data
-  if (mUI->mEventType->isChecked()) {
-    const auto var = mUI->mClientComboBox->currentData();
-    const int64_t selectedClientId = var.toLongLong();
+  if (mCurrentEvent) {
+    int64_t selectedClientId = 0;
+    if (mUI->mEventType->isChecked()) {
+      selectedClientId = mUI->mClientComboBox->currentData().toLongLong();
+      qCDebug(logEventDetails)
+          << "Selected client ID for event:" << selectedClientId;
+    }
     emit provideClientEventPairSave(selectedClientId, mCurrentEvent->getId());
-    qCDebug(logEventDetails)
-        << "Selected client ID for event:" << selectedClientId;
+  }
+
+  if (isCreatingNewEvent && mCurrentEvent) {
+    delete mCurrentEvent.data();
+    mCurrentEvent.clear();
   }
 
   // Exit edit mode

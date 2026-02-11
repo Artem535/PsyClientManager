@@ -24,6 +24,7 @@ public:
   explicit Database(const pcm::config::Config &conf);
 
   int64_t add_event(const ObxEvent &event);
+  bool update_event(const ObxEvent &event);
   std::unique_ptr<ObxEvent> get_event(const int64_t &id);
   bool remove_event(const int64_t &id);
 

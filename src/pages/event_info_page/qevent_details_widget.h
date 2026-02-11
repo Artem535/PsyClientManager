@@ -3,6 +3,7 @@
 #include "event_item.h"
 
 #include <QComboBox>
+#include <QDate>
 #include <QHash>
 #include <QPointer>
 #include <QWidget>
@@ -33,9 +34,20 @@ public:
                  std::optional<int64_t> clientId = std::nullopt);
 
   /**
+   * @brief Loads data from an existing event and enters edit mode.
+   */
+  void startEditingEvent(QEventItem *event,
+                         std::optional<int64_t> clientId = std::nullopt);
+
+  /**
    * @brief Clears the form and switches to "create new event" mode.
    */
-  void startCreatingNewEvent();
+  void startCreatingNewEvent(const QDate &date = QDate::currentDate());
+
+  /**
+   * @brief Configures widget for usage inside a modal dialog.
+   */
+  void setDialogMode(bool enabled);
 
   /**
    * @brief Checks if the widget is in edit mode.
@@ -118,4 +130,5 @@ private:
   QHash<int64_t, QString> mClientList;
   bool mInEditMode = false;
   bool mCreatingNewEvent = false;
+  bool mDialogMode = false;
 };

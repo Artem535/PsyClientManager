@@ -1,7 +1,8 @@
 #include "event_info.h"
 #include "ui/pages/ui_eventinfo.h"
 
-#include <QDateEdit>
+#include <QDialog>
+#include <QVBoxLayout>
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
@@ -9,12 +10,14 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
 
+  mSelectedDate = QDate::currentDate();
+
   mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_v_layout->addWidget(mTimelineWidget);
 
-  mEventDetailsWidget = new QEventDetailsWidget(this);
-  mUi->detailsContainer->layout()->addWidget(mEventDetailsWidget);
-  mEventDetailsWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  mCreateEventButton = new QPushButton(tr(": EVENT_ADD_BUTTON"), this);
+  mUi->list_view_v_layout->insertWidget(0, mCreateEventButton);
+  mUi->frame_2->setVisible(false);
 
   connectSignals();
   initDefaultStates();
@@ -26,28 +29,13 @@ void QEventInfoPage::connectSignals() {
   // CalendarWidget -> TimelineWidget
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
           &QTimelineWidget::onSelectedDayChanged);
-  // CalendarWidget -> EventDetailsWidget (update date)
   connect(mUi->calendar_widget, &QCalendarWidget::clicked, this,
           &QEventInfoPage::onCalendarClicked);
+  connect(mCreateEventButton, &QPushButton::clicked, this,
+          &QEventInfoPage::onCreateEventClicked);
 
-  // TimelineWidget -> EventDetailsWidget (select event)
   connect(mTimelineWidget, &QTimelineWidget::eventSelected, this,
           &QEventInfoPage::onTimelineEventSelected);
-
-  // EventDetailsWidget -> QEventInfoPage (save/cancel)
-  connect(mEventDetailsWidget, &QEventDetailsWidget::provideEventSave, this,
-          &QEventInfoPage::onEventSaved);
-  connect(mEventDetailsWidget, &QEventDetailsWidget::provideEditingCanceled,
-          this, &QEventInfoPage::onEditingCanceled);
-  connect(mEventDetailsWidget, &QEventDetailsWidget::provideClientEventPairSave,
-          [this](const int64_t clientId, const int64_t eventId) {
-            emit provideClientEventPairSave(clientId, eventId);
-          });
-
-  connect(mEventDetailsWidget, &QEventDetailsWidget::provideFillClientComboBox,
-          [this](QComboBox *comboBox) {
-            emit provideFillClientComboBox(comboBox);
-          });
 
   connect(this, &QEventInfoPage::clientResolved, this,
           &QEventInfoPage::onClientResolved);
@@ -58,9 +46,54 @@ void QEventInfoPage::initDefaultStates() {
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
-  // Update the date in the details widget
-  mEventDetailsWidget->findChild<QDateEdit *>("mEventDate")
-      ->setDateTime(QDateTime(date, QTime::currentTime()));
+  mSelectedDate = date;
+}
+
+void QEventInfoPage::onCreateEventClicked() { openEventDialog(nullptr); }
+
+void QEventInfoPage::openEventDialog(QEventItem *event,
+                                     const std::optional<int64_t> clientId) {
+  auto dialog = QDialog(this);
+  dialog.setModal(true);
+  dialog.setWindowTitle(event ? tr(": EVENT_EDIT_BUTTON")
+                              : tr(": EVENT_ADD_BUTTON"));
+
+  auto layout = QVBoxLayout(&dialog);
+  layout.setContentsMargins(0, 0, 0, 0);
+
+  auto *detailsWidget = new QEventDetailsWidget(&dialog);
+  detailsWidget->setDialogMode(true);
+  layout.addWidget(detailsWidget);
+
+  mActiveEventDetailsWidget = detailsWidget;
+
+  connect(detailsWidget, &QEventDetailsWidget::provideEventSave, this,
+          &QEventInfoPage::onEventSaved);
+  connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, this,
+          &QEventInfoPage::onEditingCanceled);
+  connect(detailsWidget, &QEventDetailsWidget::provideEventSave, &dialog,
+          &QDialog::accept);
+  connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, &dialog,
+          &QDialog::reject);
+  connect(detailsWidget, &QEventDetailsWidget::provideClientEventPairSave, this,
+          [this](const int64_t selectedClientId, const int64_t selectedEventId) {
+            emit provideClientEventPairSave(selectedClientId, selectedEventId);
+          });
+  connect(detailsWidget, &QEventDetailsWidget::provideFillClientComboBox, this,
+          [this](QComboBox *comboBox) {
+            emit provideFillClientComboBox(comboBox);
+          });
+
+  if (event) {
+    detailsWidget->startEditingEvent(event, clientId);
+  } else {
+    detailsWidget->startCreatingNewEvent(mSelectedDate);
+  }
+
+  dialog.resize(460, 620);
+  dialog.exec();
+
+  mActiveEventDetailsWidget.clear();
 }
 
 void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
@@ -75,7 +108,7 @@ void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
     clientId = mClientId;
   }
 
-  mEventDetailsWidget->loadEvent(event, clientId);
+  openEventDialog(event, clientId);
 }
 
 void QEventInfoPage::onEventSaved(QEventItem *event) {
@@ -85,14 +118,11 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 
   auto eventDetails = event->toEvent();
 
-  // If it's a new event, add it to the scene
-  if (mEventDetailsWidget->isCreatingNewEvent()) {
+  if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
     const auto id = mTimelineWidget->addEvent(eventDetails);
     eventDetails.id = id;
-    // TODO: Change it later.
     event->setId(id);
   } else {
-    // Otherwise, update the existing one
     mTimelineWidget->updateEvent(eventDetails);
   }
 

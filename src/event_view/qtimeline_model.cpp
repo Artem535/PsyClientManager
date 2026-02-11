@@ -108,8 +108,10 @@ void QTimelineModel::removeEvent(int64_t id) {
 void QTimelineModel::updateEvent(const ObxEvent &event) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == event.id) {
+      if (!mDb->update_event(event)) {
+        return;
+      }
       mEvents[i] = event;
-      mDb->add_event(event);
       emit dataChanged(
           index(i, 0, QModelIndex()), index(i, 0, QModelIndex()),
           {EventDataRole, TitleRole, StartDateTimeRole, EndDateTimeRole});

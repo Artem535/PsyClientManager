@@ -57,6 +57,42 @@ int64_t Database::add_event(const ObxEvent &event) {
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
 }
 
+bool Database::update_event(const ObxEvent &event) {
+  if (event.id <= 0) {
+    PLOG_WARNING << "Attempt to update event with invalid id: " << event.id;
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = conn.Query(R"(
+        UPDATE Event
+        SET name = $1,
+            description = $2,
+            is_work_event = $3,
+            event_stat_id = $4,
+            payment_stat_id = $5,
+            start_date = $6,
+            end_date = $7,
+            duration = $8
+        WHERE id = $9
+    )",
+                           db_utils::toDuckValue(event.name),
+                           db_utils::toDuckValue(event.description),
+                           event.is_work_event, event.event_stat_id,
+                           event.payment_stat_id,
+                           db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+                           db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
+                           db_utils::toDuckValue(event.duration), event.id);
+
+  if (result->HasError()) {
+    PLOG_ERROR << "Failed to update event (id=" << event.id
+               << "): " << result->GetError();
+    return false;
+  }
+
+  return true;
+}
+
 bool Database::remove_event(const int64_t &id) {
   if (id <= 0) {
     PLOG_WARNING << "Attempt to remove event with invalid id: " << id;
@@ -214,17 +250,27 @@ bool Database::remove_client(const int64_t &id) {
 
 int64_t Database::add_event_client(const int64_t &event_id,
                                   const int64_t &client_id) {
-  if (event_id <= 0 || client_id <= 0) {
-    PLOG_WARNING << "Invalid IDs for EventClient: event_id=" << event_id
-                 << ", client_id=" << client_id;
+  if (event_id <= 0) {
+    PLOG_WARNING << "Invalid event_id for EventClient: " << event_id;
     return 0;
   }
 
   duckdb::Connection conn(*mDb);
+  auto removeResult = conn.Query("DELETE FROM EventClient WHERE event_id = $1",
+                                 event_id);
+  if (removeResult->HasError()) {
+    PLOG_ERROR << "Failed to clear EventClient links for event_id=" << event_id
+               << ": " << removeResult->GetError();
+    return 0;
+  }
+
+  if (client_id <= 0) {
+    return 0;
+  }
+
   auto result = conn.Query(R"(
         INSERT INTO EventClient (client_id, event_id)
         VALUES ($1, $2)
-        ON CONFLICT (client_id, event_id) DO NOTHING
         RETURNING id
     )",
                            client_id, event_id);
@@ -237,8 +283,7 @@ int64_t Database::add_event_client(const int64_t &event_id,
 
   auto chunk = result->Fetch();
   if (!chunk || chunk->size() == 0) {
-    PLOG_DEBUG << "EventClient link already exists: event=" << event_id
-               << ", client=" << client_id;
+    PLOG_ERROR << "Empty result from RETURNING id in add_event_client";
     return 0;
   }
 
