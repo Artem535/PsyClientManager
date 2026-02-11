@@ -1,5 +1,9 @@
 #include "application.h"
 
+#include <QLocale>
+#include <QStringList>
+#include <QTranslator>
+
 Q_LOGGING_CATEGORY(logApplication, "pcm.Application")
 
 namespace pcm {
@@ -10,6 +14,42 @@ Application::Application() {
 
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
+
+  QTranslator translator;
+  const QString localeName = QLocale::system().name().toLower();
+  const bool preferRu = localeName.startsWith("ru");
+  const QStringList translationOrder =
+      preferRu ? QStringList{"app_ru", "app_en"}
+               : QStringList{"app_en", "app_ru"};
+
+  auto tryLoadTranslation = [&](const QString &baseName) -> bool {
+    const QStringList resourceCandidates = {
+        QString(":/i18n/%1.qm").arg(baseName),
+        QString(":/i18n/i18n/%1.qm").arg(baseName),
+    };
+    for (const auto &resourcePath : resourceCandidates) {
+      if (translator.load(resourcePath)) {
+        app.installTranslator(&translator);
+        qCInfo(logApplication) << "Loaded translation:" << resourcePath;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  bool translationLoaded = false;
+  for (const auto &baseName : translationOrder) {
+    if (tryLoadTranslation(baseName)) {
+      translationLoaded = true;
+      break;
+    }
+  }
+
+  if (!translationLoaded) {
+    qCWarning(logApplication) << "Failed to load translations. Locale:"
+                              << localeName;
+  }
+
   mMainWindow = std::make_unique<MainWindow>();
   mClientModel = std::make_shared<QClientModel>(mDb);
 

@@ -7,9 +7,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Define the project
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets LinguistTools)
 
 qt_standard_project_setup()
+
+qt_add_translations(PsyClientManager
+    TS_FILES
+        translation/app_ru.ts
+        translation/app_en.ts
+)
 
 # Include subdirectories for modules
 add_subdirectory(src/widgets)
