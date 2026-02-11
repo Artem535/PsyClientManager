@@ -115,6 +115,7 @@ public:
    * @param endTime The new end time.
    */
   void setEndTime(const QDateTime &endTime);
+  void setTimeRange(const QDateTime &startTime, const QDateTime &endTime);
 
   /**
    * @brief Sets whether the event is a work-related item.

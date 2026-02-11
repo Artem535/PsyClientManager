@@ -34,7 +34,6 @@ QVariant QTimelineModel::data(const QModelIndex &index, int role) const {
     return {};
 
   const auto &event = mEvents.at(index.row());
-
   switch (role) {
   case IdRole:
     return static_cast<qint64>(event.id);
@@ -45,9 +44,13 @@ QVariant QTimelineModel::data(const QModelIndex &index, int role) const {
   case IsWorkRole:
     return event.is_work_event;
   case StartDateTimeRole:
-    return QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
+    return QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0),
+                                          QTimeZone::UTC)
+        .toLocalTime();
   case EndDateTimeRole:
-    return QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
+    return QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0),
+                                          QTimeZone::UTC)
+        .toLocalTime();
   case DurationRole:
     return QVariant::fromValue(event.duration);
   case EventDataRole:
@@ -73,21 +76,30 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   mEvents.clear();
   mCurrentDate = date;
 
-  const auto day =
-      QDateTime(date, QTime(12, 0), QTimeZone::UTC).toMSecsSinceEpoch();
+  const auto localTz = QTimeZone::systemTimeZone();
+  const auto dayStartMs =
+      QDateTime(date, QTime(0, 0), localTz).toMSecsSinceEpoch();
+  const auto dayEndMs =
+      QDateTime(date.addDays(1), QTime(0, 0), localTz).toMSecsSinceEpoch() - 1;
 
-  const auto events = mDb->get_day_events(day);
+  const auto events = mDb->get_day_events(dayStartMs, dayEndMs);
   mEvents = std::move(QVector<ObxEvent>(events.begin(), events.end()));
+  qDebug() << "QTimelineModel::loadEventsForDay date=" << date
+           << "loaded events=" << mEvents.size();
 
   endResetModel();
   emit eventsLoaded();
 }
 
 int64_t QTimelineModel::addEvent(const ObxEvent &event) {
-  const int row = mEvents.size();
-  beginInsertRows({}, row, row);
   ObxEvent newEvent = event;
   newEvent.id = mDb->add_event(event); // save to DB
+  if (newEvent.id <= 0) {
+    return 0;
+  }
+
+  const int row = mEvents.size();
+  beginInsertRows({}, row, row);
   mEvents.append(newEvent);
   endInsertRows();
   return newEvent.id;

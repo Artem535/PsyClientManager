@@ -1,4 +1,5 @@
 #include "event_item.h"
+#include <QTimeZone>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
@@ -24,8 +25,12 @@ void QEventItem::updateFromEvent(const ObxEvent &event) {
   mSize = QSize(100, 100);
 
   mTitle = QString::fromStdString(event.name.value_or(""));
-  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
-  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
+  const auto startUtc =
+      QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
+  const auto endUtc =
+      QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0), QTimeZone::UTC);
+  mStartTime = startUtc.toLocalTime();
+  mEndTime = endUtc.toLocalTime();
   mId = event.id;
 
   qCInfo(logPcmEventItem) << "QEventItem::QEventItem"
@@ -45,8 +50,12 @@ QEventItem::QEventItem(const ObxEvent &event) {
   mIsWorkItem = event.is_work_event;
   mSize = QSize(100, 100);
   mTitle = QString::fromStdString(event.name.value_or("Undefined"));
-  mStartTime = QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0));
-  mEndTime = QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0));
+  const auto startUtc =
+      QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
+  const auto endUtc =
+      QDateTime::fromMSecsSinceEpoch(event.end_date.value_or(0), QTimeZone::UTC);
+  mStartTime = startUtc.toLocalTime();
+  mEndTime = endUtc.toLocalTime();
   mId = event.id;
 
   qCInfo(logPcmEventItem) << "QEventItem::QEventItem"
@@ -66,8 +75,8 @@ ObxEvent QEventItem::toEvent() const {
   event.id = mId;
   event.name = mTitle.toStdString();
   event.is_work_event = mIsWorkItem;
-  event.start_date = mStartTime.toMSecsSinceEpoch();
-  event.end_date = mEndTime.toMSecsSinceEpoch();
+  event.start_date = mStartTime.toUTC().toMSecsSinceEpoch();
+  event.end_date = mEndTime.toUTC().toMSecsSinceEpoch();
   event.duration = mDuration;
   return event;
 }
@@ -134,6 +143,24 @@ void QEventItem::setEndTime(const QDateTime &endTime) {
     return;
   }
 
+  mEndTime = endTime;
+  updateDuration();
+  update();
+}
+
+void QEventItem::setTimeRange(const QDateTime &startTime,
+                              const QDateTime &endTime) {
+  if (startTime > endTime) {
+    qCWarning(logPcmEventItem) << "QEventItem::setTimeRange"
+                               << "Invalid time range:" << startTime << endTime;
+    return;
+  }
+
+  if (mStartTime == startTime && mEndTime == endTime) {
+    return;
+  }
+
+  mStartTime = startTime;
   mEndTime = endTime;
   updateDuration();
   update();

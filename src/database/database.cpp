@@ -1,6 +1,16 @@
 #include "database.h"
 
 namespace pcm::database {
+namespace {
+duckdb::Value fkOrNull(const int64_t id) {
+  return id > 0 ? duckdb::Value::INTEGER(static_cast<int32_t>(id))
+                : duckdb::Value();
+}
+
+int32_t statusOrDefault(const int64_t id) {
+  return static_cast<int32_t>(id > 0 ? id : 1);
+}
+} // namespace
 
 Database::Database(const config::Config &conf) {
   const auto db_pth = conf.db_conf.value_.db_pth;
@@ -26,19 +36,31 @@ Database::Database(const config::Config &conf) {
 // --- Event ---
 
 int64_t Database::add_event(const ObxEvent &event) {
+  PLOG_DEBUG << "add_event request: start_ms="
+             << event.start_date.value_or(-1)
+             << ", end_ms=" << event.end_date.value_or(-1)
+             << ", event_stat_id=" << event.event_stat_id
+             << ", payment_stat_id=" << event.payment_stat_id;
+
   duckdb::Connection conn(*mDb);
   auto result =
       conn.Query(R"(
         INSERT INTO Event (
+            id,
             name, description, is_work_event,
             event_stat_id, payment_stat_id,
             start_date, end_date, duration
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        )
+        SELECT
+            COALESCE(MAX(id), 0) + 1,
+            $1, $2, $3, $4, $5, $6, $7, $8
+        FROM Event
         RETURNING id
     )",
                  db_utils::toDuckValue(event.name),
                  db_utils::toDuckValue(event.description), event.is_work_event,
-                 event.event_stat_id, event.payment_stat_id,
+                 statusOrDefault(event.event_stat_id),
+                 statusOrDefault(event.payment_stat_id),
                  db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
                  db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
                  db_utils::toDuckValue(event.duration));
@@ -54,7 +76,10 @@ int64_t Database::add_event(const ObxEvent &event) {
     return 0;
   }
 
-  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+  const auto newId =
+      static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+  PLOG_DEBUG << "Inserted event id=" << newId;
+  return newId;
 }
 
 bool Database::update_event(const ObxEvent &event) {
@@ -69,8 +94,8 @@ bool Database::update_event(const ObxEvent &event) {
         SET name = $1,
             description = $2,
             is_work_event = $3,
-            event_stat_id = $4,
-            payment_stat_id = $5,
+            event_stat_id = COALESCE($4, event_stat_id),
+            payment_stat_id = COALESCE($5, payment_stat_id),
             start_date = $6,
             end_date = $7,
             duration = $8
@@ -78,8 +103,8 @@ bool Database::update_event(const ObxEvent &event) {
     )",
                            db_utils::toDuckValue(event.name),
                            db_utils::toDuckValue(event.description),
-                           event.is_work_event, event.event_stat_id,
-                           event.payment_stat_id,
+                           event.is_work_event, fkOrNull(event.event_stat_id),
+                           fkOrNull(event.payment_stat_id),
                            db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
                            db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
                            db_utils::toDuckValue(event.duration), event.id);
@@ -140,10 +165,15 @@ int64_t Database::add_client(const ObxClient &client) {
   auto result = conn.Query(
       R"(
         INSERT INTO Client (
+            id,
             name, last_name, additional_info, diagnosis,
             birthday_date, email, phone_number, client_active,
             country, city, time_zone
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        )
+        SELECT
+            COALESCE(MAX(id), 0) + 1,
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+        FROM Client
         RETURNING id
     )",
       db_utils::toDuckValue(client.name),
@@ -269,8 +299,9 @@ int64_t Database::add_event_client(const int64_t &event_id,
   }
 
   auto result = conn.Query(R"(
-        INSERT INTO EventClient (client_id, event_id)
-        VALUES ($1, $2)
+        INSERT INTO EventClient (id, client_id, event_id)
+        SELECT COALESCE(MAX(id), 0) + 1, $1, $2
+        FROM EventClient
         RETURNING id
     )",
                            client_id, event_id);
@@ -341,8 +372,11 @@ bool Database::has_conflict(const ObxEvent &event) {
 }
 
 std::vector<ObxEvent>
-Database::get_day_events(const int64_t &date_ms) {
-  const auto[start_day, end_day] = get_time_range(date_ms * 1000);
+Database::get_day_events(const int64_t &start_ms, const int64_t &end_ms) {
+  const auto start_day = start_ms * 1000;
+  const auto end_day = end_ms * 1000;
+  PLOG_DEBUG << "get_day_events for range_ms=[" << start_ms << ", " << end_ms
+             << "] range_micros=[" << start_day << ", " << end_day << "]";
 
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(
@@ -362,8 +396,13 @@ Database::get_day_events(const int64_t &date_ms) {
   while (auto chunk = result->Fetch()) {
     for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
       events.emplace_back(*chunk, i);
+      const auto &ev = events.back();
+      PLOG_DEBUG << "get_day_events row id=" << ev.id
+                 << " start_ms=" << ev.start_date.value_or(-1)
+                 << " end_ms=" << ev.end_date.value_or(-1);
     }
   }
+  PLOG_DEBUG << "get_day_events loaded count=" << events.size();
   return events;
 }
 

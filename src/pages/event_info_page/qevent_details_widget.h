@@ -4,6 +4,7 @@
 
 #include <QComboBox>
 #include <QDate>
+#include <QTime>
 #include <QHash>
 #include <QPointer>
 #include <QWidget>
@@ -83,6 +84,7 @@ signals:
    * Passes a pointer to the event data that should be saved.
    */
   void provideEventSave(QEventItem *event);
+  void provideDialogAccept();
 
   /**
    * @brief Signal emitted when user cancels editing/creation.
@@ -105,8 +107,8 @@ private slots:
 
   // --- Input Change Slots ---
   void onEventTypeToggled(bool checked);
-  void onTimeFromChanged(const QDateTime &dt);
-  void onTimeToChanged(const QDateTime &dt);
+  void onTimeFromChanged(const QTime &timeFrom);
+  void onTimeToChanged(const QTime &timeTo);
 
 private:
   // --- Initialization ---

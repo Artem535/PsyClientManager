@@ -39,7 +39,8 @@ public:
   // std::vector<int64_t> get_event_ids(int64_t date);
 
   bool has_conflict(const ObxEvent &event);
-  std::vector<ObxEvent> get_day_events(const int64_t &date_ms);
+  std::vector<ObxEvent> get_day_events(const int64_t &start_ms,
+                                       const int64_t &end_ms);
 
   ObxClient get_client_by_event(const int64_t &event_id);
 

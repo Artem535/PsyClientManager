@@ -42,7 +42,9 @@ void QEventInfoPage::connectSignals() {
 }
 
 void QEventInfoPage::initDefaultStates() {
-  mUi->calendar_widget->setSelectedDate(QDate::currentDate());
+  mSelectedDate = QDate::currentDate();
+  mUi->calendar_widget->setSelectedDate(mSelectedDate);
+  mTimelineWidget->onSelectedDayChanged(mSelectedDate);
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
@@ -71,7 +73,7 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
           &QEventInfoPage::onEventSaved);
   connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, this,
           &QEventInfoPage::onEditingCanceled);
-  connect(detailsWidget, &QEventDetailsWidget::provideEventSave, &dialog,
+  connect(detailsWidget, &QEventDetailsWidget::provideDialogAccept, &dialog,
           &QDialog::accept);
   connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, &dialog,
           &QDialog::reject);
@@ -120,14 +122,18 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 
   if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
     const auto id = mTimelineWidget->addEvent(eventDetails);
+    if (id <= 0) {
+      qCWarning(logEventInfo) << "Failed to persist event in DB";
+      return;
+    }
     eventDetails.id = id;
     event->setId(id);
   } else {
     mTimelineWidget->updateEvent(eventDetails);
   }
 
-  // Request scene update
-  mTimelineWidget->updateScene();
+  // Force reload from DB to avoid stale UI state.
+  mTimelineWidget->onSelectedDayChanged(mSelectedDate);
 }
 
 void QEventInfoPage::onEditingCanceled() {}
