@@ -29,9 +29,12 @@ public slots:
     void updateScene();
 
     void updateEvent(const ObxEvent &event) const;
+    void removeEvent(int64_t id) const;
 
 signals:
     void eventSelected(QEventItem *event);
+    void eventEditRequested(QEventItem *event);
+    void eventDeleteRequested(int64_t eventId);
 
     void needSceneUpdate();
 

@@ -2,6 +2,7 @@
 #include "ui/pages/ui_eventinfo.h"
 
 #include <QDialog>
+#include <QMessageBox>
 #include <QVBoxLayout>
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
@@ -36,6 +37,10 @@ void QEventInfoPage::connectSignals() {
 
   connect(mTimelineWidget, &QTimelineWidget::eventSelected, this,
           &QEventInfoPage::onTimelineEventSelected);
+  connect(mTimelineWidget, &QTimelineWidget::eventEditRequested, this,
+          &QEventInfoPage::onTimelineEventEditRequested);
+  connect(mTimelineWidget, &QTimelineWidget::eventDeleteRequested, this,
+          &QEventInfoPage::onTimelineEventDeleteRequested);
 
   connect(this, &QEventInfoPage::clientResolved, this,
           &QEventInfoPage::onClientResolved);
@@ -99,6 +104,28 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
 }
 
 void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
+  editEventWithDialog(event);
+}
+
+void QEventInfoPage::onTimelineEventEditRequested(QEventItem *event) {
+  editEventWithDialog(event);
+}
+
+void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
+  const auto reply =
+      QMessageBox::question(this, tr(": EVENT_DELETE_TITLE"),
+                            tr(": EVENT_DELETE_CONFIRMATION"),
+                            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+
+  if (reply != QMessageBox::Yes) {
+    return;
+  }
+
+  mTimelineWidget->removeEvent(eventId);
+  mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+}
+
+void QEventInfoPage::editEventWithDialog(QEventItem *event) {
   if (!event)
     return;
 

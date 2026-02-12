@@ -108,8 +108,11 @@ int64_t QTimelineModel::addEvent(const ObxEvent &event) {
 void QTimelineModel::removeEvent(int64_t id) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
+      if (!mDb->remove_event(id)) {
+        qWarning() << "QTimelineModel::removeEvent failed for id=" << id;
+        return;
+      }
       beginRemoveRows({}, i, i);
-      mDb->remove_event(id);
       mEvents.removeAt(i);
       endRemoveRows();
       break;

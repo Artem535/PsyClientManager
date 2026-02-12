@@ -125,6 +125,14 @@ bool Database::remove_event(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
+  auto relationResult =
+      conn.Query("DELETE FROM EventClient WHERE event_id = $1", id);
+  if (relationResult->HasError()) {
+    PLOG_ERROR << "Failed to delete EventClient links for event (id=" << id
+               << "): " << relationResult->GetError();
+    return false;
+  }
+
   auto result = conn.Query("DELETE FROM Event WHERE id = $1", id);
   if (result->HasError()) {
     PLOG_ERROR << "Failed to delete event (id=" << id

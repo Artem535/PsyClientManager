@@ -2,6 +2,8 @@
 
 #include <QDateTime>
 #include <QGraphicsObject>
+#include <QGraphicsSceneContextMenuEvent>
+#include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QLoggingCategory>
 #include <QPainter>
@@ -147,9 +149,12 @@ signals:
    * @brief Emitted when the item is clicked.
    */
   void itemSelected();
+  void editRequested();
+  void deleteRequested();
 
 protected:
   void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 
 private:
   bool mIsWorkItem = false;   ///< True if the event is a work-related item.

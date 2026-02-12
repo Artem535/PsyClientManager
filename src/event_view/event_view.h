@@ -22,6 +22,8 @@ public:
 
 signals:
   void eventSelected(QEventItem *item);
+  void eventEditRequested(QEventItem *item);
+  void eventDeleteRequested(int64_t eventId);
 
 public slots:
   void updateScene();
@@ -36,6 +38,8 @@ protected:
 
 private slots:
   void onEventSelected();
+  void onEventEditRequested();
+  void onEventDeleteRequested();
 
 private:
   QTimelineModel *mModel{};

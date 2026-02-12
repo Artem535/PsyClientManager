@@ -18,6 +18,10 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
           &QTimelineWidget::updateScene);
   connect(mEventView, &QEventView::eventSelected, this,
           &QTimelineWidget::eventSelected);
+  connect(mEventView, &QEventView::eventEditRequested, this,
+          &QTimelineWidget::eventEditRequested);
+  connect(mEventView, &QEventView::eventDeleteRequested, this,
+          &QTimelineWidget::eventDeleteRequested);
   // Defaults
   mModel->loadEventsForDay(QDate::currentDate());
 
@@ -52,4 +56,10 @@ void QTimelineWidget::updateEvent(const ObxEvent &event) const {
   if (!mModel)
     return;
   mModel->updateEvent(event);
+}
+
+void QTimelineWidget::removeEvent(const int64_t id) const {
+  if (!mModel)
+    return;
+  mModel->removeEvent(id);
 }

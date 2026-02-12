@@ -1,5 +1,7 @@
 #include "event_view.h"
 
+#include <QSet>
+
 #include "qtimeline_model.h"
 #include "schema.hpp"
 
@@ -53,6 +55,10 @@ void QEventView::onRowsInserted(const QModelIndex &parent, int first,
 
     connect(item, &QEventItem::itemSelected, this,
             &QEventView::onEventSelected);
+    connect(item, &QEventItem::editRequested, this,
+            &QEventView::onEventEditRequested);
+    connect(item, &QEventItem::deleteRequested, this,
+            &QEventView::onEventDeleteRequested);
 
     mScene->addItem(item);
     mSceneItems.insert(event.id, item);
@@ -64,21 +70,30 @@ void QEventView::onRowsInserted(const QModelIndex &parent, int first,
 
 void QEventView::onRowsRemoved(const QModelIndex &parent, int first, int last) {
   Q_UNUSED(parent)
+  Q_UNUSED(first)
+  Q_UNUSED(last)
+  if (!mModel) {
+    return;
+  }
 
-  for (int row = first; row <= last; ++row) {
-    QModelIndex index = mModel->index(row, 0, parent);
-    if (!index.isValid())
+  QSet<int64_t> existingIds;
+  const int rowCount = mModel->rowCount(QModelIndex());
+  for (int row = 0; row < rowCount; ++row) {
+    const QModelIndex index = mModel->index(row, 0, QModelIndex());
+    if (!index.isValid()) {
       continue;
+    }
+    existingIds.insert(index.data(QTimelineModel::IdRole).toLongLong());
+  }
 
-    QVariant var = index.data(QTimelineModel::IdRole);
-    int64_t eventId = var.value<int64_t>();
-
-    auto it = mSceneItems.find(eventId);
-    if (it != mSceneItems.end()) {
+  for (auto it = mSceneItems.begin(); it != mSceneItems.end();) {
+    if (!existingIds.contains(it.key())) {
       mScene->removeItem(it.value());
       delete it.value();
-      mSceneItems.erase(it);
+      it = mSceneItems.erase(it);
+      continue;
     }
+    ++it;
   }
 
   updateScene();
@@ -128,6 +143,10 @@ void QEventView::onModelReset() {
     QEventItem *item = new QEventItem(event);
     connect(item, &QEventItem::itemSelected, this,
             &QEventView::onEventSelected);
+    connect(item, &QEventItem::editRequested, this,
+            &QEventView::onEventEditRequested);
+    connect(item, &QEventItem::deleteRequested, this,
+            &QEventView::onEventDeleteRequested);
     mScene->addItem(item);
     mSceneItems.insert(event.id, item);
   }
@@ -210,6 +229,20 @@ void QEventView::onEventSelected() {
                        << item->getId();
   if (item != nullptr) {
     emit eventSelected(item);
+  }
+}
+
+void QEventView::onEventEditRequested() {
+  auto *item = qobject_cast<QEventItem *>(sender());
+  if (item != nullptr) {
+    emit eventEditRequested(item);
+  }
+}
+
+void QEventView::onEventDeleteRequested() {
+  auto *item = qobject_cast<QEventItem *>(sender());
+  if (item != nullptr) {
+    emit eventDeleteRequested(item->getId());
   }
 }
 

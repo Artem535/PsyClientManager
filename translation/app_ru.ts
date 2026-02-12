@@ -379,6 +379,19 @@
     </message>
 </context>
 <context>
+    <name>QEventItem</name>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="227"/>
+        <source>: EVENT_CONTEXT_EDIT</source>
+        <translation>Изменить</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="228"/>
+        <source>: EVENT_CONTEXT_DELETE</source>
+        <translation>Удалить</translation>
+    </message>
+</context>
+<context>
     <name>QEventInfoPage</name>
     <message>
         <location filename="../src/pages/event_info_page/event_info.cpp" line="18"/>
@@ -390,6 +403,16 @@
         <location filename="../src/pages/event_info_page/event_info.cpp" line="58"/>
         <source>: EVENT_EDIT_BUTTON</source>
         <translation>Изменить</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="116"/>
+        <source>: EVENT_DELETE_TITLE</source>
+        <translation>Удаление события</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="117"/>
+        <source>: EVENT_DELETE_CONFIRMATION</source>
+        <translation>Вы уверены, что хотите удалить это событие?</translation>
     </message>
 </context>
 <context>

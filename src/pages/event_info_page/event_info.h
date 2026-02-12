@@ -34,6 +34,8 @@ private slots:
   void onCalendarClicked(const QDate &date);
   void onCreateEventClicked();
   void onTimelineEventSelected(QEventItem *event);
+  void onTimelineEventEditRequested(QEventItem *event);
+  void onTimelineEventDeleteRequested(int64_t eventId);
   void onEventSaved(QEventItem *event);
   void onEditingCanceled();
 
@@ -42,6 +44,7 @@ private:
   void initDefaultStates();
   void openEventDialog(QEventItem *event,
                        std::optional<int64_t> clientId = std::nullopt);
+  void editEventWithDialog(QEventItem *event);
 
   std::unique_ptr<Ui::EventInfo> mUi;
   QTimelineWidget *mTimelineWidget = nullptr;

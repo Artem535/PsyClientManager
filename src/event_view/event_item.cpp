@@ -1,4 +1,5 @@
 #include "event_item.h"
+#include <QMenu>
 #include <QTimeZone>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
@@ -206,10 +207,29 @@ QVariant QEventItem::itemChange(const GraphicsItemChange change,
 }
 
 void QEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-  emit itemSelected();
-  qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:"
-                          << mTitle;
+  if (event && event->button() == Qt::LeftButton) {
+    emit itemSelected();
+    qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:"
+                            << mTitle;
+  }
   QGraphicsObject::mousePressEvent(event);
+}
+
+void QEventItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
+  if (!event) {
+    return;
+  }
+
+  QMenu menu;
+  auto *editAction = menu.addAction(tr(": EVENT_CONTEXT_EDIT"));
+  auto *deleteAction = menu.addAction(tr(": EVENT_CONTEXT_DELETE"));
+  connect(editAction, &QAction::triggered, this,
+          [this]() { emit editRequested(); });
+  connect(deleteAction, &QAction::triggered, this,
+          [this]() { emit deleteRequested(); });
+  menu.exec(event->screenPos());
+
+  event->accept();
 }
 
 void QEventItem::updateDuration() {
