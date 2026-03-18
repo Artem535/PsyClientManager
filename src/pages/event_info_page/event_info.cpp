@@ -1,5 +1,6 @@
 #include "event_info.h"
 #include "../../widgets/constants.hpp"
+#include "../../widgets/app_settings.h"
 #include "ui/pages/ui_eventinfo.h"
 
 #include <QDialog>
@@ -143,13 +144,15 @@ void QEventInfoPage::onTimelineEventEditRequested(QEventItem *event) {
 }
 
 void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
-  const auto reply =
-      QMessageBox::question(this, tr(": EVENT_DELETE_TITLE"),
-                            tr(": EVENT_DELETE_CONFIRMATION"),
-                            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+  if (pcm::app_settings::confirmEventDeletion()) {
+    const auto reply =
+        QMessageBox::question(this, tr(": EVENT_DELETE_TITLE"),
+                              tr(": EVENT_DELETE_CONFIRMATION"),
+                              QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 
-  if (reply != QMessageBox::Yes) {
-    return;
+    if (reply != QMessageBox::Yes) {
+      return;
+    }
   }
 
   mTimelineWidget->removeEvent(eventId);
@@ -196,3 +199,12 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 
 void QEventInfoPage::onEditingCanceled() {}
 void QEventInfoPage::onClientResolved(int64_t clientId) { mClientId = clientId; }
+
+void QEventInfoPage::refreshAppearance() {
+  if (!mTimelineWidget) {
+    return;
+  }
+
+  mTimelineWidget->updateScene();
+  mTimelineWidget->update();
+}

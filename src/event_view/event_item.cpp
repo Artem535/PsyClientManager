@@ -1,4 +1,5 @@
 #include "event_item.h"
+#include "../widgets/app_settings.h"
 #include <QIcon>
 #include <QMenu>
 #include <QTimeZone>
@@ -262,9 +263,9 @@ void QEventItem::paint(QPainter *painter,
   painter->save();
 
   // Fill and border colors
-  const QColor fillColor = mIsWorkItem ? QColor(173, 216, 230)  // Light blue
-                                       : QColor(255, 182, 193); // Light pink
-  const QPen borderPen(mIsWorkItem ? Qt::darkBlue : Qt::darkRed, 1.5);
+  const QColor fillColor = mIsWorkItem ? pcm::app_settings::workEventColor()
+                                       : pcm::app_settings::personalEventColor();
+  const QPen borderPen(fillColor.darker(165), 1.5);
 
   painter->setBrush(fillColor);
   painter->setPen(borderPen);

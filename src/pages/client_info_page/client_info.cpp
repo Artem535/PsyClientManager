@@ -1,4 +1,5 @@
 #include "client_info.h"
+#include "../../widgets/constants.hpp"
 #include "ui/pages/ui_clientinfo.h"
 
 Q_LOGGING_CATEGORY(logClientInfo, "pcm.ClientInfo")
@@ -14,6 +15,30 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
 
   mUi->listView->setModel(mClientModel.get());
   mUi->listView->setViewMode(QListView::ListMode);
+  mUi->listView->setFrameShape(QFrame::NoFrame);
+  mUi->listView->setSpacing(10);
+  mUi->listView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  mUi->listView->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  mUi->listView->setStyleSheet(QStringLiteral(
+      "QListView#listView {"
+      " background-color: rgba(%1, %2, %3, %4);"
+      " border: 1px solid rgba(%5, %6, %7, %8);"
+      " border-radius: 16px;"
+      " padding: 10px;"
+      " outline: none;"
+      "}"
+      "QListView#listView::item {"
+      " background: transparent;"
+      " border: none;"
+      "}").arg(
+      QString::number(pcm::widgets::constants::kSurfaceBackgroundColor.red()),
+      QString::number(pcm::widgets::constants::kSurfaceBackgroundColor.green()),
+      QString::number(pcm::widgets::constants::kSurfaceBackgroundColor.blue()),
+      QString::number(pcm::widgets::constants::kSurfaceBackgroundColor.alpha()),
+      QString::number(pcm::widgets::constants::kSurfaceBorderColor.red()),
+      QString::number(pcm::widgets::constants::kSurfaceBorderColor.green()),
+      QString::number(pcm::widgets::constants::kSurfaceBorderColor.blue()),
+      QString::number(pcm::widgets::constants::kSurfaceBorderColor.alpha())));
 
   const auto delegate = new QClientDelegate(mUi->listView);
   connectSignals(delegate);
