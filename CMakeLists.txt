@@ -15,9 +15,31 @@ if(Qt6_VERSION VERSION_LESS 6.8.0)
   message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
 endif()
 
+set(QLEMENTINE_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/apply_qlementine_patch.sh")
+execute_process(
+  COMMAND "${QLEMENTINE_PATCH_SCRIPT}"
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  RESULT_VARIABLE QLEMENTINE_PATCH_RESULT
+  OUTPUT_VARIABLE QLEMENTINE_PATCH_OUTPUT
+  ERROR_VARIABLE QLEMENTINE_PATCH_ERROR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT QLEMENTINE_PATCH_RESULT EQUAL 0)
+  message(FATAL_ERROR
+    "Failed to apply local Qlementine patch.\n"
+    "stdout: ${QLEMENTINE_PATCH_OUTPUT}\n"
+    "stderr: ${QLEMENTINE_PATCH_ERROR}")
+endif()
+
+if(QLEMENTINE_PATCH_OUTPUT)
+  message(STATUS "${QLEMENTINE_PATCH_OUTPUT}")
+endif()
+
 add_custom_target(apply_qlementine_patch
-  COMMAND ${CMAKE_SOURCE_DIR}/scripts/apply_qlementine_patch.sh
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  COMMAND "${QLEMENTINE_PATCH_SCRIPT}"
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   COMMENT "Applying local patch to third_party/qlementine"
   VERBATIM
 )

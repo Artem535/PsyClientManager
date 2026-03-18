@@ -1,21 +1,16 @@
 diff --git a/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp b/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
-index 733d578..13badb1 100644
+index 37dd199..76abcb4 100644
 --- a/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
 +++ b/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
-@@ -6,10 +6,12 @@
+@@ -5,6 +5,7 @@
+ 
  #include <oclero/qlementine/animation/WidgetAnimator.hpp>
  
- #include <unordered_map>
 +#include <memory>
+ #include <unordered_map>
  #include <optional>
  
- namespace oclero::qlementine {
- #define DECLARE_ANIMATE(NAME, TYPE, easing) \
-+
-   TYPE animate##NAME(const QWidget* w, const TYPE& target, int duration, bool loop = false) { \
-     if (_animationsEnabled && w != nullptr) { \
-       auto* animator = getOrCreateAnimator(w); \
-@@ -29,6 +31,7 @@ namespace oclero::qlementine {
+@@ -32,6 +33,7 @@ namespace oclero::qlementine {
  class WidgetAnimationManager {
  public:
    WidgetAnimationManager();
@@ -23,7 +18,7 @@ index 733d578..13badb1 100644
  
    bool enabled() const;
    void setEnabled(bool enabled);
-@@ -62,6 +65,7 @@ private:
+@@ -68,6 +70,7 @@ private:
    QEasingCurve _focusEasingCurve;
    QEasingCurve _defaultEasingCurve;
    QEasingCurve _linearEasingCurve;
@@ -32,23 +27,23 @@ index 733d578..13badb1 100644
  };
  } // namespace oclero::qlementine
 diff --git a/lib/src/animation/WidgetAnimationManager.cpp b/lib/src/animation/WidgetAnimationManager.cpp
-index 0955786..60b2280 100644
+index 5a2cab2..fa0473b 100644
 --- a/lib/src/animation/WidgetAnimationManager.cpp
 +++ b/lib/src/animation/WidgetAnimationManager.cpp
-@@ -6,6 +6,11 @@ namespace oclero::qlementine {
- WidgetAnimationManager::WidgetAnimationManager() {
+@@ -8,6 +8,12 @@ WidgetAnimationManager::WidgetAnimationManager() {
    initializeEasingCurves();
  }
-+
+ 
 +WidgetAnimationManager::~WidgetAnimationManager() {
 +  // Some widgets, notably QCalendarWidget internals, may emit deferred
 +  // destruction callbacks after the style teardown has already started.
 +  *_alive = false;
 +}
- 
++
  bool WidgetAnimationManager::enabled() const {
    return _animationsEnabled;
-@@ -40,8 +45,12 @@ void WidgetAnimationManager::addWidget(const QWidget* widget, WidgetAnimator* wi
+ }
+@@ -40,7 +46,11 @@ void WidgetAnimationManager::addWidget(const QWidget* widget, WidgetAnimator* wi
    if (!findWidget(widget)) {
      _map.insert_or_assign(widget, widgetAnimator);
  
@@ -61,4 +56,3 @@ index 0955786..60b2280 100644
        removeWidget(widget);
      });
    }
- }

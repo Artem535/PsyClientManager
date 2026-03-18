@@ -3,8 +3,10 @@
 #include "ui/pages/ui_eventinfo.h"
 
 #include <QDialog>
+#include <QIcon>
 #include <QLayout>
 #include <QMessageBox>
+#include <QSize>
 #include <QTextCharFormat>
 #include <QVBoxLayout>
 
@@ -26,8 +28,11 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
   mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_layout->addWidget(mTimelineWidget, 0, 0, 2, 1);
 
-  mCreateEventButton = new QPushButton(tr(": EVENT_ADD_BUTTON"), this);
-  mCreateEventButton->setFixedWidth(96);
+  mCreateEventButton = new QPushButton(this);
+  mCreateEventButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
+  mCreateEventButton->setToolTip(tr(": EVENT_ADD_BUTTON"));
+  mCreateEventButton->setIconSize(QSize(18, 18));
+  mCreateEventButton->setFixedSize(40, 40);
   mCreateEventButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
   mUi->list_view_layout->addWidget(mCreateEventButton, 0, 1,
                                    Qt::AlignTop | Qt::AlignRight);

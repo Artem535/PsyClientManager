@@ -1,5 +1,12 @@
 <RCC>
-  <qresource prefix="/themes">
-    <file alias="qlementine_dark.json">themes/qlementine_dark.json</file>
-  </qresource>
+    <qresource prefix="/icons">
+        <file alias="calendar-plus-solid-full.svg">icons/calendar-plus-solid-full.svg</file>
+        <file>icons/user-minus-solid-full.svg</file>
+        <file>icons/user-pen-solid-full.svg</file>
+        <file>icons/user-plus-solid-full.svg</file>
+        <file>icons/user-solid-full.svg</file>
+    </qresource>
+    <qresource prefix="/themes">
+        <file alias="qlementine_dark.json">themes/qlementine_dark.json</file>
+    </qresource>
 </RCC>
