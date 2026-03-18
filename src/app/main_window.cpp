@@ -5,22 +5,26 @@
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
 
 #include <QApplication>
-#include <QAction>
 #include <QIcon>
-#include <QMenu>
-#include <QMenuBar>
 #include <QPixmap>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mUi(std::make_unique<Ui::MainWindow>()) {
   mUi->setupUi(this);
+  menuBar()->hide();
   mUi->gridLayout->setColumnStretch(0, 0);
   mUi->gridLayout->setColumnStretch(1, 1);
   mUi->gridLayout->setRowStretch(0, 0);
   mUi->gridLayout->setRowStretch(1, 1);
   mPageCustomWidgetLayout = new QHBoxLayout(mUi->pageCustomWidgetHost);
-  mPageCustomWidgetLayout->setContentsMargins(0, 0, 0, 0);
-  mPageCustomWidgetLayout->setSpacing(0);
+  mPageCustomWidgetLayout->setContentsMargins(
+      pcm::widgets::constants::kPageContentMargin +
+          pcm::widgets::constants::kPanelPadding,
+      0,
+      pcm::widgets::constants::kPageContentMargin +
+          pcm::widgets::constants::kPanelPadding,
+      0);
+  mPageCustomWidgetLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
   auto *titleLayout = new QHBoxLayout();
   titleLayout->setContentsMargins(0, 0, 0, 0);
@@ -53,10 +57,10 @@ MainWindow::MainWindow(QWidget *parent)
 
   // Add stretch to push buttons to the top
   mUi->verticalLayout->addStretch();
+  setupUtilityButtons();
 
   // Initialize default UI style
   initDefaultStyle();
-  setupMenuBar();
 }
 
 
@@ -66,6 +70,25 @@ void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
 
   const int index = mUi->stackedWidget->addWidget(page);
   mPagesIndex.insertOrAssign(Pages::clientInfo, index);
+
+  mClientPageActions = new QWidget(this);
+  auto *actionsLayout = new QHBoxLayout(mClientPageActions);
+  actionsLayout->setContentsMargins(0, 0, 0, 0);
+  actionsLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
+
+  mClientSearchInput = new QLineEdit(mClientPageActions);
+  mClientSearchInput->setPlaceholderText(tr("Search clients"));
+  mClientSearchInput->setClearButtonEnabled(true);
+  mClientSearchInput->setMinimumWidth(260);
+
+  mAddClientButton = new QPushButton(QIcon(":/icons/user-plus-solid-full.svg"),
+                                     tr("Add client"), mClientPageActions);
+  mAddClientButton->setIconSize(QSize(16, 16));
+  mAddClientButton->setCursor(Qt::PointingHandCursor);
+
+  actionsLayout->addWidget(mClientSearchInput, 1);
+  actionsLayout->addWidget(mAddClientButton, 0);
+  setPageCustomWidget(Pages::clientInfo, mClientPageActions);
 }
 
 
@@ -113,6 +136,15 @@ void MainWindow::connectSignals() {
   connect(clientInfoPage, &ClientInfo::displayButtonClicked,
           [this]() { showPage(Pages::clientCard, mBtnProfile); });
 
+  connect(mClientSearchInput, &QLineEdit::textChanged, clientInfoPage,
+          &ClientInfo::setSearchQuery);
+
+  connect(mAddClientButton, &QPushButton::clicked, this, [this, clientCardPage]() {
+    clientCardPage->setClientInfo(std::nullopt);
+    clientCardPage->enterInEditMode();
+    showPage(Pages::clientCard, mBtnProfile);
+  });
+
   // Forward the save client signal from the client card to the main window
   connect(clientCardPage, &QClientInfoCardPage::provideSaveClient,
           [&](const auto &client) { emit provideSaveClient(client); });
@@ -131,6 +163,7 @@ QWidget *MainWindow::getPage(const Pages page) { return mPages[page]; }
 void MainWindow::setPageCustomWidget(const Pages page, QWidget *widget) {
   if (widget != nullptr) {
     widget->setParent(mUi->pageCustomWidgetHost);
+    widget->hide();
   }
 
   mPageCustomWidgets.insertOrAssign(page, widget);
@@ -183,19 +216,40 @@ void MainWindow::applyPageCustomWidget(const Pages page) {
   }
 }
 
-void MainWindow::setupMenuBar() {
-  auto *appMenu = menuBar()->addMenu(tr("&Application"));
+void MainWindow::setupUtilityButtons() {
+  const auto makeUtilityButton = [this](const QIcon &icon, const QString &text) {
+    auto *button = new QPushButton(icon, text, this);
+    button->setFlat(true);
+    button->setCheckable(false);
+    button->setCursor(Qt::PointingHandCursor);
+    button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    button->setIconSize(QSize(16, 16));
+    button->setStyleSheet(
+        "QPushButton {"
+        " color: rgba(255, 255, 255, 0.52);"
+        " background: transparent;"
+        " border: none;"
+        " padding: 6px 10px;"
+        " text-align: left;"
+        "}"
+        "QPushButton:hover {"
+        " color: rgba(255, 255, 255, 0.78);"
+        "}"
+        "QPushButton:pressed {"
+        " color: rgba(255, 255, 255, 0.92);"
+        "}");
+    return button;
+  };
 
-  mSettingsAction =
-      appMenu->addAction(QIcon(":/icons/users-gear-solid-full.svg"), tr("Settings"));
-  mAboutAction =
-      appMenu->addAction(QIcon(":/icons/brain-solid-full.svg"), tr("About"));
-  appMenu->addSeparator();
-  mQuitAction = appMenu->addAction(tr("Quit"));
+  mBtnSettings =
+      makeUtilityButton(QIcon(":/icons/users-gear-solid-full.svg"), tr("Settings"));
+  mBtnAbout = makeUtilityButton(QIcon(":/icons/brain-solid-full.svg"), tr("About"));
 
-  connect(mSettingsAction, &QAction::triggered, this, &MainWindow::openSettingsDialog);
-  connect(mAboutAction, &QAction::triggered, this, &MainWindow::openAboutDialog);
-  connect(mQuitAction, &QAction::triggered, this, &QWidget::close);
+  mUi->verticalLayout->addWidget(mBtnSettings);
+  mUi->verticalLayout->addWidget(mBtnAbout);
+
+  connect(mBtnSettings, &QPushButton::clicked, this, &MainWindow::openSettingsDialog);
+  connect(mBtnAbout, &QPushButton::clicked, this, &MainWindow::openAboutDialog);
 }
 
 void MainWindow::openSettingsDialog() {

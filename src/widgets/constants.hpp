@@ -4,6 +4,8 @@
 
 namespace pcm::widgets::constants {
     constexpr auto kFontSize = 15;
+    constexpr auto kPageContentMargin = 9;
+    constexpr auto kPanelPadding = 10;
     constexpr auto kCircleDiameter = 10;
     constexpr auto kCircleMargin = kCircleDiameter / 2;
     constexpr auto kCircleColor = QColor(0, 120, 215);

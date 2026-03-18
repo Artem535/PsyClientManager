@@ -43,16 +43,28 @@ void QClientDelegate::paint(QPainter *painter,
   painter->setRenderHint(QPainter::TextAntialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-  // Draw background
-  QStyleOptionViewItem opt(option);
-  initStyleOption(&opt, index);
-  if (opt.widget) {
-    opt.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt,
-                                       painter, opt.widget);
+  const auto cardRect = option.rect.adjusted(2, 2, -2, -2);
+  const bool isSelected = option.state & QStyle::State_Selected;
+  const bool isHovered = option.state & QStyle::State_MouseOver;
+
+  QColor backgroundColor = Qt::transparent;
+  if (isSelected) {
+    backgroundColor = option.palette.color(QPalette::Highlight);
+    backgroundColor.setAlpha(38);
+  } else if (isHovered) {
+    backgroundColor = option.palette.color(QPalette::Highlight);
+    backgroundColor.setAlpha(18);
+  }
+
+  if (backgroundColor.alpha() > 0) {
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(backgroundColor);
+    painter->drawRoundedRect(cardRect, 14, 14);
   }
 
   const QVariant clientVal = index.data(QClientModel::ClientRoles::Full_object);
   const auto client = clientVal.value<DuckClient>();
+  mButtonRects.insert(QPersistentModelIndex(index), calculateButtonRects(option));
 
   drawFirstColumn(painter, option, client);
   drawContacts(painter, option, client);
@@ -281,20 +293,35 @@ QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
 bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
                                   const QStyleOptionViewItem &option,
                                   const QModelIndex &index) {
-  const auto [button1Rect, button2Rect] = calculateButtonRects(option);
+  Q_UNUSED(model)
+
+  if (!event) {
+    return false;
+  }
+
+  if (event->type() != QEvent::MouseButtonRelease &&
+      event->type() != QEvent::MouseButtonDblClick) {
+    return QStyledItemDelegate::editorEvent(event, model, option, index);
+  }
 
   const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
-  if (const auto pos = mouseEvent->pos();
-      event->type() == QEvent::MouseButtonPress) {
-    if (button1Rect.contains(pos)) {
-      // Edit button clicked
-      emit displayButtonClicked(index);
-      return true;
-    } else if (button2Rect.contains(pos)) {
-      // Delete button clicked
-      emit removeButtonClicked(index);
-      return true;
-    }
+  if (!mouseEvent || mouseEvent->button() != Qt::LeftButton) {
+    return QStyledItemDelegate::editorEvent(event, model, option, index);
+  }
+
+  const auto buttonRects =
+      mButtonRects.value(QPersistentModelIndex(index), calculateButtonRects(option));
+  const auto [button1Rect, button2Rect] = buttonRects;
+  const auto pos = mouseEvent->pos();
+
+  if (button1Rect.contains(pos)) {
+    emit displayButtonClicked(index);
+    return true;
+  }
+
+  if (button2Rect.contains(pos)) {
+    emit removeButtonClicked(index);
+    return true;
   }
 
   return QStyledItemDelegate::editorEvent(event, model, option, index);

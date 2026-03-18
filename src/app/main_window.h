@@ -8,6 +8,8 @@
 #include "tab_button.h"
 
 #include <QAction>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QMainWindow>
 #include <QLabel>
 #include <QHBoxLayout>
@@ -109,12 +111,14 @@ private:
   TabButton *mBtnCalendar{nullptr};
   TabButton *mBtnClients{nullptr};
   TabButton *mBtnProfile{nullptr};
+  QWidget *mClientPageActions{nullptr};
+  QLineEdit *mClientSearchInput{nullptr};
+  QPushButton *mAddClientButton{nullptr};
+  QPushButton *mBtnSettings{nullptr};
+  QPushButton *mBtnAbout{nullptr};
   QHBoxLayout *mPageCustomWidgetLayout{nullptr};
   QHash<Pages, QWidget*> mPageCustomWidgets;
   Pages mCurrentPage{Pages::eventInfo};
-  QAction *mSettingsAction{nullptr};
-  QAction *mAboutAction{nullptr};
-  QAction *mQuitAction{nullptr};
 
   /**
    * @brief Initializes default UI style (colors, fonts, etc.).
@@ -139,7 +143,7 @@ private:
    * @param page Target page.
    */
   void applyPageCustomWidget(Pages page);
-  void setupMenuBar();
+  void setupUtilityButtons();
   void openSettingsDialog();
   void openAboutDialog();
   [[nodiscard]] QString pageTitle(Pages page) const;

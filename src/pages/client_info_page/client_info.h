@@ -8,7 +8,7 @@
 #include <QMessageBox>
 #include <QModelIndex>
 #include <QPointer>
-#include <QPushButton>
+#include <QSortFilterProxyModel>
 #include <QLabel>
 #include <QVariant>
 #include <QWidget>
@@ -34,12 +34,15 @@ public:
                       QWidget *parent = nullptr);
   ~ClientInfo() override;
 
+  void setSearchQuery(const QString &query) const;
+
 signals:
   void displayButtonClicked(const std::optional<DuckClient> &client);
 
 private:
   std::unique_ptr<Ui::ClientInfo> mUi;
   std::shared_ptr<QClientModel> mClientModel;
+  QSortFilterProxyModel *mFilterModel{nullptr};
   QLabel *mLoadingLabel{nullptr};
 
   void connectSignals(const QClientDelegate *delegate);

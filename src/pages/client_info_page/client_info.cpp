@@ -4,6 +4,47 @@
 
 Q_LOGGING_CATEGORY(logClientInfo, "pcm.ClientInfo")
 
+namespace {
+
+class ClientFilterModel final : public QSortFilterProxyModel {
+public:
+  using QSortFilterProxyModel::QSortFilterProxyModel;
+
+  void setQuery(const QString &query) {
+    mQuery = query.trimmed().toCaseFolded();
+    invalidateFilter();
+  }
+
+protected:
+  bool filterAcceptsRow(int source_row,
+                        const QModelIndex &source_parent) const override {
+    const auto needle = mQuery;
+    if (needle.isEmpty()) {
+      return true;
+    }
+
+    const auto index = sourceModel()->index(source_row, 0, source_parent);
+    const auto clientVar = sourceModel()->data(index, QClientModel::ClientRoles::Full_object);
+    const auto client = clientVar.value<DuckClient>();
+
+    const QString haystack =
+        QStringList{
+            QString::fromStdString(client.name.value_or("")),
+            QString::fromStdString(client.last_name.value_or("")),
+            QString::fromStdString(client.email.value_or("")),
+            QString::fromStdString(client.phone_number.value_or("")),
+            QString::fromStdString(client.city.value_or(""))
+        }.join(' ').toCaseFolded();
+
+    return haystack.contains(needle);
+  }
+
+private:
+  QString mQuery;
+};
+
+} // namespace
+
 ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::ClientInfo>()),
       mClientModel(std::move(model)) {
@@ -13,7 +54,11 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
   mLoadingLabel->setAlignment(Qt::AlignCenter);
   mUi->verticalLayout->insertWidget(0, mLoadingLabel);
 
-  mUi->listView->setModel(mClientModel.get());
+  mFilterModel = new ClientFilterModel(this);
+  mFilterModel->setSourceModel(mClientModel.get());
+  mFilterModel->setDynamicSortFilter(true);
+
+  mUi->listView->setModel(mFilterModel);
   mUi->listView->setViewMode(QListView::ListMode);
   mUi->listView->setFrameShape(QFrame::NoFrame);
   mUi->listView->setSpacing(10);
@@ -24,7 +69,7 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
       " background-color: rgba(%1, %2, %3, %4);"
       " border: 1px solid rgba(%5, %6, %7, %8);"
       " border-radius: 16px;"
-      " padding: 10px;"
+      " padding: %9px;"
       " outline: none;"
       "}"
       "QListView#listView::item {"
@@ -38,7 +83,8 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
       QString::number(pcm::widgets::constants::kSurfaceBorderColor.red()),
       QString::number(pcm::widgets::constants::kSurfaceBorderColor.green()),
       QString::number(pcm::widgets::constants::kSurfaceBorderColor.blue()),
-      QString::number(pcm::widgets::constants::kSurfaceBorderColor.alpha())));
+      QString::number(pcm::widgets::constants::kSurfaceBorderColor.alpha()),
+      QString::number(pcm::widgets::constants::kPanelPadding)));
 
   const auto delegate = new QClientDelegate(mUi->listView);
   connectSignals(delegate);
@@ -66,6 +112,14 @@ ClientInfo::ClientInfo(std::shared_ptr<QClientModel> model, QWidget *parent)
 }
 
 ClientInfo::~ClientInfo() = default;
+
+void ClientInfo::setSearchQuery(const QString &query) const {
+  if (!mFilterModel) {
+    return;
+  }
+
+  static_cast<ClientFilterModel *>(mFilterModel)->setQuery(query);
+}
 
 void ClientInfo::connectSignals(const QClientDelegate *delegate) {
   connect(

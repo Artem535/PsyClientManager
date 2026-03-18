@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QHash>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -122,4 +123,6 @@ private:
    * @return int Calculated age.
    */
   static int countAge(const QDate &birthDate);
+
+  mutable QHash<QPersistentModelIndex, std::pair<QRect, QRect>> mButtonRects;
 };

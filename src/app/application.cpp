@@ -93,6 +93,10 @@ void Application::fillClientComboBox(QComboBox *box) {
   box->clear();
   const auto clients = mDb->get_clients();
   for (const auto &client : clients) {
+    if (!client || !client->client_active) {
+      continue;
+    }
+
     QString title{"%1 %2"};
     const auto name = client->name != std::nullopt
                           ? QString::fromStdString(client->name.value())
