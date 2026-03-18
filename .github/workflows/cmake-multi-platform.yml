@@ -22,9 +22,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            qt_version: 6.8.2
             qt_arch: gcc_64
             artifact_name: PsyClientManager-linux-appimage
           - os: windows-latest
+            qt_version: 6.8.3
             qt_arch: win64_msvc2022_64
             artifact_name: PsyClientManager-windows-deploy
 
@@ -65,7 +67,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.3"
+          version: ${{ matrix.qt_version }}
           cache: true
           arch: ${{ matrix.qt_arch }}
           aqtversion: "==3.3.*"
