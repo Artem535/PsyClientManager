@@ -4,6 +4,8 @@
 
 #include "qclient_delegate.h"
 
+#include <QIcon>
+
 namespace {
 // Convenience aliases
 namespace cst = pcm::widgets::constants;
@@ -11,6 +13,14 @@ namespace cst = pcm::widgets::constants;
 // Compute absolute widths based on fractions
 inline int widthBy(const double fraction, const int total) {
   return static_cast<int>(std::round(fraction * total));
+}
+
+QIcon displayClientIcon() {
+  return QIcon(":/icons/user-solid-full.svg");
+}
+
+QIcon removeClientIcon() {
+  return QIcon(":/icons/user-minus-solid-full.svg");
 }
 } // namespace
 
@@ -217,17 +227,24 @@ void QClientDelegate::drawActions(QPainter *painter,
                                   const ObxClient & /*client*/) {
   const auto [btn1Rect, btn2Rect] = calculateButtonRects(option);
 
-  painter->setBrush(QColor(200, 200, 200));
-  painter->setPen(Qt::NoPen);
+  const auto outlineColor = QColor(255, 255, 255, 56);
+  painter->setBrush(Qt::NoBrush);
+  painter->setPen(QPen(outlineColor, 1));
 
   painter->drawEllipse(btn1Rect);
   painter->drawEllipse(btn2Rect);
 
-  painter->setPen(Qt::black);
-  // Edit button
-  painter->drawText(btn1Rect, Qt::AlignCenter, "S");
-  // Delete button
-  painter->drawText(btn2Rect, Qt::AlignCenter, "D");
+  const auto displayPixmap =
+      displayClientIcon().pixmap(QSize(btn1Rect.width() - 10, btn1Rect.height() - 10));
+  const auto removePixmap =
+      removeClientIcon().pixmap(QSize(btn2Rect.width() - 10, btn2Rect.height() - 10));
+
+  painter->drawPixmap(btn1Rect.center().x() - displayPixmap.width() / 2,
+                      btn1Rect.center().y() - displayPixmap.height() / 2,
+                      displayPixmap);
+  painter->drawPixmap(btn2Rect.center().x() - removePixmap.width() / 2,
+                      btn2Rect.center().y() - removePixmap.height() / 2,
+                      removePixmap);
 }
 
 std::pair<QRect, QRect>

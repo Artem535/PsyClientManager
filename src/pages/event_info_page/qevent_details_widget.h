@@ -10,6 +10,10 @@
 #include <QWidget>
 #include <memory>
 
+namespace oclero::qlementine {
+class Switch;
+}
+
 // Forward declaration for UI
 namespace Ui {
 class EventDetails;
@@ -126,6 +130,7 @@ private:
 
   // --- UI ---
   std::unique_ptr<Ui::EventDetails> mUI;
+  oclero::qlementine::Switch *mEventTypeSwitch = nullptr;
 
   // --- Data ---
   QPointer<QEventItem> mCurrentEvent;

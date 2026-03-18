@@ -8,6 +8,15 @@
 
 TabButton::TabButton(const QString &text, QWidget *parent)
     : QPushButton(parent), mText(text) {
+  init();
+}
+
+TabButton::TabButton(const QIcon &icon, const QString &text, QWidget *parent)
+    : QPushButton(parent), mText(text), mIcon(icon) {
+  init();
+}
+
+void TabButton::init() {
   setCheckable(true);
   setFlat(true); // removes native border
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
@@ -37,7 +46,19 @@ void TabButton::paintEvent(QPaintEvent *event) {
     painter.setPen(isChecked() ? palette().color(QPalette::Highlight)
                                : palette().color(QPalette::WindowText));
 
-    constexpr auto textX = 10;
+    constexpr int iconSize = 16;
+    constexpr int leftPadding = 10;
+    constexpr int iconTextSpacing = 8;
+    int textX = leftPadding;
+
+    if (!mIcon.isNull()) {
+      const auto pixmap = mIcon.pixmap(iconSize, iconSize);
+      const QRect iconRect(leftPadding, (height() - iconSize) / 2, iconSize,
+                           iconSize);
+      painter.drawPixmap(iconRect, pixmap);
+      textX += iconSize + iconTextSpacing;
+    }
+
     const QRect textRect(textX, 0, width() - textX, height());
     painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mText);
   }
@@ -45,7 +66,14 @@ void TabButton::paintEvent(QPaintEvent *event) {
 
 QSize TabButton::sizeHint() const {
   const QFontMetrics fm(font());
-  const int w = fm.horizontalAdvance(mText);
+  constexpr int leftPadding = 10;
+  constexpr int rightPadding = 12;
+  constexpr int iconSize = 16;
+  constexpr int iconTextSpacing = 8;
+  int w = fm.horizontalAdvance(mText) + leftPadding + rightPadding;
+  if (!mIcon.isNull()) {
+    w += iconSize + iconTextSpacing;
+  }
   const int h = fm.height() + 4; // some padding at top and bottom
   return {w, h};
 }

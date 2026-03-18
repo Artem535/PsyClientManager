@@ -1,7 +1,6 @@
 #pragma once
 
 // === Qt ===
-#include <QCheckBox>
 #include <QDateTime>
 #include <QLineEdit>
 #include <QLoggingCategory>
@@ -18,6 +17,10 @@
 // === Local ===
 #include "database.h"
 #include "qclient.h"
+
+namespace oclero::qlementine {
+class Switch;
+}
 
 namespace Ui {
 class ClientInfoCard;
@@ -67,6 +70,7 @@ public slots:
 
 private:
   std::unique_ptr<Ui::ClientInfoCard> mUi;
+  oclero::qlementine::Switch *mIsActiveSwitch = nullptr;
   QClient mClientInfo;
 
   static int countAge(const QDate &birthDate);

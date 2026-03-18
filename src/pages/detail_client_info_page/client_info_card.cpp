@@ -1,11 +1,25 @@
 #include "client_info_card.h"
 #include "ui/pages/ui_detailclientinfo.h"
 
+#include <oclero/qlementine/widgets/Switch.hpp>
+
+#include <QIcon>
+#include <QSize>
+
 Q_LOGGING_CATEGORY(logClientInfoCard, "pcm.ClientInfoCard");
 
 QClientInfoCardPage::QClientInfoCardPage(QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::ClientInfoCard>()) {
   mUi->setupUi(this);
+
+  mIsActiveSwitch = new oclero::qlementine::Switch(this);
+  mIsActiveSwitch->setText(mUi->isActive->text());
+  mUi->gridLayout->replaceWidget(mUi->isActive, mIsActiveSwitch);
+  mUi->isActive->hide();
+  mUi->isActive->deleteLater();
+
+  mUi->editButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
+  mUi->editButton->setIconSize(QSize(16, 16));
 
   connectReactiveSignals();
   connectSignals();
@@ -50,6 +64,7 @@ void QClientInfoCardPage::leaveEditMode() {
   tmpClient.setTimezone(mUi->timezoneInput->text());
   tmpClient.setDiagnosis(mUi->diagnosisTextEdit->toPlainText());
   tmpClient.setAdditionalInfo(mUi->additionalInfoTextEdit->toPlainText());
+  tmpClient.setIsActive(mIsActiveSwitch->isChecked());
 
   if (tmpClient.getName().isEmpty() || tmpClient.getLastName().isEmpty()) {
     QMessageBox::warning(this, tr(": WARNING_TITLE"),
@@ -87,6 +102,7 @@ void QClientInfoCardPage::updateUiProperty() const {
   mUi->countryInput->setText(mClientInfo.getCountry());
   mUi->cityInput->setText(mClientInfo.getCity());
   mUi->timezoneInput->setText(mClientInfo.getTimezone());
+  mIsActiveSwitch->setChecked(mClientInfo.isActive());
 
   mUi->diagnosisTextEdit->setPlainText(mClientInfo.getDiagnosis());
   mUi->additionalInfoTextEdit->setPlainText(mClientInfo.getAdditionalInfo());
@@ -105,10 +121,10 @@ void QClientInfoCardPage::connectReactiveSignals() {
 
   // Update text in isActive checkbox
   // clang-format off
-  connect(mUi->isActive, &QCheckBox::checkStateChanged, [this](const auto state) {
-    const auto text = state == Qt::CheckState::Checked ? tr(": CLIENT_STATUS_ACTIVE")
-                                                        : tr(": CLIENT_STATUS_INACTIVE");
-    mUi->isActive->setText(QString(text));
+  connect(mIsActiveSwitch, &QAbstractButton::toggled, [this](const auto checked) {
+    const auto text = checked ? tr(": CLIENT_STATUS_ACTIVE")
+                              : tr(": CLIENT_STATUS_INACTIVE");
+    mIsActiveSwitch->setText(QString(text));
   });
   // clang-format on
 }
@@ -204,5 +220,5 @@ void QClientInfoCardPage::clearUI() const {
   mUi->diagnosisTextEdit->clear();
   mUi->additionalInfoTextEdit->clear();
   mUi->avatarLabel->setText("??");
-  mUi->isActive->setChecked(Qt::CheckState::Unchecked);
+  mIsActiveSwitch->setChecked(false);
 }

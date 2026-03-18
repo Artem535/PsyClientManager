@@ -24,6 +24,7 @@ void QClient::update(const ObxClient &client) {
   setTimezone(QString::fromStdString(client.time_zone != std::nullopt ? client.time_zone.value() : ""));
   setAdditionalInfo(QString::fromStdString(client.additional_info != std::nullopt ? client.additional_info.value() : ""));
   setDiagnosis(QString::fromStdString(client.diagnosis != std::nullopt ? client.diagnosis.value() : ""));
+  setIsActive(client.client_active);
 }
 
 void QClient::clear() {
@@ -39,6 +40,7 @@ void QClient::clear() {
   mTimezone.clear();
   mAdditionalInfo.clear();
   mDiagnosis.clear();
+  mIsActive = false;
 }
 
 // ---- Getters ----

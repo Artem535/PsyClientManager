@@ -1,7 +1,11 @@
 #include "qevent_details_widget.h"
 #include "ui/pages/ui_eventdetails.h"
 
+#include <oclero/qlementine/widgets/Switch.hpp>
+
+#include <QIcon>
 #include <QMessageBox>
+#include <QSize>
 #include <QTimeZone>
 
 Q_LOGGING_CATEGORY(logEventDetails, "pcm.EventDetails")
@@ -26,6 +30,17 @@ void QEventDetailsWidget::initUi() {
   mUI->mTimeTo->setTimeZone(localTz);
   mUI->mTimeFrom->setDisplayFormat("HH:mm");
   mUI->mTimeTo->setDisplayFormat("HH:mm");
+
+  mEventTypeSwitch = new oclero::qlementine::Switch(this);
+  mEventTypeSwitch->setText(mUI->mEventType->text());
+  mUI->formLayout->replaceWidget(mUI->mEventType, mEventTypeSwitch);
+  mUI->mEventType->hide();
+  mUI->mEventType->deleteLater();
+
+  mUI->mAddButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
+  mUI->mAddButton->setIconSize(QSize(16, 16));
+  mUI->mChangeButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
+  mUI->mChangeButton->setIconSize(QSize(16, 16));
 }
 
 void QEventDetailsWidget::initConnections() {
@@ -40,7 +55,7 @@ void QEventDetailsWidget::initConnections() {
           &QEventDetailsWidget::onChangeClicked);
 
   // --- Input Change Connections ---
-  connect(mUI->mEventType, &QCheckBox::toggled, this,
+  connect(mEventTypeSwitch, &QAbstractButton::toggled, this,
           &QEventDetailsWidget::onEventTypeToggled);
   connect(mUI->mTimeFrom, &QTimeEdit::timeChanged, this,
           &QEventDetailsWidget::onTimeFromChanged);
@@ -57,7 +72,7 @@ void QEventDetailsWidget::initDefaultStyle() {
   const auto isVisible = mCurrentEvent ? mCurrentEvent->isWorkItem() : false;
   mUI->mClientComboBox->setVisible(isVisible);
   mUI->mClientComboxBoxLabel->setVisible(isVisible);
-  mUI->mEventType->setEnabled(false);
+  mEventTypeSwitch->setEnabled(false);
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
   mUI->mAddButton->setVisible(true);
@@ -68,13 +83,13 @@ void QEventDetailsWidget::initEditStyle() {
   mUI->mButtonBox->setVisible(true);
   mUI->mChangeButton->setVisible(false);
   mUI->mAddButton->setVisible(false);
-  mUI->mEventType->setEnabled(true);
+  mEventTypeSwitch->setEnabled(true);
   emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
 void QEventDetailsWidget::initDefaultStates() const {
   // Set initial text for checkbox
-  mUI->mEventType->setText(tr(": EVENT_TYPE_REGULAR"));
+  mEventTypeSwitch->setText(tr(": EVENT_TYPE_REGULAR"));
 }
 
 void QEventDetailsWidget::initDefaultTimes() const {
@@ -108,7 +123,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   mUI->mTimeFrom->setTime(event->getStartTime().time());
   mUI->mTimeTo->setTime(event->getEndTime().time());
   const bool isWorkItem = event->isWorkItem();
-  mUI->mEventType->setChecked(isWorkItem);
+  mEventTypeSwitch->setChecked(isWorkItem);
 
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
@@ -195,7 +210,7 @@ void QEventDetailsWidget::onApplyClicked() {
 
     mCurrentEvent->setTitle(mUI->mTitle->text());
     mCurrentEvent->setTimeRange(startDateTime, endDateTime);
-    mCurrentEvent->setIsWorkItem(mUI->mEventType->isChecked());
+    mCurrentEvent->setIsWorkItem(mEventTypeSwitch->isChecked());
   }
 
   const bool isCreatingNewEvent = mCreatingNewEvent;
@@ -211,7 +226,7 @@ void QEventDetailsWidget::onApplyClicked() {
 
   if (mCurrentEvent) {
     int64_t selectedClientId = 0;
-    if (mUI->mEventType->isChecked()) {
+    if (mEventTypeSwitch->isChecked()) {
       selectedClientId = mUI->mClientComboBox->currentData().toLongLong();
       qCDebug(logEventDetails)
           << "Selected client ID for event:" << selectedClientId;
@@ -255,7 +270,7 @@ void QEventDetailsWidget::onChangeClicked() {
 }
 
 void QEventDetailsWidget::onEventTypeToggled(bool checked) {
-  mUI->mEventType->setText(
+  mEventTypeSwitch->setText(
       checked ? tr(": EVENT_TYPE_WORK") : tr(": EVENT_TYPE_REGULAR"));
   mUI->mClientComboBox->setVisible(checked);
   mUI->mClientComboxBoxLabel->setVisible(checked);
@@ -311,7 +326,7 @@ ObxEvent QEventDetailsWidget::collectEventData() const {
   event.end_date = QDateTime(mUI->mEventDate->date(), mUI->mTimeTo->time(),
                              QTimeZone::systemTimeZone())
                        .toMSecsSinceEpoch();
-  event.is_work_event = mUI->mEventType->isChecked();
+  event.is_work_event = mEventTypeSwitch->isChecked();
   event.duration = (event.end_date.value_or(0) - event.start_date.value_or(0)) / 1000; // in seconds
   return event;
 }

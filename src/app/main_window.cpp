@@ -1,6 +1,9 @@
 #include "main_window.h"
 #include "ui/app/ui_mainwindow.h"
 
+#include <QIcon>
+#include <QPixmap>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mUi(std::make_unique<Ui::MainWindow>()) {
   mUi->setupUi(this);
@@ -12,10 +15,29 @@ MainWindow::MainWindow(QWidget *parent)
   mPageCustomWidgetLayout->setContentsMargins(0, 0, 0, 0);
   mPageCustomWidgetLayout->setSpacing(0);
 
+  auto *titleLayout = new QHBoxLayout();
+  titleLayout->setContentsMargins(0, 0, 0, 0);
+  titleLayout->setSpacing(10);
+  auto *titleIconLabel = new QLabel(this);
+  titleIconLabel->setPixmap(QIcon(":/icons/brain-solid-full.svg").pixmap(24, 24));
+  auto *titleTextLabel = new QLabel(mUi->label->text(), this);
+  titleTextLabel->setFont(mUi->label->font());
+  auto *titleWidget = new QWidget(this);
+  titleWidget->setLayout(titleLayout);
+  titleLayout->addWidget(titleIconLabel);
+  titleLayout->addWidget(titleTextLabel);
+  titleLayout->addStretch();
+  mUi->gridLayout->replaceWidget(mUi->label, titleWidget);
+  mUi->label->hide();
+  mUi->label->deleteLater();
+
   // Create navigation buttons
-  mBtnCalendar = new TabButton(tr(": NAV_CALENDAR"), this);
-  mBtnClients = new TabButton(tr(": NAV_CLIENTS"), this);
-  mBtnProfile = new TabButton(tr(": NAV_DETAILS"), this);
+  mBtnCalendar =
+      new TabButton(QIcon(":/icons/calendar-solid-full.svg"), tr(": NAV_CALENDAR"), this);
+  mBtnClients =
+      new TabButton(QIcon(":/icons/users-line-solid-full.svg"), tr(": NAV_CLIENTS"), this);
+  mBtnProfile =
+      new TabButton(QIcon(":/icons/users-gear-solid-full.svg"), tr(": NAV_DETAILS"), this);
 
   // Add buttons to the vertical layout
   mUi->verticalLayout->addWidget(mBtnCalendar);

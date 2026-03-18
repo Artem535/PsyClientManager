@@ -15,6 +15,10 @@ qt_add_library(${TARGET_NAME} STATIC
         qevent_details_widget.h
 )
 
+target_include_directories(${TARGET_NAME} PRIVATE
+        ${qlementine_SOURCE_DIR}/lib/include
+)
+
 qt_add_ui(${TARGET_NAME} SOURCES
         ../../../ui/pages/eventinfo.ui
         ../../../ui/pages/eventdetails.ui
@@ -36,9 +40,9 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_client_model
         ${PROJECT_NAME}_event_view
         ${PROJECT_NAME}_timeline_widget
+        qlementine
         Qt6::Widgets
         Qt6::Gui
 )
 
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-

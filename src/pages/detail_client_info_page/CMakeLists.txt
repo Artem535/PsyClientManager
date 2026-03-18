@@ -15,6 +15,10 @@ qt_add_library(${TARGET_NAME} STATIC
         qclient.h
 )
 
+target_include_directories(${TARGET_NAME} PRIVATE
+        ${qlementine_SOURCE_DIR}/lib/include
+)
+
 
 qt_add_ui(${TARGET_NAME} SOURCES
         ../../../ui/pages/detailclientinfo.ui
@@ -30,8 +34,8 @@ add_dependencies(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
+        qlementine
         Qt6::Widgets
 )
 
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-
