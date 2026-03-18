@@ -1,9 +1,14 @@
 #pragma once
 
-#include <QCalendarWidget>
 #include <QDate>
+#include <QLabel>
+#include <QMap>
+#include <QMouseEvent>
 #include <QPaintEvent>
+#include <QRect>
+#include <QResizeEvent>
 #include <QTextCharFormat>
+#include <QToolButton>
 #include <QWidget>
 
 class RoundedCalendarWidget final : public QWidget {
@@ -19,8 +24,21 @@ public:
 signals:
   void clicked(const QDate &date);
 
-private:
+protected:
+  void mousePressEvent(QMouseEvent *event) override;
   void paintEvent(QPaintEvent *event) override;
+  void resizeEvent(QResizeEvent *event) override;
 
-  QCalendarWidget *mCalendarWidget = nullptr;
+private:
+  void syncNavigationControls() const;
+  [[nodiscard]] QRect gridRect() const;
+  [[nodiscard]] QRect cellRect(int row, int column) const;
+  [[nodiscard]] QDate firstVisibleDate() const;
+
+  QDate mSelectedDate;
+  QDate mShownMonth;
+  QMap<QDate, QTextCharFormat> mDateFormats;
+  QToolButton *mPreviousMonthButton = nullptr;
+  QToolButton *mNextMonthButton = nullptr;
+  QLabel *mMonthYearLabel = nullptr;
 };
