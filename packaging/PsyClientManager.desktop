@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PsyClientManager
+Comment=Desktop workspace for calendar scheduling, client management, and session tracking.
+Exec=PsyClientManager
+Icon=PsyClientManager
+Categories=Office;Utility;
+Terminal=false

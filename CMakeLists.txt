@@ -10,6 +10,7 @@ set(CMAKE_AUTOUIC ON)
 # Define the project
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
+include(GNUInstallDirs)
 
 if(Qt6_VERSION VERSION_LESS 6.8.0)
   message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
@@ -102,3 +103,47 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
 # Link with libs
 target_link_libraries(PsyClientManager PUBLIC ${PROJECT_NAME}_app Qt6::Widgets)
+
+install(TARGETS PsyClientManager
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(FILES
+    ${CMAKE_SOURCE_DIR}/LICENSE
+    ${CMAKE_SOURCE_DIR}/README.md
+    DESTINATION .
+)
+
+if(UNIX AND NOT APPLE)
+  install(FILES
+      ${CMAKE_SOURCE_DIR}/packaging/PsyClientManager.desktop
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+  )
+  install(FILES
+      ${CMAKE_SOURCE_DIR}/resources/icons/brain-solid-full.svg
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+      RENAME PsyClientManager.svg
+  )
+endif()
+
+qt_generate_deploy_app_script(
+    TARGET PsyClientManager
+    OUTPUT_SCRIPT deploy_runtime_dependencies_script
+    NO_UNSUPPORTED_PLATFORM_ERROR
+)
+install(SCRIPT ${deploy_runtime_dependencies_script})
+
+set(CPACK_PACKAGE_NAME "PsyClientManager")
+set(CPACK_PACKAGE_VENDOR "PsyClientManager")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_FILE_NAME
+    "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}"
+)
+set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}/packages")
+
+if(WIN32)
+  set(CPACK_GENERATOR "ZIP")
+endif()
+
+include(CPack)
