@@ -4,6 +4,7 @@
 #include <QLocale>
 #include <QMenu>
 #include <QTimeZone>
+#include <vector>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
@@ -300,7 +301,7 @@ void QEventItem::paint(QPainter *painter,
 
   painter->setPen(Qt::white);
   const qreal margin_y = 0.12 * mSize.height();
-  const qreal margin_x = 0.06 * mSize.width();
+  constexpr qreal margin_x = 10.0;
 
   if (mIsWorkItem) {
     constexpr int iconSize = 12;
@@ -319,64 +320,120 @@ void QEventItem::paint(QPainter *painter,
     const qreal rowHeight = 16.0;
     const qreal rowGap = 4.0;
     const qreal itemGap = 10.0;
+    const QRectF contentRect(x + 6.0, 2.0, mSize.width() - 12.0, mSize.height() - 4.0);
 
-    qreal cursorX = left;
-    qreal cursorY = top;
-
-    auto drawFlowEntry = [&](const QPixmap& icon, const QString& text,
-                             const QFont& font) -> bool {
-      if (text.isEmpty()) {
-        return true;
-      }
-
-      const QFontMetricsF metrics(font);
-      const qreal naturalWidth =
-          icon.width() + iconTextSpacing + metrics.horizontalAdvance(text);
-      const qreal maxWidth = right - left;
-
-      if (cursorX > left && cursorX + naturalWidth > right) {
-        cursorX = left;
-        cursorY += rowHeight + rowGap;
-      }
-
-      if (cursorY + rowHeight > bottom) {
-        return false;
-      }
-
-      const qreal remainingWidth = right - cursorX;
-      const qreal textWidth =
-          std::max<qreal>(0.0, remainingWidth - icon.width() - iconTextSpacing);
-      if (textWidth <= 6.0) {
-        return false;
-      }
-
-      painter->setFont(font);
-      painter->drawPixmap(QPointF(cursorX, cursorY + (rowHeight - icon.height()) / 2.0),
-                          icon);
-
-      const auto elidedText = metrics.elidedText(text, Qt::ElideRight, textWidth);
-      const QRectF textRect(cursorX + icon.width() + iconTextSpacing, cursorY,
-                            textWidth, rowHeight);
-      painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
-
-      cursorX += std::min(maxWidth, naturalWidth) + itemGap;
-      return true;
-    };
+    if (mSize.height() < 28) {
+      QFont compactFont = painter->font();
+      compactFont.setBold(true);
+      painter->setFont(compactFont);
+      const QFontMetricsF metrics(compactFont);
+      const qreal textLeft = contentRect.left() + iconSize + iconTextSpacing + 4.0;
+      const qreal availableWidth =
+          std::max<qreal>(0.0, contentRect.right() - textLeft - 4.0);
+      const auto elidedTitle = metrics.elidedText(mTitle, Qt::ElideRight, availableWidth);
+      painter->drawPixmap(
+          QPointF(contentRect.left() + 4.0,
+                  contentRect.top() + (contentRect.height() - iconSize) / 2.0),
+          briefcasePixmap);
+      const QRectF textRect(textLeft, contentRect.top(),
+                            availableWidth, contentRect.height());
+      painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedTitle);
+      painter->restore();
+      return;
+    }
 
     QFont titleFont = painter->font();
     titleFont.setBold(true);
     QFont secondaryFont = painter->font();
     secondaryFont.setPointSizeF(secondaryFont.pointSizeF() - 0.5);
 
-    if (!drawFlowEntry(briefcasePixmap, mTitle, titleFont)) {
+    struct FlowEntry {
+      QPixmap icon;
+      QString text;
+      QFont font;
+      qreal naturalWidth = 0.0;
+    };
+
+    std::vector<FlowEntry> entries;
+    auto appendEntry = [&](const QPixmap& icon, const QString& text, const QFont& font) {
+      if (text.isEmpty()) {
+        return;
+      }
+      const QFontMetricsF metrics(font);
+      entries.push_back({icon, text, font,
+                         icon.width() + iconTextSpacing + metrics.horizontalAdvance(text)});
+    };
+
+    appendEntry(briefcasePixmap, mTitle, titleFont);
+
+    if (mSize.height() < 44) {
+      if (!entries.empty()) {
+        const auto& entry = entries.front();
+        painter->setFont(entry.font);
+        painter->drawPixmap(QPointF(left, contentRect.top() + (contentRect.height() - iconSize) / 2.0),
+                            entry.icon);
+        const QFontMetricsF metrics(entry.font);
+        const qreal textWidth =
+            std::max<qreal>(0.0, contentRect.width() - entry.icon.width() - iconTextSpacing - 4.0);
+        const auto elidedText = metrics.elidedText(entry.text, Qt::ElideRight, textWidth);
+        const QRectF textRect(left + entry.icon.width() + iconTextSpacing, contentRect.top(),
+                              textWidth, contentRect.height());
+        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
+      }
       painter->restore();
       return;
     }
-    drawFlowEntry(userPixmap, mClientName, secondaryFont);
-    drawFlowEntry(coinsPixmap, costText, secondaryFont);
+
+    appendEntry(userPixmap, mClientName, secondaryFont);
+    appendEntry(coinsPixmap, costText, secondaryFont);
+
+    const qreal maxWidth = right - left;
+    std::vector<int> rowStarts{0};
+    qreal cursorX = left;
+    for (int i = 0; i < static_cast<int>(entries.size()); ++i) {
+      const auto& entry = entries[i];
+      if (cursorX > left && cursorX + entry.naturalWidth > right) {
+        rowStarts.push_back(i);
+        cursorX = left;
+      }
+      cursorX += std::min(maxWidth, entry.naturalWidth) + itemGap;
+    }
+    rowStarts.push_back(static_cast<int>(entries.size()));
+
+    const int rowCount = static_cast<int>(rowStarts.size()) - 1;
+    const qreal totalHeight = rowCount * rowHeight + std::max(0, rowCount - 1) * rowGap;
+    qreal baseY = top;
+    if (rowCount <= 1) {
+      baseY = contentRect.top() + std::max<qreal>(0.0, (contentRect.height() - totalHeight) / 2.0);
+    }
+
+    for (int row = 0; row < rowCount; ++row) {
+      qreal rowX = left;
+      const qreal rowY = baseY + row * (rowHeight + rowGap);
+
+      for (int i = rowStarts[row]; i < rowStarts[row + 1]; ++i) {
+        const auto& entry = entries[i];
+        const QFontMetricsF metrics(entry.font);
+        const qreal remainingWidth = right - rowX;
+        const qreal textWidth =
+            std::max<qreal>(0.0, remainingWidth - entry.icon.width() - iconTextSpacing);
+        if (textWidth <= 6.0 || rowY + rowHeight > bottom) {
+          continue;
+        }
+
+        painter->setFont(entry.font);
+        painter->drawPixmap(QPointF(rowX, rowY + (rowHeight - entry.icon.height()) / 2.0),
+                            entry.icon);
+        const auto elidedText = metrics.elidedText(entry.text, Qt::ElideRight, textWidth);
+        const QRectF textRect(rowX + entry.icon.width() + iconTextSpacing, rowY,
+                              textWidth, rowHeight);
+        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
+        rowX += std::min(maxWidth, entry.naturalWidth) + itemGap;
+      }
+    }
   } else {
-    const QRectF textRect(x + margin_x, margin_y, mSize.width() * 0.9,
-                          mSize.height() * 0.8);
+    const QRectF textRect(x + margin_x, margin_y,
+                          mSize.width() - 2.0 * margin_x, mSize.height() * 0.8);
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
   }
 
