@@ -24,11 +24,11 @@ public:
 public slots:
     void onSelectedDayChanged(const QDate &date) const;
 
-    [[nodiscard]] int64_t addEvent(const ObxEvent &event) const;
+    [[nodiscard]] int64_t addEvent(const DuckEvent &event) const;
 
     void updateScene();
 
-    void updateEvent(const ObxEvent &event) const;
+    void updateEvent(const DuckEvent &event) const;
     void removeEvent(int64_t id) const;
 
 signals:

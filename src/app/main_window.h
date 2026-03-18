@@ -83,7 +83,7 @@ signals:
    * @brief Emitted when a client should be saved.
    * @param client The client data to save.
    */
-  void provideSaveClient(const ObxClient &client);
+  void provideSaveClient(const DuckClient &client);
 
   /**
    * @brief Emitted when a client-event association should be saved.

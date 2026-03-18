@@ -35,7 +35,7 @@ public:
   ~ClientInfo() override;
 
 signals:
-  void displayButtonClicked(const std::optional<ObxClient> &client);
+  void displayButtonClicked(const std::optional<DuckClient> &client);
 
 private:
   std::unique_ptr<Ui::ClientInfo> mUi;

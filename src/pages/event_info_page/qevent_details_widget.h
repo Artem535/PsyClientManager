@@ -126,7 +126,7 @@ private:
 
   // --- Validation & Data Collection ---
   bool validateInput();
-  [[nodiscard]] ObxEvent collectEventData() const;
+  [[nodiscard]] DuckEvent collectEventData() const;
 
   // --- UI ---
   std::unique_ptr<Ui::EventDetails> mUI;

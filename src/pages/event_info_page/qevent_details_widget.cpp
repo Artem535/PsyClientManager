@@ -315,10 +315,10 @@ bool QEventDetailsWidget::validateInput() {
   return true;
 }
 
-ObxEvent QEventDetailsWidget::collectEventData() const {
+DuckEvent QEventDetailsWidget::collectEventData() const {
   // This method is no longer used in the main logic flow.
   // It is left for backward compatibility or internal use if needed.
-  ObxEvent event;
+  DuckEvent event;
   event.name = mUI->mTitle->text().toStdString();
   event.start_date = QDateTime(mUI->mEventDate->date(), mUI->mTimeFrom->time(),
                                QTimeZone::systemTimeZone())

@@ -66,7 +66,7 @@ public:
    */
   static void drawFirstColumn(QPainter *painter,
                               const QStyleOptionViewItem &option,
-                              const ObxClient &client);
+                              const DuckClient &client);
 
   /**
    * @brief Draws the second column (Email, Phone).
@@ -76,7 +76,7 @@ public:
    */
   static void drawContacts(QPainter *painter,
                            const QStyleOptionViewItem &option,
-                           const ObxClient &client);
+                           const DuckClient &client);
 
   /**
    * @brief Draws the third column (Last session date).
@@ -86,7 +86,7 @@ public:
    */
   static void drawLastSession(QPainter *painter,
                               const QStyleOptionViewItem &option,
-                              const ObxClient &client);
+                              const DuckClient &client);
 
   /**
    * @brief Draws the fourth column (Status chip).
@@ -96,7 +96,7 @@ public:
    */
   static void drawStatusChip(QPainter *painter,
                              const QStyleOptionViewItem &option,
-                             const ObxClient &client);
+                             const DuckClient &client);
 
   /**
    * @brief Draws the fifth column (two action buttons) and update them coords
@@ -106,7 +106,7 @@ public:
    * @param client The client data (not used here, reserved for future).
    */
   static void drawActions(QPainter *painter, const QStyleOptionViewItem &option,
-                          const ObxClient &client);
+                          const DuckClient &client);
 
   static std::pair<QRect, QRect>
   calculateButtonRects(const QStyleOptionViewItem &option);

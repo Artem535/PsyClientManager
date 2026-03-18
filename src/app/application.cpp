@@ -72,7 +72,7 @@ int Application::run(int argc, char *argv[]) {
 
   return app.exec();
 }
-void Application::saveClient(const ObxClient &client) {
+void Application::saveClient(const DuckClient &client) {
   qCDebug(logApplication) << "Application::saveClient| Client id:" << client.id;
   mDb->add_client(client);
   if (mClientModel) {

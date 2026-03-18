@@ -49,7 +49,7 @@ void ClientInfo::connectSignals(const QClientDelegate *delegate) {
 
         const QVariant clientVar =
             index.data(QClientModel::ClientRoles::Full_object);
-        const auto client = clientVar.value<ObxClient>();
+        const auto client = clientVar.value<DuckClient>();
 
         emit displayButtonClicked(client);
       });

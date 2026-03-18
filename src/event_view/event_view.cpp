@@ -67,10 +67,10 @@ void QEventView::onRowsInserted(const QModelIndex &parent, int first,
       continue;
 
     QVariant var = index.data(QTimelineModel::EventDataRole);
-    if (!var.canConvert<ObxEvent>())
+    if (!var.canConvert<DuckEvent>())
       continue;
 
-    ObxEvent event = var.value<ObxEvent>();
+    DuckEvent event = var.value<DuckEvent>();
     QEventItem *item = new QEventItem(event);
 
     connect(item, &QEventItem::itemSelected, this,
@@ -135,8 +135,8 @@ void QEventView::onDataChanged(const QModelIndex &topLeft,
 
     auto it = mSceneItems.find(eventId);
     if (it != mSceneItems.end()) {
-      ObxEvent updatedEvent =
-          index.data(QTimelineModel::EventDataRole).value<ObxEvent>();
+      DuckEvent updatedEvent =
+          index.data(QTimelineModel::EventDataRole).value<DuckEvent>();
       it.value()->updateFromEvent(updatedEvent); // Method in QEventItem
     }
   }
@@ -158,8 +158,8 @@ void QEventView::onModelReset() {
     if (!index.isValid())
       continue;
 
-    ObxEvent event =
-        index.data(QTimelineModel::EventDataRole).value<ObxEvent>();
+    DuckEvent event =
+        index.data(QTimelineModel::EventDataRole).value<DuckEvent>();
     QEventItem *item = new QEventItem(event);
     connect(item, &QEventItem::itemSelected, this,
             &QEventView::onEventSelected);

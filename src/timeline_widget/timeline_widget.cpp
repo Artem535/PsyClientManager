@@ -40,7 +40,7 @@ void QTimelineWidget::onSelectedDayChanged(const QDate &date) const {
   mModel->loadEventsForDay(date);
 }
 
-int64_t QTimelineWidget::addEvent(const ObxEvent &event) const {
+int64_t QTimelineWidget::addEvent(const DuckEvent &event) const {
   if (!mModel) {
     qCWarning(logTimelineWidget) << "QTimelineWidget::addEvent | Model is null";
     return 0;
@@ -54,7 +54,7 @@ int64_t QTimelineWidget::addEvent(const ObxEvent &event) const {
 
 void QTimelineWidget::updateScene() { emit needSceneUpdate(); }
 
-void QTimelineWidget::updateEvent(const ObxEvent &event) const {
+void QTimelineWidget::updateEvent(const DuckEvent &event) const {
   if (!mModel)
     return;
   mModel->updateEvent(event);

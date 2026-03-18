@@ -23,38 +23,38 @@ inline std::ostream &print_optional(std::ostream &os,
   return os;
 }
 
-// --- ObxPaymentStatus ---
-struct ObxPaymentStatus {
+// --- DuckPaymentStatus ---
+struct DuckPaymentStatus {
   std::int64_t id = -1;
   std::string name;
-  ObxPaymentStatus() = default;
-  ObxPaymentStatus(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+  DuckPaymentStatus() = default;
+  DuckPaymentStatus(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     auto id_val = chunk.GetValue(0, index);
     auto name_val = chunk.GetValue(1, index);
     id = db_utils::toInt32AsInt64(id_val);
     name = name_val.ToString(); // NOT NULL in schema
   }
 };
-inline std::ostream &operator<<(std::ostream &os, const ObxPaymentStatus &s) {
-  os << "ObxPaymentStatus{id=" << s.id << ", name=\"" << s.name << "\"}";
+inline std::ostream &operator<<(std::ostream &os, const DuckPaymentStatus &s) {
+  os << "DuckPaymentStatus{id=" << s.id << ", name=\"" << s.name << "\"}";
   return os;
 }
-// --- ObxEventStatus ---
-struct ObxEventStatus {
+// --- DuckEventStatus ---
+struct DuckEventStatus {
   std::int64_t id = -1;
   std::string name;
-  ObxEventStatus() = default;
-  ObxEventStatus(const DataChunk &chunk, idx_t index) {
+  DuckEventStatus() = default;
+  DuckEventStatus(const DataChunk &chunk, idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
     name = chunk.GetValue(1, index).ToString();
   }
 };
-inline std::ostream &operator<<(std::ostream &os, const ObxEventStatus &s) {
-  os << "ObxEventStatus{id=" << s.id << ", name=\"" << s.name << "\"}";
+inline std::ostream &operator<<(std::ostream &os, const DuckEventStatus &s) {
+  os << "DuckEventStatus{id=" << s.id << ", name=\"" << s.name << "\"}";
   return os;
 }
-// --- ObxClient ---
-struct ObxClient {
+// --- DuckClient ---
+struct DuckClient {
   std::int64_t id = -1;
   std::optional<std::string> name = std::nullopt;
   std::optional<std::string> last_name = std::nullopt;
@@ -67,8 +67,8 @@ struct ObxClient {
   std::optional<std::string> country = std::nullopt;
   std::optional<std::string> city = std::nullopt;
   std::optional<std::string> time_zone = std::nullopt;
-  ObxClient() = default;
-  ObxClient(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+  DuckClient() = default;
+  DuckClient(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
     name = db_utils::toOptionalString(chunk.GetValue(1, index));
     last_name = db_utils::toOptionalString(chunk.GetValue(2, index));
@@ -84,8 +84,8 @@ struct ObxClient {
     time_zone = db_utils::toOptionalString(chunk.GetValue(11, index));
   }
 };
-inline std::ostream &operator<<(std::ostream &os, const ObxClient &c) {
-  os << "ObxClient{"
+inline std::ostream &operator<<(std::ostream &os, const DuckClient &c) {
+  os << "DuckClient{"
      << "id=" << c.id << ", "
      << "name=";
   print_optional(os, c.name) << ", "
@@ -105,19 +105,20 @@ inline std::ostream &operator<<(std::ostream &os, const ObxClient &c) {
   print_optional(os, c.time_zone) << "}";
   return os;
 }
-// --- ObxEvent ---
-struct ObxEvent {
+// --- DuckEvent ---
+struct DuckEvent {
   std::int64_t id = -1;
   std::optional<std::string> name = std::nullopt;
   std::optional<std::string> description = std::nullopt;
+  std::optional<std::string> client_name = std::nullopt;
   bool is_work_event = false;
   std::int64_t event_stat_id = -1;
   std::int64_t payment_stat_id = -1;
   std::optional<std::int64_t> start_date = std::nullopt;
   std::optional<std::int64_t> end_date = std::nullopt;
   std::optional<std::int64_t> duration = std::nullopt;
-  ObxEvent() = default;
-  ObxEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+  DuckEvent() = default;
+  DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
     name = db_utils::toOptionalString(chunk.GetValue(1, index));
     description = db_utils::toOptionalString(chunk.GetValue(2, index));
@@ -129,8 +130,8 @@ struct ObxEvent {
     duration = db_utils::toOptionalInt32AsInt64(chunk.GetValue(8, index));
   }
 };
-inline std::ostream &operator<<(std::ostream &os, const ObxEvent &e) {
-  os << "ObxEvent{"
+inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
+  os << "DuckEvent{"
      << "id=" << e.id << ", "
      << "name=";
   print_optional(os, e.name)
@@ -146,20 +147,20 @@ inline std::ostream &operator<<(std::ostream &os, const ObxEvent &e) {
   print_optional(os, e.duration) << "}";
   return os;
 }
-// --- ObxEventClient ---
-struct ObxEventClient {
+// --- DuckEventClient ---
+struct DuckEventClient {
   std::int64_t id = -1;
   std::int64_t client_id = -1;
   std::int64_t event_id = -1;
-  ObxEventClient() = default;
-  ObxEventClient(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+  DuckEventClient() = default;
+  DuckEventClient(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
     client_id = db_utils::toInt32AsInt64(chunk.GetValue(1, index));
     event_id = db_utils::toInt32AsInt64(chunk.GetValue(2, index));
   }
 };
-inline std::ostream &operator<<(std::ostream &os, const ObxEventClient &ec) {
-  os << "ObxEventClient{id=" << ec.id << ", client_id=" << ec.client_id
+inline std::ostream &operator<<(std::ostream &os, const DuckEventClient &ec) {
+  os << "DuckEventClient{id=" << ec.id << ", client_id=" << ec.client_id
      << ", event_id=" << ec.event_id << "}";
   return os;
 }

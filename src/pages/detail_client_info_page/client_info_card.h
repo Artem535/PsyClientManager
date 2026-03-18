@@ -45,10 +45,10 @@ signals:
 
   void endEditMode();
 
-  void provideSaveClient(const ObxClient &client);
+  void provideSaveClient(const DuckClient &client);
 
 public slots:
-  void setClientInfo(const std::optional<ObxClient> &client);
+  void setClientInfo(const std::optional<DuckClient> &client);
 
   void enterInEditMode();
 

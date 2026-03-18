@@ -31,13 +31,13 @@ TEST(DatabaseTest, AddClientAndEvent) {
 
   pcm::database::Database db{conf};
 
-  ObxClient client;
+  DuckClient client;
   client.name = std::string{"Test"};
   client.last_name = std::string{"User"};
   const auto clientId = db.add_client(client);
   EXPECT_GT(clientId, 0);
 
-  ObxEvent event;
+  DuckEvent event;
   event.name = std::string{"Test Event"};
   event.start_date = 1730000000000; // ms since epoch
   event.end_date = 1730003600000;   // +1 hour

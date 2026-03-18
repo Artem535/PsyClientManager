@@ -23,26 +23,26 @@ class Database {
 public:
   explicit Database(const pcm::config::Config &conf);
 
-  int64_t add_event(const ObxEvent &event);
-  bool update_event(const ObxEvent &event);
-  std::unique_ptr<ObxEvent> get_event(const int64_t &id);
+  int64_t add_event(const DuckEvent &event);
+  bool update_event(const DuckEvent &event);
+  std::unique_ptr<DuckEvent> get_event(const int64_t &id);
   bool remove_event(const int64_t &id);
 
-  int64_t add_client(const ObxClient &client);
+  int64_t add_client(const DuckClient &client);
   bool remove_client(const int64_t &id);
-  std::unique_ptr<ObxClient> get_client(const int64_t &id);
-  std::vector<std::unique_ptr<ObxClient>> get_clients();
+  std::unique_ptr<DuckClient> get_client(const int64_t &id);
+  std::vector<std::unique_ptr<DuckClient>> get_clients();
   std::vector<int64_t> get_client_ids();
 
   int64_t add_event_client(const int64_t &event_id, const int64_t &client_id);
 
   // std::vector<int64_t> get_event_ids(int64_t date);
 
-  bool has_conflict(const ObxEvent &event);
-  std::vector<ObxEvent> get_day_events(const int64_t &start_ms,
+  bool has_conflict(const DuckEvent &event);
+  std::vector<DuckEvent> get_day_events(const int64_t &start_ms,
                                        const int64_t &end_ms);
 
-  ObxClient get_client_by_event(const int64_t &event_id);
+  DuckClient get_client_by_event(const int64_t &event_id);
 
 private:
   void add_demo_data();

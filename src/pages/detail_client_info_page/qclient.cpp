@@ -9,10 +9,10 @@
 QClient::QClient() {}
 
 // ---- Constructors ----
-QClient::QClient(const ObxClient &client) { update(client); }
+QClient::QClient(const DuckClient &client) { update(client); }
 
 // ---- Update from database ----
-void QClient::update(const ObxClient &client) {
+void QClient::update(const DuckClient &client) {
   setId(client.id);
   setName(QString::fromStdString(client.name != std::nullopt ? client.name.value() : ""));
   setLastName(QString::fromStdString(client.last_name != std::nullopt ? client.last_name.value() : ""));
@@ -82,8 +82,8 @@ void QClient::setId(const int64_t id) { mId = id; }
 void QClient::setIsActive(const bool isActive) { mIsActive = isActive; }
 
 // ---- Convert to database entity ----
-ObxClient QClient::toObxClient() const {
-  ObxClient client;
+DuckClient QClient::toDuckClient() const {
+  DuckClient client;
 
   // Basic info
   client.id = getId();

@@ -13,9 +13,9 @@
 class QClient {
 public:
   QClient();
-  explicit QClient(const ObxClient &client);
+  explicit QClient(const DuckClient &client);
 
-  void update(const ObxClient &client);
+  void update(const DuckClient &client);
   void clear();
 
   // ---- Getters ----
@@ -49,7 +49,7 @@ public:
   void setIsActive(const bool isActive);
 
   // ---- Others ----
-  [[nodiscard]] ObxClient toObxClient() const;
+  [[nodiscard]] DuckClient toDuckClient() const;
 
 private:
   int64_t mId = 0;

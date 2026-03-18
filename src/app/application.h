@@ -22,7 +22,7 @@ public:
   int run(int argc, char *argv[]);
 
 private slots:
-  void saveClient(const ObxClient &client);
+  void saveClient(const DuckClient &client);
   void fillClientComboBox(QComboBox *box);
   void saveClientEventPair(const int64_t clientId, const int64_t eventId);
 

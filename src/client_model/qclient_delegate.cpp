@@ -52,7 +52,7 @@ void QClientDelegate::paint(QPainter *painter,
   }
 
   const QVariant clientVal = index.data(QClientModel::ClientRoles::Full_object);
-  const auto client = clientVal.value<ObxClient>();
+  const auto client = clientVal.value<DuckClient>();
 
   drawFirstColumn(painter, option, client);
   drawContacts(painter, option, client);
@@ -66,7 +66,7 @@ void QClientDelegate::paint(QPainter *painter,
 // ---------------- First column (Name, Surname, Age) ----------------
 void QClientDelegate::drawFirstColumn(QPainter *painter,
                                       const QStyleOptionViewItem &option,
-                                      const ObxClient &client) {
+                                      const DuckClient &client) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
   const int cardHeight = cardRect.height();
@@ -114,7 +114,7 @@ void QClientDelegate::drawFirstColumn(QPainter *painter,
 // ---------------- Second column (Email, Phone) ----------------
 void QClientDelegate::drawContacts(QPainter *painter,
                                    const QStyleOptionViewItem &option,
-                                   const ObxClient &client) {
+                                   const DuckClient &client) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
   const int cardHeight = cardRect.height();
@@ -156,7 +156,7 @@ void QClientDelegate::drawContacts(QPainter *painter,
 // ---------------- Third column (Last session date) ----------------
 void QClientDelegate::drawLastSession(QPainter *painter,
                                       const QStyleOptionViewItem &option,
-                                      const ObxClient &client) {
+                                      const DuckClient &client) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
   const int cardHeight = cardRect.height();
@@ -185,7 +185,7 @@ void QClientDelegate::drawLastSession(QPainter *painter,
 // ---------------- Fourth column (Status chip) ----------------
 void QClientDelegate::drawStatusChip(QPainter *painter,
                                      const QStyleOptionViewItem &option,
-                                     const ObxClient &client) {
+                                     const DuckClient &client) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
   const int cardHeight = cardRect.height();
@@ -224,7 +224,7 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
 // ---------------- Fifth column (Action buttons) ----------------
 void QClientDelegate::drawActions(QPainter *painter,
                                   const QStyleOptionViewItem &option,
-                                  const ObxClient & /*client*/) {
+                                  const DuckClient & /*client*/) {
   const auto [btn1Rect, btn2Rect] = calculateButtonRects(option);
 
   const auto outlineColor = QColor(255, 255, 255, 56);

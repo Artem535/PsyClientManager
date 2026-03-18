@@ -30,7 +30,7 @@ QClientInfoCardPage::QClientInfoCardPage(QWidget *parent)
 QClientInfoCardPage::~QClientInfoCardPage() = default;
 
 void QClientInfoCardPage::setClientInfo(
-    const std::optional<ObxClient> &client) {
+    const std::optional<DuckClient> &client) {
   if (client.has_value()) {
     mClientInfo.update(client.value());
   } else {
@@ -77,7 +77,7 @@ void QClientInfoCardPage::leaveEditMode() {
   emit provideDefaultStyle();
   emit provideUpdateUI();
   emit endEditMode();
-  emit provideSaveClient(mClientInfo.toObxClient());
+  emit provideSaveClient(mClientInfo.toDuckClient());
 }
 
 void QClientInfoCardPage::updateUiProperty() const {

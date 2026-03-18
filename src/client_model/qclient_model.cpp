@@ -20,7 +20,7 @@ public slots:
       return;
     }
 
-    std::vector<ObxClient> clients;
+    std::vector<DuckClient> clients;
     const auto loaded = m_db->get_clients();
     clients.reserve(loaded.size());
     for (const auto &client : loaded) {
@@ -34,7 +34,7 @@ public slots:
   }
 
 signals:
-  void clientsLoaded(const std::vector<ObxClient> &clients);
+  void clientsLoaded(const std::vector<DuckClient> &clients);
   void loadFailed(const QString &message);
 
 private:
@@ -46,7 +46,7 @@ private:
 QClientModel::QClientModel(std::shared_ptr<pcm::database::Database> db,
                            QObject *parent)
     : QAbstractListModel(parent), m_db{db} {
-  qRegisterMetaType<std::vector<ObxClient>>("std::vector<ObxClient>");
+  qRegisterMetaType<std::vector<DuckClient>>("std::vector<DuckClient>");
 
   m_loaderThread = new QThread(this);
   const auto worker = new ClientLoaderWorker(m_db);
@@ -56,7 +56,7 @@ QClientModel::QClientModel(std::shared_ptr<pcm::database::Database> db,
           &ClientLoaderWorker::loadClients, Qt::QueuedConnection);
 
   connect(worker, &ClientLoaderWorker::clientsLoaded, this,
-          [this](const std::vector<ObxClient> &clients) {
+          [this](const std::vector<DuckClient> &clients) {
             beginResetModel();
             m_clients = clients;
             m_client_ids.clear();
@@ -166,7 +166,7 @@ bool QClientModel::setData(const QModelIndex &index, const QVariant &value,
   }
 
   // const auto old_client = *m_db->get_client(m_client_ids.at(index.row()));
-  const auto client = value.value<ObxClient>();
+  const auto client = value.value<DuckClient>();
 
   m_db->add_client(client);
   m_clients.at(index.row()) = client;
@@ -177,7 +177,7 @@ bool QClientModel::setData(const QModelIndex &index, const QVariant &value,
   return true;
 }
 
-void QClientModel::add_new_client(const ObxClient &client) {
+void QClientModel::add_new_client(const DuckClient &client) {
   int new_row_index = static_cast<int>(m_clients.size());
   const auto id = m_db->add_client(client);
   auto new_client = client;

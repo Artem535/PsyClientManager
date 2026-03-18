@@ -12,8 +12,8 @@
 
 #include "database.h"
 
-Q_DECLARE_METATYPE(ObxClient)
-Q_DECLARE_METATYPE(std::vector<ObxClient>)
+Q_DECLARE_METATYPE(DuckClient)
+Q_DECLARE_METATYPE(std::vector<DuckClient>)
 
 class QClientModel final : public QAbstractListModel {
   Q_OBJECT
@@ -32,7 +32,7 @@ public:
   bool setData(const QModelIndex &index, const QVariant &value,
                int role = Qt::EditRole) override;
 
-  void add_new_client(const ObxClient &new_client);
+  void add_new_client(const DuckClient &new_client);
   void reload();
   bool isLoading() const;
 
@@ -46,7 +46,7 @@ private:
 
   std::shared_ptr<pcm::database::Database> m_db;
   QThread *m_loaderThread{nullptr};
-  std::vector<ObxClient> m_clients;
+  std::vector<DuckClient> m_clients;
   std::vector<int64_t> m_client_ids;
   bool m_isLoading{false};
 };
