@@ -7,9 +7,9 @@
 #include <memory>
 
 #include "database.h"
-#include "event_item.h" // for ObxEvent
+#include "event_item.h" // for DuckEvent
 
-Q_DECLARE_METATYPE(ObxEvent)
+Q_DECLARE_METATYPE(DuckEvent)
 
 class QTimelineModel final : public QAbstractItemModel {
   Q_OBJECT
@@ -39,9 +39,9 @@ public:
 
   // API
   void loadEventsForDay(const QDate &date);
-  int64_t addEvent(const ObxEvent &event);
+  int64_t addEvent(const DuckEvent &event);
   void removeEvent(int64_t id);
-  void updateEvent(const ObxEvent &event);
+  void updateEvent(const DuckEvent &event);
 
   QModelIndex indexForEventId(int64_t id) const;
 
@@ -50,6 +50,6 @@ signals:
 
 private:
   std::shared_ptr<pcm::database::Database> mDb;
-  QVector<ObxEvent> mEvents;
+  QVector<DuckEvent> mEvents;
   QDate mCurrentDate;
 };

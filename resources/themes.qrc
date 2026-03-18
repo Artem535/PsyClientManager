@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/icons">
         <file alias="brain-solid-full.svg">icons/brain-solid-full.svg</file>
+        <file alias="briefcase-solid-full.svg">icons/briefcase-solid-full.svg</file>
         <file alias="calendar-solid-full.svg">icons/calendar-solid-full.svg</file>
         <file alias="calendar-plus-solid-full.svg">icons/calendar-plus-solid-full.svg</file>
         <file alias="user-minus-solid-full.svg">icons/user-minus-solid-full.svg</file>
@@ -14,4 +15,3 @@
         <file alias="qlementine_dark.json">themes/qlementine_dark.json</file>
     </qresource>
 </RCC>
-2

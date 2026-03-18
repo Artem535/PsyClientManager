@@ -1,4 +1,5 @@
 #include "event_item.h"
+#include <QIcon>
 #include <QMenu>
 #include <QTimeZone>
 
@@ -21,11 +22,12 @@ QEventItem::QEventItem(const unsigned long id, const QString &title,
   updateDuration();
 }
 
-void QEventItem::updateFromEvent(const ObxEvent &event) {
+void QEventItem::updateFromEvent(const DuckEvent &event) {
   mIsWorkItem = event.is_work_event;
   mSize = QSize(100, 100);
 
   mTitle = QString::fromStdString(event.name.value_or(""));
+  mClientName = QString::fromStdString(event.client_name.value_or(""));
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -47,10 +49,11 @@ void QEventItem::updateFromEvent(const ObxEvent &event) {
   update();
 }
 
-QEventItem::QEventItem(const ObxEvent &event) {
+QEventItem::QEventItem(const DuckEvent &event) {
   mIsWorkItem = event.is_work_event;
   mSize = QSize(100, 100);
   mTitle = QString::fromStdString(event.name.value_or("Undefined"));
+  mClientName = QString::fromStdString(event.client_name.value_or(""));
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -71,8 +74,8 @@ QEventItem::QEventItem(const ObxEvent &event) {
   updateDuration();
 }
 
-ObxEvent QEventItem::toEvent() const {
-  ObxEvent event;
+DuckEvent QEventItem::toEvent() const {
+  DuckEvent event;
   event.id = mId;
   event.name = mTitle.toStdString();
   event.is_work_event = mIsWorkItem;
@@ -109,6 +112,7 @@ QSize QEventItem::getSize() const { return mSize; }
 QDateTime QEventItem::getStartTime() const { return mStartTime; }
 QDateTime QEventItem::getEndTime() const { return mEndTime; }
 QString QEventItem::getTitle() const { return mTitle; }
+QString QEventItem::getClientName() const { return mClientName; }
 unsigned long QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
@@ -116,6 +120,13 @@ void QEventItem::setTitle(const QString &title) {
   if (mTitle == title)
     return;
   mTitle = title;
+  update();
+}
+
+void QEventItem::setClientName(const QString &clientName) {
+  if (mClientName == clientName)
+    return;
+  mClientName = clientName;
   update();
 }
 
@@ -264,13 +275,54 @@ void QEventItem::paint(QPainter *painter,
 
   painter->drawRoundedRect(x, 0, mSize.width(), mSize.height(), 5, 5);
 
-  // Draw title text
   painter->setPen(Qt::white);
-  const qreal margin_y = 0.1 * mSize.height();
-  const qreal margin_x = 0.05 * mSize.width();
-  const QRectF textRect(x + margin_x, margin_y, mSize.width() * 0.9,
-                        mSize.height() * 0.8);
-  painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
+  const qreal margin_y = 0.12 * mSize.height();
+  const qreal margin_x = 0.06 * mSize.width();
+
+  if (mIsWorkItem) {
+    constexpr int iconSize = 12;
+    constexpr int iconTextSpacing = 6;
+    const auto briefcasePixmap = QIcon(":/icons/briefcase-solid-full.svg")
+                                     .pixmap(iconSize, iconSize);
+    const auto userPixmap =
+        QIcon(":/icons/user-solid-full.svg").pixmap(iconSize, iconSize);
+
+    const QRectF titleRowRect(x + margin_x, margin_y, mSize.width() * 0.9,
+                              mSize.height() * 0.34);
+    const QRectF clientRowRect(x + margin_x, margin_y + mSize.height() * 0.34,
+                               mSize.width() * 0.9, mSize.height() * 0.28);
+
+    const QPointF briefcasePos(titleRowRect.left(),
+                               titleRowRect.center().y() - iconSize / 2.0);
+    const QPointF userPos(clientRowRect.left(),
+                          clientRowRect.center().y() - iconSize / 2.0);
+    painter->drawPixmap(briefcasePos, briefcasePixmap);
+    painter->drawPixmap(userPos, userPixmap);
+
+    QFont titleFont = painter->font();
+    titleFont.setBold(true);
+    painter->setFont(titleFont);
+    const QRectF titleTextRect(
+        titleRowRect.left() + iconSize + iconTextSpacing, titleRowRect.top(),
+        titleRowRect.width() - iconSize - iconTextSpacing, titleRowRect.height());
+    painter->drawText(titleTextRect, Qt::AlignLeft | Qt::AlignVCenter,
+                      mTitle);
+
+    QFont clientFont = painter->font();
+    clientFont.setBold(false);
+    clientFont.setPointSizeF(clientFont.pointSizeF() - 0.5);
+    painter->setFont(clientFont);
+    const QRectF clientTextRect(
+        clientRowRect.left() + iconSize + iconTextSpacing, clientRowRect.top(),
+        clientRowRect.width() - iconSize - iconTextSpacing,
+        clientRowRect.height());
+    painter->drawText(clientTextRect, Qt::AlignLeft | Qt::AlignVCenter,
+                      mClientName);
+  } else {
+    const QRectF textRect(x + margin_x, margin_y, mSize.width() * 0.9,
+                          mSize.height() * 0.8);
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
+  }
 
   painter->restore();
 }

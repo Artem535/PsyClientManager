@@ -3,6 +3,14 @@
 #include <QDateTime>
 #include <QTimeZone>
 
+namespace {
+QString fullClientName(const DuckClient &client) {
+  const auto firstName = QString::fromStdString(client.name.value_or(""));
+  const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+  return QString("%1 %2").arg(firstName, lastName).trimmed();
+}
+} // namespace
+
 QTimelineModel::QTimelineModel(
     const std::shared_ptr<pcm::database::Database> &db, QObject *parent)
     : QAbstractItemModel(parent), mDb(db) {}
@@ -83,7 +91,22 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
       QDateTime(date.addDays(1), QTime(0, 0), localTz).toMSecsSinceEpoch() - 1;
 
   const auto events = mDb->get_day_events(dayStartMs, dayEndMs);
-  mEvents = std::move(QVector<ObxEvent>(events.begin(), events.end()));
+  mEvents = std::move(QVector<DuckEvent>(events.begin(), events.end()));
+  for (auto &event : mEvents) {
+    if (!event.is_work_event) {
+      continue;
+    }
+
+    try {
+      const auto client = mDb->get_client_by_event(event.id);
+      const auto displayName = fullClientName(client);
+      if (!displayName.isEmpty()) {
+        event.client_name = displayName.toStdString();
+      }
+    } catch (const std::exception &) {
+      event.client_name = std::nullopt;
+    }
+  }
   qDebug() << "QTimelineModel::loadEventsForDay date=" << date
            << "loaded events=" << mEvents.size();
 
@@ -91,8 +114,8 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   emit eventsLoaded();
 }
 
-int64_t QTimelineModel::addEvent(const ObxEvent &event) {
-  ObxEvent newEvent = event;
+int64_t QTimelineModel::addEvent(const DuckEvent &event) {
+  DuckEvent newEvent = event;
   newEvent.id = mDb->add_event(event); // save to DB
   if (newEvent.id <= 0) {
     return 0;
@@ -120,7 +143,7 @@ void QTimelineModel::removeEvent(int64_t id) {
   }
 }
 
-void QTimelineModel::updateEvent(const ObxEvent &event) {
+void QTimelineModel::updateEvent(const DuckEvent &event) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == event.id) {
       if (!mDb->update_event(event)) {

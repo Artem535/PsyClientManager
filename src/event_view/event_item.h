@@ -40,11 +40,11 @@ public:
   QEventItem(unsigned long id, const QString &title, const QDateTime &startTime,
              const QDateTime &endTime, bool isWorkItem = false);
 
-  void updateFromEvent(const ObxEvent &data);
+  void updateFromEvent(const DuckEvent &data);
 
-  explicit QEventItem(const ObxEvent &event);
+  explicit QEventItem(const DuckEvent &event);
 
-  ObxEvent toEvent() const;
+  DuckEvent toEvent() const;
 
   /**
    * @brief Returns the bounding rectangle of the item.
@@ -91,6 +91,7 @@ public:
    * @return The title.
    */
   [[nodiscard]] QString getTitle() const;
+  [[nodiscard]] QString getClientName() const;
 
   /**
    * @brief Returns the unique identifier of the event.
@@ -105,6 +106,7 @@ public:
    * @param title The new title.
    */
   void setTitle(const QString &title);
+  void setClientName(const QString &clientName);
 
   /**
    * @brief Sets the start time of the event.
@@ -160,6 +162,7 @@ private:
   bool mIsWorkItem = false;   ///< True if the event is a work-related item.
   QSize mSize;                ///< The size of the event item.
   QString mTitle;             ///< The title of the event.
+  QString mClientName;        ///< Linked client name for work items.
   QDateTime mStartTime;       ///< The start time of the event.
   QDateTime mEndTime;         ///< The end time of the event.
   unsigned long mId;          ///< Unique identifier of the event.
