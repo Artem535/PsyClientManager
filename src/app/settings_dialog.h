@@ -6,6 +6,7 @@
 
 class QDialogButtonBox;
 class QComboBox;
+class QDoubleSpinBox;
 class QLabel;
 class QPushButton;
 
@@ -33,6 +34,7 @@ private:
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};
+  QDoubleSpinBox *mDefaultWorkCostSpinBox{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
 };

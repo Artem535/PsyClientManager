@@ -22,4 +22,7 @@ void setWorkEventColor(const QColor &color);
 QColor personalEventColor();
 void setPersonalEventColor(const QColor &color);
 
+double defaultWorkEventCost();
+void setDefaultWorkEventCost(double cost);
+
 } // namespace pcm::app_settings

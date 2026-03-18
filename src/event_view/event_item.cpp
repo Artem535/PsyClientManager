@@ -1,10 +1,21 @@
 #include "event_item.h"
 #include "../widgets/app_settings.h"
 #include <QIcon>
+#include <QLocale>
 #include <QMenu>
 #include <QTimeZone>
 
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
+
+namespace {
+QString formatEventCost(const std::optional<double>& cost) {
+  if (!cost.has_value()) {
+    return {};
+  }
+
+  return QLocale(QLocale::Russian).toString(*cost, 'f', 0) + QStringLiteral(" ₽");
+}
+} // namespace
 
 QEventItem::QEventItem(const unsigned long id, const QString &title,
                        const QDateTime &startTime, const QDateTime &endTime,
@@ -29,6 +40,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
 
   mTitle = QString::fromStdString(event.name.value_or(""));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
+  mCost = event.cost;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -55,6 +67,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mSize = QSize(100, 100);
   mTitle = QString::fromStdString(event.name.value_or("Undefined"));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
+  mCost = event.cost;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -83,6 +96,7 @@ DuckEvent QEventItem::toEvent() const {
   event.start_date = mStartTime.toUTC().toMSecsSinceEpoch();
   event.end_date = mEndTime.toUTC().toMSecsSinceEpoch();
   event.duration = mDuration;
+  event.cost = mCost;
   return event;
 }
 
@@ -114,6 +128,7 @@ QDateTime QEventItem::getStartTime() const { return mStartTime; }
 QDateTime QEventItem::getEndTime() const { return mEndTime; }
 QString QEventItem::getTitle() const { return mTitle; }
 QString QEventItem::getClientName() const { return mClientName; }
+std::optional<double> QEventItem::cost() const { return mCost; }
 unsigned long QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
@@ -128,6 +143,13 @@ void QEventItem::setClientName(const QString &clientName) {
   if (mClientName == clientName)
     return;
   mClientName = clientName;
+  update();
+}
+
+void QEventItem::setCost(std::optional<double> cost) {
+  if (mCost == cost)
+    return;
+  mCost = std::move(cost);
   update();
 }
 
@@ -287,38 +309,71 @@ void QEventItem::paint(QPainter *painter,
                                      .pixmap(iconSize, iconSize);
     const auto userPixmap =
         QIcon(":/icons/user-solid-full.svg").pixmap(iconSize, iconSize);
+    const auto coinsPixmap =
+        QIcon(":/icons/coins-solid-full.svg").pixmap(iconSize, iconSize);
+    const auto costText = formatEventCost(mCost);
+    const qreal left = x + margin_x;
+    const qreal right = x + mSize.width() - margin_x;
+    const qreal top = margin_y;
+    const qreal bottom = mSize.height() - margin_y;
+    const qreal rowHeight = 16.0;
+    const qreal rowGap = 4.0;
+    const qreal itemGap = 10.0;
 
-    const QRectF titleRowRect(x + margin_x, margin_y, mSize.width() * 0.9,
-                              mSize.height() * 0.34);
-    const QRectF clientRowRect(x + margin_x, margin_y + mSize.height() * 0.34,
-                               mSize.width() * 0.9, mSize.height() * 0.28);
+    qreal cursorX = left;
+    qreal cursorY = top;
 
-    const QPointF briefcasePos(titleRowRect.left(),
-                               titleRowRect.center().y() - iconSize / 2.0);
-    const QPointF userPos(clientRowRect.left(),
-                          clientRowRect.center().y() - iconSize / 2.0);
-    painter->drawPixmap(briefcasePos, briefcasePixmap);
-    painter->drawPixmap(userPos, userPixmap);
+    auto drawFlowEntry = [&](const QPixmap& icon, const QString& text,
+                             const QFont& font) -> bool {
+      if (text.isEmpty()) {
+        return true;
+      }
+
+      const QFontMetricsF metrics(font);
+      const qreal naturalWidth =
+          icon.width() + iconTextSpacing + metrics.horizontalAdvance(text);
+      const qreal maxWidth = right - left;
+
+      if (cursorX > left && cursorX + naturalWidth > right) {
+        cursorX = left;
+        cursorY += rowHeight + rowGap;
+      }
+
+      if (cursorY + rowHeight > bottom) {
+        return false;
+      }
+
+      const qreal remainingWidth = right - cursorX;
+      const qreal textWidth =
+          std::max<qreal>(0.0, remainingWidth - icon.width() - iconTextSpacing);
+      if (textWidth <= 6.0) {
+        return false;
+      }
+
+      painter->setFont(font);
+      painter->drawPixmap(QPointF(cursorX, cursorY + (rowHeight - icon.height()) / 2.0),
+                          icon);
+
+      const auto elidedText = metrics.elidedText(text, Qt::ElideRight, textWidth);
+      const QRectF textRect(cursorX + icon.width() + iconTextSpacing, cursorY,
+                            textWidth, rowHeight);
+      painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
+
+      cursorX += std::min(maxWidth, naturalWidth) + itemGap;
+      return true;
+    };
 
     QFont titleFont = painter->font();
     titleFont.setBold(true);
-    painter->setFont(titleFont);
-    const QRectF titleTextRect(
-        titleRowRect.left() + iconSize + iconTextSpacing, titleRowRect.top(),
-        titleRowRect.width() - iconSize - iconTextSpacing, titleRowRect.height());
-    painter->drawText(titleTextRect, Qt::AlignLeft | Qt::AlignVCenter,
-                      mTitle);
+    QFont secondaryFont = painter->font();
+    secondaryFont.setPointSizeF(secondaryFont.pointSizeF() - 0.5);
 
-    QFont clientFont = painter->font();
-    clientFont.setBold(false);
-    clientFont.setPointSizeF(clientFont.pointSizeF() - 0.5);
-    painter->setFont(clientFont);
-    const QRectF clientTextRect(
-        clientRowRect.left() + iconSize + iconTextSpacing, clientRowRect.top(),
-        clientRowRect.width() - iconSize - iconTextSpacing,
-        clientRowRect.height());
-    painter->drawText(clientTextRect, Qt::AlignLeft | Qt::AlignVCenter,
-                      mClientName);
+    if (!drawFlowEntry(briefcasePixmap, mTitle, titleFont)) {
+      painter->restore();
+      return;
+    }
+    drawFlowEntry(userPixmap, mClientName, secondaryFont);
+    drawFlowEntry(coinsPixmap, costText, secondaryFont);
   } else {
     const QRectF textRect(x + margin_x, margin_y, mSize.width() * 0.9,
                           mSize.height() * 0.8);

@@ -92,6 +92,7 @@ public:
    */
   [[nodiscard]] QString getTitle() const;
   [[nodiscard]] QString getClientName() const;
+  [[nodiscard]] std::optional<double> cost() const;
 
   /**
    * @brief Returns the unique identifier of the event.
@@ -107,6 +108,7 @@ public:
    */
   void setTitle(const QString &title);
   void setClientName(const QString &clientName);
+  void setCost(std::optional<double> cost);
 
   /**
    * @brief Sets the start time of the event.
@@ -163,6 +165,7 @@ private:
   QSize mSize;                ///< The size of the event item.
   QString mTitle;             ///< The title of the event.
   QString mClientName;        ///< Linked client name for work items.
+  std::optional<double> mCost;///< Optional work event cost.
   QDateTime mStartTime;       ///< The start time of the event.
   QDateTime mEndTime;         ///< The end time of the event.
   unsigned long mId;          ///< Unique identifier of the event.

@@ -47,6 +47,7 @@ public:
 private:
   void add_demo_data();
   void init_tables();
+  void apply_schema_migrations();
   void init_payment_status_table();
   void init_event_status_table();
 

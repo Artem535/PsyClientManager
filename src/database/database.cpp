@@ -25,10 +25,12 @@ Database::Database(const config::Config &conf) {
 
   mDb = std::make_unique<duckdb::DuckDB>(db_pth.toString() + "/database.db");
 
+  init_tables();
+  apply_schema_migrations();
+  init_payment_status_table();
+  init_event_status_table();
+
   if (it_first_init) {
-    init_tables();
-    init_payment_status_table();
-    init_event_status_table();
     add_demo_data();
   }
 }
@@ -54,11 +56,11 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
             id,
             name, description, is_work_event,
             event_stat_id, payment_stat_id,
-            start_date, end_date, duration
+            start_date, end_date, duration, cost
         )
         SELECT
             COALESCE(MAX(id), 0) + 1,
-            $1, $2, $3, $4, $5, $6, $7, $8
+            $1, $2, $3, $4, $5, $6, $7, $8, $9
         FROM Event
         RETURNING id
     )",
@@ -68,7 +70,8 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
                  statusOrDefault(event.payment_stat_id),
                  db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
                  db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-                 db_utils::toDuckValue(event.duration));
+                 db_utils::toDuckValue(event.duration),
+                 db_utils::toDuckValue(event.cost));
 
   if (result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -109,8 +112,9 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
             payment_stat_id = COALESCE($5, payment_stat_id),
             start_date = $6,
             end_date = $7,
-            duration = $8
-        WHERE id = $9
+            duration = $8,
+            cost = $9
+        WHERE id = $10
     )",
                            db_utils::toDuckValue(event.name),
                            db_utils::toDuckValue(event.description),
@@ -118,7 +122,8 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
                            fkOrNull(event.payment_stat_id),
                            db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
                            db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-                           db_utils::toDuckValue(event.duration), event.id);
+                           db_utils::toDuckValue(event.duration),
+                           db_utils::toDuckValue(event.cost), event.id);
 
   if (result->HasError()) {
     PLOG_ERROR << "Failed to update event (id=" << event.id
@@ -469,6 +474,14 @@ void Database::init_tables() {
   auto result = conn.Query(constance::kCreateTables);
   if (result->HasError()) {
     PLOG_ERROR << "Error creating tables: " << result->GetError();
+  }
+}
+
+void Database::apply_schema_migrations() {
+  duckdb::Connection conn(*mDb);
+  auto result = conn.Query(constance::kSchemaMigrations);
+  if (result->HasError()) {
+    PLOG_ERROR << "Error applying schema migrations: " << result->GetError();
   }
 }
 

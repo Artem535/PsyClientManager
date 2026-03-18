@@ -1,4 +1,5 @@
 #include "qevent_details_widget.h"
+#include "../../widgets/app_settings.h"
 #include "ui/pages/ui_eventdetails.h"
 
 #include <oclero/qlementine/widgets/Switch.hpp>
@@ -30,6 +31,11 @@ void QEventDetailsWidget::initUi() {
   mUI->mTimeTo->setTimeZone(localTz);
   mUI->mTimeFrom->setDisplayFormat("HH:mm");
   mUI->mTimeTo->setDisplayFormat("HH:mm");
+  mUI->mCostSpinBox->setDecimals(2);
+  mUI->mCostSpinBox->setMinimum(0.0);
+  mUI->mCostSpinBox->setMaximum(1'000'000.0);
+  mUI->mCostSpinBox->setSingleStep(100.0);
+  mUI->mCostSpinBox->setSuffix(tr(" ₽"));
 
   mEventTypeSwitch = new oclero::qlementine::Switch(this);
   mEventTypeSwitch->setText(mUI->mEventType->text());
@@ -72,6 +78,8 @@ void QEventDetailsWidget::initDefaultStyle() {
   const auto isVisible = mCurrentEvent ? mCurrentEvent->isWorkItem() : false;
   mUI->mClientComboBox->setVisible(isVisible);
   mUI->mClientComboxBoxLabel->setVisible(isVisible);
+  mUI->mCostLabel->setVisible(isVisible);
+  mUI->mCostSpinBox->setVisible(isVisible);
   mEventTypeSwitch->setEnabled(false);
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
@@ -84,6 +92,7 @@ void QEventDetailsWidget::initEditStyle() {
   mUI->mChangeButton->setVisible(false);
   mUI->mAddButton->setVisible(false);
   mEventTypeSwitch->setEnabled(true);
+  onEventTypeToggled(mEventTypeSwitch->isChecked());
   emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
@@ -124,6 +133,8 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   mUI->mTimeTo->setTime(event->getEndTime().time());
   const bool isWorkItem = event->isWorkItem();
   mEventTypeSwitch->setChecked(isWorkItem);
+  mUI->mCostSpinBox->setValue(
+      event->cost().value_or(pcm::app_settings::defaultWorkEventCost()));
 
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
@@ -139,6 +150,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   }
 
   updateButtonState();
+  onEventTypeToggled(isWorkItem);
 }
 
 void QEventDetailsWidget::startEditingEvent(
@@ -167,6 +179,7 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date) {
                      crtDateTime.addSecs(3600));
   loadEvent(mCurrentEvent.data());
   mUI->mEventDate->setDate(date);
+  mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   initEditStyle();
 }
 
@@ -232,6 +245,9 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setTitle(mUI->mTitle->text());
     mCurrentEvent->setTimeRange(startDateTime, endDateTime);
     mCurrentEvent->setIsWorkItem(mEventTypeSwitch->isChecked());
+    mCurrentEvent->setCost(mEventTypeSwitch->isChecked()
+                               ? std::make_optional(mUI->mCostSpinBox->value())
+                               : std::nullopt);
   }
 
   if (mCurrentEvent) {
@@ -295,6 +311,11 @@ void QEventDetailsWidget::onEventTypeToggled(bool checked) {
       checked ? tr(": EVENT_TYPE_WORK") : tr(": EVENT_TYPE_REGULAR"));
   mUI->mClientComboBox->setVisible(checked);
   mUI->mClientComboxBoxLabel->setVisible(checked);
+  mUI->mCostLabel->setVisible(checked);
+  mUI->mCostSpinBox->setVisible(checked);
+  if (checked && mCreatingNewEvent && mUI->mCostSpinBox->value() <= 0.0) {
+    mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
+  }
 }
 
 void QEventDetailsWidget::onTimeFromChanged(const QTime &timeFrom) {
@@ -349,5 +370,7 @@ DuckEvent QEventDetailsWidget::collectEventData() const {
                        .toMSecsSinceEpoch();
   event.is_work_event = mEventTypeSwitch->isChecked();
   event.duration = (event.end_date.value_or(0) - event.start_date.value_or(0)) / 1000; // in seconds
+  event.cost = event.is_work_event ? std::make_optional(mUI->mCostSpinBox->value())
+                                   : std::nullopt;
   return event;
 }

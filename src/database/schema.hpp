@@ -117,6 +117,7 @@ struct DuckEvent {
   std::optional<std::int64_t> start_date = std::nullopt;
   std::optional<std::int64_t> end_date = std::nullopt;
   std::optional<std::int64_t> duration = std::nullopt;
+  std::optional<double> cost = std::nullopt;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -128,6 +129,7 @@ struct DuckEvent {
     start_date = db_utils::toOptionalTimestampMs(chunk.GetValue(6, index));
     end_date = db_utils::toOptionalTimestampMs(chunk.GetValue(7, index));
     duration = db_utils::toOptionalInt32AsInt64(chunk.GetValue(8, index));
+    cost = db_utils::toOptionalDouble(chunk.GetValue(9, index));
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
@@ -144,7 +146,9 @@ inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
                                    << "end_date=";
   print_optional(os, e.end_date) << ", "
                                  << "duration=";
-  print_optional(os, e.duration) << "}";
+  print_optional(os, e.duration) << ", "
+                                 << "cost=";
+  print_optional(os, e.cost) << "}";
   return os;
 }
 // --- DuckEventClient ---

@@ -19,6 +19,11 @@ inline std::optional<std::int64_t> toOptionalInt32AsInt64(const duckdb::Value &v
   return val.GetValue<int32_t>();
 }
 
+inline std::optional<double> toOptionalDouble(const duckdb::Value &val) {
+  if (val.IsNull()) return std::nullopt;
+  return val.GetValue<double>();
+}
+
 inline std::int64_t toInt32AsInt64(const duckdb::Value &val) {
   return val.GetValue<int32_t>();
 }
@@ -45,6 +50,10 @@ inline duckdb::Value toDuckValue(const std::optional<std::string>& opt) {
 
 inline duckdb::Value toDuckValue(const std::optional<std::int64_t>& opt) {
   return opt.has_value() ? duckdb::Value(*opt) : duckdb::Value();
+}
+
+inline duckdb::Value toDuckValue(const std::optional<double>& opt) {
+  return opt.has_value() ? duckdb::Value::DOUBLE(*opt) : duckdb::Value();
 }
 
 inline duckdb::Value toDuckTimestamp(const std::optional<std::int64_t>& micros_opt) {

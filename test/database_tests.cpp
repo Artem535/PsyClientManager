@@ -42,6 +42,7 @@ TEST(DatabaseTest, AddClientAndEvent) {
   event.start_date = 1730000000000; // ms since epoch
   event.end_date = 1730003600000;   // +1 hour
   event.duration = 3600;
+  event.cost = 3200.0;
 
   const auto eventId = db.add_event(event);
   EXPECT_GT(eventId, 0);
@@ -50,6 +51,8 @@ TEST(DatabaseTest, AddClientAndEvent) {
   ASSERT_NE(storedEvent, nullptr);
   EXPECT_EQ(storedEvent->id, eventId);
   EXPECT_EQ(storedEvent->name.value_or(""), "Test Event");
+  ASSERT_TRUE(storedEvent->cost.has_value());
+  EXPECT_DOUBLE_EQ(*storedEvent->cost, 3200.0);
 
   const auto eventClientId = db.add_event_client(eventId, clientId);
   EXPECT_GT(eventClientId, 0);

@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -109,10 +110,20 @@ void SettingsDialog::setupUi() {
   mPreventOverlapsSwitch = new oclero::qlementine::Switch(eventsBox);
   mWorkEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
   mPersonalEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
+  mDefaultWorkCostSpinBox = new QDoubleSpinBox(eventsBox);
+  mDefaultWorkCostSpinBox->setDecimals(2);
+  mDefaultWorkCostSpinBox->setMinimum(0.0);
+  mDefaultWorkCostSpinBox->setMaximum(1'000'000.0);
+  mDefaultWorkCostSpinBox->setSingleStep(100.0);
+  mDefaultWorkCostSpinBox->setSuffix(tr(" ₽"));
   eventsLayout->addWidget(
       makeSettingRow(tr("Disallow overlapping events"),
                      tr("Reject saves when the selected time range intersects another event."),
                      mPreventOverlapsSwitch, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Default work event cost"),
+                     tr("Used to prefill new work sessions."),
+                     mDefaultWorkCostSpinBox, eventsBox));
   eventsLayout->addWidget(
       makeSettingRow(tr("Work events"),
                      tr("Accent color for work sessions in the timeline."),
@@ -135,6 +146,7 @@ void SettingsDialog::loadSettings() const {
   mDatabasePathLabel->setText(
       QString::fromStdString(mConfig.db_conf.value_.db_pth.toString()));
   mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
+  mDefaultWorkCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
 }
@@ -149,6 +161,10 @@ void SettingsDialog::connectSignals() const {
   connect(mPreventOverlapsSwitch, &QAbstractButton::toggled, this,
           [](const bool checked) {
             pcm::app_settings::setPreventEventOverlaps(checked);
+          });
+  connect(mDefaultWorkCostSpinBox, &QDoubleSpinBox::valueChanged, this,
+          [](const double value) {
+            pcm::app_settings::setDefaultWorkEventCost(value);
           });
   connect(mWorkEventColorEditor, &oclero::qlementine::ColorEditor::colorChanged,
           this, [this]() {

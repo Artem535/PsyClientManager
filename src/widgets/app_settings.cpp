@@ -10,6 +10,7 @@ constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
 constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
 constexpr auto kPersonalEventColorKey = "timeline/personalEventColor";
+constexpr auto kDefaultWorkEventCostKey = "event/defaultWorkEventCost";
 
 QColor defaultWorkEventColor() {
   return QColor(173, 216, 230);
@@ -17,6 +18,10 @@ QColor defaultWorkEventColor() {
 
 QColor defaultPersonalEventColor() {
   return QColor(255, 182, 193);
+}
+
+double defaultWorkEventCostValue() {
+  return 2500.0;
 }
 } // namespace
 
@@ -80,6 +85,17 @@ QColor personalEventColor() {
 void setPersonalEventColor(const QColor &color) {
   QSettings settings;
   settings.setValue(kPersonalEventColorKey, color);
+}
+
+double defaultWorkEventCost() {
+  QSettings settings;
+  return settings.value(kDefaultWorkEventCostKey, defaultWorkEventCostValue())
+      .toDouble();
+}
+
+void setDefaultWorkEventCost(const double cost) {
+  QSettings settings;
+  settings.setValue(kDefaultWorkEventCostKey, cost);
 }
 
 } // namespace pcm::app_settings
