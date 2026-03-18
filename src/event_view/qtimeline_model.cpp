@@ -114,9 +114,9 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   emit eventsLoaded();
 }
 
-int64_t QTimelineModel::addEvent(const DuckEvent &event) {
+int64_t QTimelineModel::addEvent(const DuckEvent &event, const bool allowOverlap) {
   DuckEvent newEvent = event;
-  newEvent.id = mDb->add_event(event); // save to DB
+  newEvent.id = mDb->add_event(event, allowOverlap); // save to DB
   if (newEvent.id <= 0) {
     return 0;
   }
@@ -143,10 +143,10 @@ void QTimelineModel::removeEvent(int64_t id) {
   }
 }
 
-void QTimelineModel::updateEvent(const DuckEvent &event) {
+void QTimelineModel::updateEvent(const DuckEvent &event, const bool allowOverlap) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == event.id) {
-      if (!mDb->update_event(event)) {
+      if (!mDb->update_event(event, allowOverlap)) {
         return;
       }
       mEvents[i] = event;
@@ -156,6 +156,10 @@ void QTimelineModel::updateEvent(const DuckEvent &event) {
       break;
     }
   }
+}
+
+bool QTimelineModel::hasConflict(const DuckEvent &event) const {
+  return mDb && mDb->has_conflict(event);
 }
 
 QModelIndex QTimelineModel::indexForEventId(int64_t id) const {

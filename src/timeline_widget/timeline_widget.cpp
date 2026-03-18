@@ -40,7 +40,8 @@ void QTimelineWidget::onSelectedDayChanged(const QDate &date) const {
   mModel->loadEventsForDay(date);
 }
 
-int64_t QTimelineWidget::addEvent(const DuckEvent &event) const {
+int64_t QTimelineWidget::addEvent(const DuckEvent &event,
+                                  const bool allowOverlap) const {
   if (!mModel) {
     qCWarning(logTimelineWidget) << "QTimelineWidget::addEvent | Model is null";
     return 0;
@@ -49,19 +50,24 @@ int64_t QTimelineWidget::addEvent(const DuckEvent &event) const {
   qCDebug(logTimelineWidget) << "QTimelineWidget::addEvent | Adding event:"
                              << QString::fromStdString(event.name.value_or(""));
 
-  return mModel->addEvent(event);
+  return mModel->addEvent(event, allowOverlap);
 }
 
 void QTimelineWidget::updateScene() { emit needSceneUpdate(); }
 
-void QTimelineWidget::updateEvent(const DuckEvent &event) const {
+void QTimelineWidget::updateEvent(const DuckEvent &event,
+                                  const bool allowOverlap) const {
   if (!mModel)
     return;
-  mModel->updateEvent(event);
+  mModel->updateEvent(event, allowOverlap);
 }
 
 void QTimelineWidget::removeEvent(const int64_t id) const {
   if (!mModel)
     return;
   mModel->removeEvent(id);
+}
+
+bool QTimelineWidget::hasConflict(const DuckEvent &event) const {
+  return mModel && mModel->hasConflict(event);
 }

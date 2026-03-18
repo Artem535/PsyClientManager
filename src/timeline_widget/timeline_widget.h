@@ -24,12 +24,13 @@ public:
 public slots:
     void onSelectedDayChanged(const QDate &date) const;
 
-    [[nodiscard]] int64_t addEvent(const DuckEvent &event) const;
+    [[nodiscard]] int64_t addEvent(const DuckEvent &event, bool allowOverlap = true) const;
 
     void updateScene();
 
-    void updateEvent(const DuckEvent &event) const;
+    void updateEvent(const DuckEvent &event, bool allowOverlap = true) const;
     void removeEvent(int64_t id) const;
+    [[nodiscard]] bool hasConflict(const DuckEvent &event) const;
 
 signals:
     void eventSelected(QEventItem *event);

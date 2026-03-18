@@ -181,6 +181,27 @@ bool QEventDetailsWidget::isCreatingNewEvent() const {
   return mCreatingNewEvent;
 }
 
+int64_t QEventDetailsWidget::selectedClientId() const {
+  if (!mEventTypeSwitch->isChecked()) {
+    return 0;
+  }
+
+  return mUI->mClientComboBox->currentData().toLongLong();
+}
+
+QString QEventDetailsWidget::selectedClientName() const {
+  if (!mEventTypeSwitch->isChecked()) {
+    return {};
+  }
+
+  return mUI->mClientComboBox->currentText();
+}
+
+void QEventDetailsWidget::setConflictChecker(
+    std::function<bool(const DuckEvent &)> checker) {
+  mConflictChecker = std::move(checker);
+}
+
 QEventItem *QEventDetailsWidget::currentEvent() const {
   return mCurrentEvent.data();
 }
@@ -213,6 +234,16 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setIsWorkItem(mEventTypeSwitch->isChecked());
   }
 
+  if (mCurrentEvent) {
+    const auto eventData = mCurrentEvent->toEvent();
+    if (mConflictChecker && mConflictChecker(eventData)) {
+      QMessageBox::warning(
+          this, tr(": ERROR_TITLE"),
+          tr("The selected time range overlaps an existing event."));
+      return;
+    }
+  }
+
   const bool isCreatingNewEvent = mCreatingNewEvent;
 
   // Emit signal to save the event
@@ -222,16 +253,6 @@ void QEventDetailsWidget::onApplyClicked() {
     QMessageBox::warning(this, tr(": ERROR_TITLE"),
                          tr("Failed to save event to database"));
     return;
-  }
-
-  if (mCurrentEvent) {
-    int64_t selectedClientId = 0;
-    if (mEventTypeSwitch->isChecked()) {
-      selectedClientId = mUI->mClientComboBox->currentData().toLongLong();
-      qCDebug(logEventDetails)
-          << "Selected client ID for event:" << selectedClientId;
-    }
-    emit provideClientEventPairSave(selectedClientId, mCurrentEvent->getId());
   }
 
   if (isCreatingNewEvent && mCurrentEvent) {

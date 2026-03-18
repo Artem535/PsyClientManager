@@ -5,6 +5,7 @@
 
 namespace {
 constexpr auto kConfirmEventDeletionKey = "event/confirmDeletion";
+constexpr auto kPreventEventOverlapsKey = "event/preventOverlaps";
 constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
 constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
@@ -29,6 +30,16 @@ bool confirmEventDeletion() {
 void setConfirmEventDeletion(const bool enabled) {
   QSettings settings;
   settings.setValue(kConfirmEventDeletionKey, enabled);
+}
+
+bool preventEventOverlaps() {
+  QSettings settings;
+  return settings.value(kPreventEventOverlapsKey, true).toBool();
+}
+
+void setPreventEventOverlaps(const bool enabled) {
+  QSettings settings;
+  settings.setValue(kPreventEventOverlapsKey, enabled);
 }
 
 bool showStatusBarMessages() {

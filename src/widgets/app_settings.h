@@ -7,6 +7,8 @@ namespace pcm::app_settings {
 
 bool confirmEventDeletion();
 void setConfirmEventDeletion(bool enabled);
+bool preventEventOverlaps();
+void setPreventEventOverlaps(bool enabled);
 
 bool showStatusBarMessages();
 void setShowStatusBarMessages(bool enabled);

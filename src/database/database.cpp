@@ -35,12 +35,17 @@ Database::Database(const config::Config &conf) {
 
 // --- Event ---
 
-int64_t Database::add_event(const DuckEvent &event) {
+int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
   PLOG_DEBUG << "add_event request: start_ms="
              << event.start_date.value_or(-1)
              << ", end_ms=" << event.end_date.value_or(-1)
              << ", event_stat_id=" << event.event_stat_id
              << ", payment_stat_id=" << event.payment_stat_id;
+
+  if (!allowOverlap && has_conflict(event)) {
+    PLOG_WARNING << "Rejected event insert because of time conflict";
+    return 0;
+  }
 
   duckdb::Connection conn(*mDb);
   auto result =
@@ -82,9 +87,15 @@ int64_t Database::add_event(const DuckEvent &event) {
   return newId;
 }
 
-bool Database::update_event(const DuckEvent &event) {
+bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
   if (event.id <= 0) {
     PLOG_WARNING << "Attempt to update event with invalid id: " << event.id;
+    return false;
+  }
+
+  if (!allowOverlap && has_conflict(event)) {
+    PLOG_WARNING << "Rejected event update because of time conflict for id="
+                 << event.id;
     return false;
   }
 
@@ -357,18 +368,21 @@ int64_t Database::add_event_client(const int64_t &event_id,
 // }
 
 bool Database::has_conflict(const DuckEvent &event) {
-  if (event.start_date <= 0 || event.end_date <= 0) {
+  if (!event.start_date.has_value() || !event.end_date.has_value()) {
     return false;
   }
 
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(R"(
         SELECT 1 FROM Event
-        WHERE start_date < $1 AND end_date > $2
+        WHERE id != $1
+          AND start_date < $2
+          AND end_date > $3
         LIMIT 1
     )",
-                           db_utils::toDuckTimestamp(event.end_date),
-                           db_utils::toDuckTimestamp(event.start_date));
+                           event.id,
+                           db_utils::toDuckTimestamp(event.end_date.value() * 1000),
+                           db_utils::toDuckTimestamp(event.start_date.value() * 1000));
 
   if (result->HasError()) {
     PLOG_ERROR << "Conflict check failed: " << result->GetError();

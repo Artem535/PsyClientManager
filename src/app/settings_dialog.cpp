@@ -3,6 +3,7 @@
 #include "../widgets/app_settings.h"
 
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
+#include <oclero/qlementine/widgets/Switch.hpp>
 
 #include <QComboBox>
 #include <QDesktopServices>
@@ -105,8 +106,13 @@ void SettingsDialog::setupUi() {
   auto *eventsLayout = new QVBoxLayout(eventsBox);
   eventsLayout->setContentsMargins(16, 16, 16, 16);
   eventsLayout->setSpacing(14);
+  mPreventOverlapsSwitch = new oclero::qlementine::Switch(eventsBox);
   mWorkEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
   mPersonalEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Disallow overlapping events"),
+                     tr("Reject saves when the selected time range intersects another event."),
+                     mPreventOverlapsSwitch, eventsBox));
   eventsLayout->addWidget(
       makeSettingRow(tr("Work events"),
                      tr("Accent color for work sessions in the timeline."),
@@ -128,6 +134,7 @@ void SettingsDialog::loadSettings() const {
   mLanguageCombo->setCurrentIndex(languageIndex >= 0 ? languageIndex : 0);
   mDatabasePathLabel->setText(
       QString::fromStdString(mConfig.db_conf.value_.db_pth.toString()));
+  mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
 }
@@ -139,6 +146,10 @@ void SettingsDialog::connectSignals() const {
   });
   connect(mOpenDatabaseFolderButton, &QPushButton::clicked, this,
           &SettingsDialog::openDatabaseFolder);
+  connect(mPreventOverlapsSwitch, &QAbstractButton::toggled, this,
+          [](const bool checked) {
+            pcm::app_settings::setPreventEventOverlaps(checked);
+          });
   connect(mWorkEventColorEditor, &oclero::qlementine::ColorEditor::colorChanged,
           this, [this]() {
             pcm::app_settings::setWorkEventColor(mWorkEventColorEditor->color());

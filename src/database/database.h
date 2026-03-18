@@ -23,8 +23,8 @@ class Database {
 public:
   explicit Database(const pcm::config::Config &conf);
 
-  int64_t add_event(const DuckEvent &event);
-  bool update_event(const DuckEvent &event);
+  int64_t add_event(const DuckEvent &event, bool allowOverlap = true);
+  bool update_event(const DuckEvent &event, bool allowOverlap = true);
   std::unique_ptr<DuckEvent> get_event(const int64_t &id);
   bool remove_event(const int64_t &id);
 

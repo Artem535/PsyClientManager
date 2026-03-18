@@ -11,6 +11,7 @@ class QPushButton;
 
 namespace oclero::qlementine {
 class ColorEditor;
+class Switch;
 }
 
 class SettingsDialog final : public QDialog {
@@ -29,6 +30,7 @@ private:
   QComboBox *mLanguageCombo{nullptr};
   QLabel *mDatabasePathLabel{nullptr};
   QPushButton *mOpenDatabaseFolderButton{nullptr};
+  oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};

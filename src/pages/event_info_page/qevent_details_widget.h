@@ -8,6 +8,7 @@
 #include <QHash>
 #include <QPointer>
 #include <QWidget>
+#include <functional>
 #include <memory>
 
 namespace oclero::qlementine {
@@ -53,6 +54,7 @@ public:
    * @brief Configures widget for usage inside a modal dialog.
    */
   void setDialogMode(bool enabled);
+  void setConflictChecker(std::function<bool(const DuckEvent &)> checker);
 
   /**
    * @brief Checks if the widget is in edit mode.
@@ -65,6 +67,8 @@ public:
    * @return true if creating a new event, false otherwise.
    */
   [[nodiscard]] bool isCreatingNewEvent() const;
+  [[nodiscard]] int64_t selectedClientId() const;
+  [[nodiscard]] QString selectedClientName() const;
 
   /**
    * @brief Returns a pointer to the current event (may be nullptr if creating a
@@ -81,8 +85,6 @@ public:
   void setClientList(const QHash<int64_t, QString> &clients);
 
 signals:
-  void provideClientEventPairSave(int64_t clientId, int64_t eventId);
-
   /**
    * @brief Signal emitted when user requests to save the event.
    * Passes a pointer to the event data that should be saved.
@@ -138,4 +140,5 @@ private:
   bool mInEditMode = false;
   bool mCreatingNewEvent = false;
   bool mDialogMode = false;
+  std::function<bool(const DuckEvent &)> mConflictChecker;
 };

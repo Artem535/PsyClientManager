@@ -39,9 +39,10 @@ public:
 
   // API
   void loadEventsForDay(const QDate &date);
-  int64_t addEvent(const DuckEvent &event);
+  int64_t addEvent(const DuckEvent &event, bool allowOverlap = true);
   void removeEvent(int64_t id);
-  void updateEvent(const DuckEvent &event);
+  void updateEvent(const DuckEvent &event, bool allowOverlap = true);
+  bool hasConflict(const DuckEvent &event) const;
 
   QModelIndex indexForEventId(int64_t id) const;
 

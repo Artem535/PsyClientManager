@@ -102,6 +102,10 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
 
   auto *detailsWidget = new QEventDetailsWidget(&dialog);
   detailsWidget->setDialogMode(true);
+  detailsWidget->setConflictChecker([this](const DuckEvent &event) {
+    return pcm::app_settings::preventEventOverlaps() && mTimelineWidget &&
+           mTimelineWidget->hasConflict(event);
+  });
   layout.addWidget(detailsWidget);
 
   mActiveEventDetailsWidget = detailsWidget;
@@ -114,10 +118,6 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
           &QDialog::accept);
   connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, &dialog,
           &QDialog::reject);
-  connect(detailsWidget, &QEventDetailsWidget::provideClientEventPairSave, this,
-          [this](const int64_t selectedClientId, const int64_t selectedEventId) {
-            emit provideClientEventPairSave(selectedClientId, selectedEventId);
-          });
   connect(detailsWidget, &QEventDetailsWidget::provideFillClientComboBox, this,
           [this](QComboBox *comboBox) {
             emit provideFillClientComboBox(comboBox);
@@ -180,9 +180,14 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
   qCDebug(logEventInfo) << "Event saved with ID:" << event->getId();
 
   auto eventDetails = event->toEvent();
+  const auto selectedClientId =
+      mActiveEventDetailsWidget ? mActiveEventDetailsWidget->selectedClientId() : 0;
+  const auto selectedClientName =
+      mActiveEventDetailsWidget ? mActiveEventDetailsWidget->selectedClientName() : QString{};
 
   if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
-    const auto id = mTimelineWidget->addEvent(eventDetails);
+    const auto id = mTimelineWidget->addEvent(
+        eventDetails, !pcm::app_settings::preventEventOverlaps());
     if (id <= 0) {
       qCWarning(logEventInfo) << "Failed to persist event in DB";
       return;
@@ -190,7 +195,13 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
     eventDetails.id = id;
     event->setId(id);
   } else {
-    mTimelineWidget->updateEvent(eventDetails);
+    mTimelineWidget->updateEvent(
+        eventDetails, !pcm::app_settings::preventEventOverlaps());
+  }
+
+  if (eventDetails.is_work_event && selectedClientId > 0 && eventDetails.id > 0) {
+    emit provideClientEventPairSave(selectedClientId, eventDetails.id);
+    event->setClientName(selectedClientName);
   }
 
   // Force reload from DB to avoid stale UI state.
