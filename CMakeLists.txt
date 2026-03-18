@@ -4,10 +4,27 @@ cmake_minimum_required(VERSION 3.28)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
 # Define the project
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg LinguistTools)
+
+if(Qt6_VERSION VERSION_LESS 6.8.0)
+  message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
+endif()
+
+add_custom_target(apply_qlementine_patch
+  COMMAND ${CMAKE_SOURCE_DIR}/scripts/apply_qlementine_patch.sh
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  COMMENT "Applying local patch to third_party/qlementine"
+  VERBATIM
+)
+
+set(QLEMENTINE_SANDBOX OFF CACHE BOOL "" FORCE)
+set(QLEMENTINE_SHOWCASE OFF CACHE BOOL "" FORCE)
+add_subdirectory(third_party/qlementine)
 
 qt_standard_project_setup()
 
@@ -37,9 +54,7 @@ add_subdirectory(test)
 
 # Add the main executable
 qt_add_executable(PsyClientManager src/main.cpp
-        src/widgets/tab_button.cpp
-        src/widgets/tab_button.h
-        src/widgets/constants.hpp)
+        resources/themes.qrc)
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 

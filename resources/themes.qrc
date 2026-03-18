@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/themes">
+    <file alias="qlementine_dark.json">themes/qlementine_dark.json</file>
+  </qresource>
+</RCC>

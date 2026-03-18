@@ -1,0 +1,64 @@
+diff --git a/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp b/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
+index 733d578..13badb1 100644
+--- a/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
++++ b/lib/include/oclero/qlementine/animation/WidgetAnimationManager.hpp
+@@ -6,10 +6,12 @@
+ #include <oclero/qlementine/animation/WidgetAnimator.hpp>
+ 
+ #include <unordered_map>
++#include <memory>
+ #include <optional>
+ 
+ namespace oclero::qlementine {
+ #define DECLARE_ANIMATE(NAME, TYPE, easing) \
++
+   TYPE animate##NAME(const QWidget* w, const TYPE& target, int duration, bool loop = false) { \
+     if (_animationsEnabled && w != nullptr) { \
+       auto* animator = getOrCreateAnimator(w); \
+@@ -29,6 +31,7 @@ namespace oclero::qlementine {
+ class WidgetAnimationManager {
+ public:
+   WidgetAnimationManager();
++  ~WidgetAnimationManager();
+ 
+   bool enabled() const;
+   void setEnabled(bool enabled);
+@@ -62,6 +65,7 @@ private:
+   QEasingCurve _focusEasingCurve;
+   QEasingCurve _defaultEasingCurve;
+   QEasingCurve _linearEasingCurve;
++  std::shared_ptr<bool> _alive{ std::make_shared<bool>(true) };
+   std::unordered_map<const QWidget*, WidgetAnimator*> _map;
+ };
+ } // namespace oclero::qlementine
+diff --git a/lib/src/animation/WidgetAnimationManager.cpp b/lib/src/animation/WidgetAnimationManager.cpp
+index 0955786..60b2280 100644
+--- a/lib/src/animation/WidgetAnimationManager.cpp
++++ b/lib/src/animation/WidgetAnimationManager.cpp
+@@ -6,6 +6,11 @@ namespace oclero::qlementine {
+ WidgetAnimationManager::WidgetAnimationManager() {
+   initializeEasingCurves();
+ }
++
++WidgetAnimationManager::~WidgetAnimationManager() {
++  // Some widgets, notably QCalendarWidget internals, may emit deferred
++  // destruction callbacks after the style teardown has already started.
++  *_alive = false;
++}
+ 
+ bool WidgetAnimationManager::enabled() const {
+   return _animationsEnabled;
+@@ -40,8 +45,12 @@ void WidgetAnimationManager::addWidget(const QWidget* widget, WidgetAnimator* wi
+   if (!findWidget(widget)) {
+     _map.insert_or_assign(widget, widgetAnimator);
+ 
+-    QObject::connect(widget, &QObject::destroyed, widget, [this, widget]() {
++    const auto alive = _alive;
++    QObject::connect(widget, &QObject::destroyed, [this, alive, widget]() {
++      if (!*alive) {
++        return;
++      }
+       removeWidget(widget);
+     });
+   }
+ }

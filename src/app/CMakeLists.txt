@@ -14,6 +14,10 @@ qt_add_library(${TARGET_NAME} STATIC
         main_window.cpp
 )
 
+target_include_directories(${TARGET_NAME} PRIVATE
+        ${qlementine_SOURCE_DIR}/lib/include
+)
+
 
 qt_add_ui(${TARGET_NAME} SOURCES
         ../../ui/app/mainwindow.ui
@@ -39,5 +43,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_client_info_card_page
         ${PROJECT_NAME}_event_page
         ${PROJECT_NAME}_widgets
+        qlementine
         Qt6::Widgets
 )

@@ -3,6 +3,7 @@
 #include <QLocale>
 #include <QStringList>
 #include <QTranslator>
+#include <oclero/qlementine.hpp>
 
 Q_LOGGING_CATEGORY(logApplication, "pcm.Application")
 
@@ -14,6 +15,14 @@ Application::Application() {
 
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
+  auto *style = new oclero::qlementine::QlementineStyle(&app);
+  app.setStyle(style);
+
+  auto *themeManager = new oclero::qlementine::ThemeManager(style, &app);
+  themeManager->loadDirectory(":/themes");
+  themeManager->setCurrentTheme("Dark");
+  qCInfo(logApplication) << "Qlementine themes loaded:" << themeManager->themeCount()
+                         << "current:" << themeManager->currentTheme();
 
   QTranslator translator;
   const QString localeName = QLocale::system().name().toLower();
