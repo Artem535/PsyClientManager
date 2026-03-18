@@ -66,9 +66,10 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.8.3"
-          modules: qtsvg
           cache: true
           arch: ${{ matrix.qt_arch }}
+          archives: "qtbase qtsvg"
+          aqtversion: "==3.3.*"
 
       - name: Restore vcpkg cache
         uses: actions/cache@v4
