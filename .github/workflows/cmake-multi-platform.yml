@@ -13,6 +13,7 @@ env:
   APPIMAGE_EXTRACT_AND_RUN: "1"
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.cache/vcpkg/archives
   VCPKG_DOWNLOADS: ${{ github.workspace }}/vcpkg/downloads
+  VCPKG_INSTALL_OPTIONS: --debug
 
 jobs:
   build:
