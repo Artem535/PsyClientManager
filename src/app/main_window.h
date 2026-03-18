@@ -4,8 +4,10 @@
 #include "event_info.h"
 #include "database.h"
 #include "client_info_card.h"
+#include "settings_dialog.h"
 #include "tab_button.h"
 
+#include <QAction>
 #include <QMainWindow>
 #include <QLabel>
 #include <QHBoxLayout>
@@ -110,6 +112,9 @@ private:
   QHBoxLayout *mPageCustomWidgetLayout{nullptr};
   QHash<Pages, QWidget*> mPageCustomWidgets;
   Pages mCurrentPage{Pages::eventInfo};
+  QAction *mSettingsAction{nullptr};
+  QAction *mAboutAction{nullptr};
+  QAction *mQuitAction{nullptr};
 
   /**
    * @brief Initializes default UI style (colors, fonts, etc.).
@@ -134,4 +139,9 @@ private:
    * @param page Target page.
    */
   void applyPageCustomWidget(Pages page);
+  void setupMenuBar();
+  void openSettingsDialog();
+  void openAboutDialog();
+  [[nodiscard]] QString pageTitle(Pages page) const;
+  void refreshPageAppearance();
 };

@@ -1,8 +1,10 @@
 #include "application.h"
+#include "../widgets/app_settings.h"
 
 #include <QLocale>
 #include <QStringList>
 #include <QTranslator>
+#include <QIcon>
 #include <oclero/qlementine.hpp>
 
 Q_LOGGING_CATEGORY(logApplication, "pcm.Application")
@@ -15,6 +17,11 @@ Application::Application() {
 
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
+  app.setOrganizationName("PsyClientManager");
+  app.setApplicationName("PsyClientManager");
+  app.setApplicationDisplayName("PsyClientManager");
+  app.setApplicationVersion("0.1.0");
+  app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);
 
@@ -26,7 +33,9 @@ int Application::run(int argc, char *argv[]) {
 
   QTranslator translator;
   const QString localeName = QLocale::system().name().toLower();
-  const bool preferRu = localeName.startsWith("ru");
+  const QString preferredLanguage = pcm::app_settings::languageCode();
+  const bool preferRu = preferredLanguage == "ru" ||
+                        (preferredLanguage == "system" && localeName.startsWith("ru"));
   const QStringList translationOrder =
       preferRu ? QStringList{"app_ru", "app_en"}
                : QStringList{"app_en", "app_ru"};

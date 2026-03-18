@@ -12,6 +12,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 qt_add_library(${TARGET_NAME} STATIC
         application.cpp
         main_window.cpp
+        settings_dialog.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE

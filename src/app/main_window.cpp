@@ -1,7 +1,14 @@
 #include "main_window.h"
+#include "../widgets/app_settings.h"
 #include "ui/app/ui_mainwindow.h"
 
+#include <oclero/qlementine/widgets/AboutDialog.hpp>
+
+#include <QApplication>
+#include <QAction>
 #include <QIcon>
+#include <QMenu>
+#include <QMenuBar>
 #include <QPixmap>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -49,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
 
   // Initialize default UI style
   initDefaultStyle();
+  setupMenuBar();
 }
 
 
@@ -152,6 +160,12 @@ void MainWindow::showPage(const Pages page, QPushButton *btn) {
   mCurrentPage = page;
   applyPageCustomWidget(page);
   checkButton(btn);
+
+  if (pcm::app_settings::showStatusBarMessages()) {
+    statusBar()->showMessage(tr("Opened %1").arg(pageTitle(page)), 2000);
+  } else {
+    statusBar()->clearMessage();
+  }
 }
 
 void MainWindow::applyPageCustomWidget(const Pages page) {
@@ -166,6 +180,60 @@ void MainWindow::applyPageCustomWidget(const Pages page) {
     widget->setParent(mUi->pageCustomWidgetHost);
     widget->show();
     mPageCustomWidgetLayout->addWidget(widget);
+  }
+}
+
+void MainWindow::setupMenuBar() {
+  auto *appMenu = menuBar()->addMenu(tr("&Application"));
+
+  mSettingsAction =
+      appMenu->addAction(QIcon(":/icons/users-gear-solid-full.svg"), tr("Settings"));
+  mAboutAction =
+      appMenu->addAction(QIcon(":/icons/brain-solid-full.svg"), tr("About"));
+  appMenu->addSeparator();
+  mQuitAction = appMenu->addAction(tr("Quit"));
+
+  connect(mSettingsAction, &QAction::triggered, this, &MainWindow::openSettingsDialog);
+  connect(mAboutAction, &QAction::triggered, this, &MainWindow::openAboutDialog);
+  connect(mQuitAction, &QAction::triggered, this, &QWidget::close);
+}
+
+void MainWindow::openSettingsDialog() {
+  SettingsDialog dialog(this);
+  dialog.exec();
+  refreshPageAppearance();
+}
+
+void MainWindow::openAboutDialog() {
+  oclero::qlementine::AboutDialog dialog(this);
+  dialog.setWindowTitle(tr("About"));
+  dialog.setIcon(QIcon(":/icons/brain-solid-full.svg"));
+  dialog.setApplicationName(QApplication::applicationDisplayName());
+  dialog.setApplicationVersion(QApplication::applicationVersion());
+  dialog.setDescription(
+      tr("Desktop workspace for calendar scheduling, client management, and session tracking."));
+  dialog.setLicense(tr("Built with Qt, DuckDB, and Qlementine."));
+  dialog.setCopyright(QStringLiteral("2026 PsyClientManager"));
+  dialog.exec();
+}
+
+QString MainWindow::pageTitle(const Pages page) const {
+  switch (page) {
+    case Pages::clientInfo:
+      return tr("Clients");
+    case Pages::eventInfo:
+      return tr("Calendar");
+    case Pages::clientCard:
+      return tr("Details");
+  }
+
+  return tr("Page");
+}
+
+void MainWindow::refreshPageAppearance() {
+  if (const auto eventPage =
+          dynamic_cast<QEventInfoPage *>(mPages.value(Pages::eventInfo, nullptr))) {
+    eventPage->refreshAppearance();
   }
 }
 
