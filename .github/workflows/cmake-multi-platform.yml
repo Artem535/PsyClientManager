@@ -68,7 +68,6 @@ jobs:
           version: "6.8.3"
           cache: true
           arch: ${{ matrix.qt_arch }}
-          archives: "qtbase qtsvg"
           aqtversion: "==3.3.*"
 
       - name: Restore vcpkg cache
