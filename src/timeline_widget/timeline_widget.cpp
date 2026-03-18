@@ -7,6 +7,8 @@ Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
     : QWidget(parent), mModel(model) {
   mLayout = new QVBoxLayout(this);
+  mLayout->setContentsMargins(0, 0, 0, 0);
+  mLayout->setSpacing(0);
   setLayout(mLayout);
 
   mEventView = new QEventView(this);

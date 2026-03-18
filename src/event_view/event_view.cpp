@@ -1,5 +1,8 @@
 #include "event_view.h"
+#include "../widgets/constants.hpp"
 
+#include <QPainterPath>
+#include <QRegion>
 #include <QSet>
 
 #include "qtimeline_model.h"
@@ -12,11 +15,28 @@ QEventView::QEventView(QWidget *parent)
   mScene = new QGraphicsScene(this);
   setScene(mScene);
 
+  setFrameShape(QFrame::NoFrame);
+  setObjectName("eventTimelineView");
   setRenderHint(QPainter::Antialiasing);
   setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  const auto borderCss =
+      pcm::widgets::constants::kSurfaceBorderColor.name(QColor::HexArgb);
+  const auto backgroundCss =
+      pcm::widgets::constants::kSurfaceBackgroundColor.name(QColor::HexArgb);
+  setStyleSheet(
+      QString(
+          "QGraphicsView#eventTimelineView {"
+          " border: 1px solid %1;"
+          " border-radius: 16px;"
+          " background: %2;"
+          "}"
+          "QGraphicsView#eventTimelineView QWidget {"
+          " border-radius: 16px;"
+          "}")
+          .arg(borderCss, backgroundCss));
 
   updateSceneSize();
 }
@@ -159,6 +179,11 @@ void QEventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
 
   painter->save();
+  constexpr qreal kCornerRadius = 16.0;
+  const auto viewportSceneRect = mapToScene(viewport()->rect()).boundingRect();
+  QPainterPath clipPath;
+  clipPath.addRoundedRect(viewportSceneRect, kCornerRadius, kCornerRadius);
+  painter->setClipPath(clipPath);
 
   // DRAW HORIZONTAL AXIS
   {
@@ -286,6 +311,10 @@ void QEventView::updateItemsCords() const {
 
 void QEventView::resizeEvent(QResizeEvent *event) {
   QGraphicsView::resizeEvent(event);
+  constexpr int kCornerRadius = 16;
+  QPainterPath clipPath;
+  clipPath.addRoundedRect(rect(), kCornerRadius, kCornerRadius);
+  setMask(QRegion(clipPath.toFillPolygon().toPolygon()));
   updateScene();
 }
 

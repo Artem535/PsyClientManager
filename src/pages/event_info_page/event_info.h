@@ -3,6 +3,7 @@
 #include "database.h"
 #include "qevent_details_widget.h"
 #include "timeline_widget.h"
+#include "../../widgets/rounded_calendar_widget.h"
 #include <QDate>
 #include <QPointer>
 #include <QPushButton>
@@ -42,11 +43,13 @@ private slots:
 private:
   void connectSignals();
   void initDefaultStates();
+  void updateCalendarHighlights() const;
   void openEventDialog(QEventItem *event,
                        std::optional<int64_t> clientId = std::nullopt);
   void editEventWithDialog(QEventItem *event);
 
   std::unique_ptr<Ui::EventInfo> mUi;
+  RoundedCalendarWidget *mCalendarWidget = nullptr;
   QTimelineWidget *mTimelineWidget = nullptr;
   QPushButton *mCreateEventButton = nullptr;
   QPointer<QEventDetailsWidget> mActiveEventDetailsWidget;

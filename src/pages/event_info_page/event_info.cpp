@@ -1,8 +1,11 @@
 #include "event_info.h"
+#include "../../widgets/constants.hpp"
 #include "ui/pages/ui_eventinfo.h"
 
 #include <QDialog>
+#include <QLayout>
 #include <QMessageBox>
+#include <QTextCharFormat>
 #include <QVBoxLayout>
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
@@ -10,14 +13,24 @@ Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
+  mUi->list_view_layout->setColumnStretch(0, 1);
+  mUi->list_view_layout->setColumnStretch(1, 0);
 
   mSelectedDate = QDate::currentDate();
+  mCalendarWidget = new RoundedCalendarWidget(this);
+  mCalendarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  mUi->calendarCardLayout->replaceWidget(mUi->calendar_widget, mCalendarWidget);
+  mUi->calendar_widget->hide();
+  mUi->calendar_widget->deleteLater();
 
   mTimelineWidget = new QTimelineWidget(model, this);
-  mUi->list_view_v_layout->addWidget(mTimelineWidget);
+  mUi->list_view_layout->addWidget(mTimelineWidget, 0, 0, 2, 1);
 
   mCreateEventButton = new QPushButton(tr(": EVENT_ADD_BUTTON"), this);
-  mUi->list_view_v_layout->insertWidget(0, mCreateEventButton);
+  mCreateEventButton->setFixedWidth(96);
+  mCreateEventButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  mUi->list_view_layout->addWidget(mCreateEventButton, 0, 1,
+                                   Qt::AlignTop | Qt::AlignRight);
   mUi->frame_2->setVisible(false);
 
   connectSignals();
@@ -28,9 +41,9 @@ QEventInfoPage::~QEventInfoPage() = default;
 
 void QEventInfoPage::connectSignals() {
   // CalendarWidget -> TimelineWidget
-  connect(mUi->calendar_widget, &QCalendarWidget::clicked, mTimelineWidget,
+  connect(mCalendarWidget, &RoundedCalendarWidget::clicked, mTimelineWidget,
           &QTimelineWidget::onSelectedDayChanged);
-  connect(mUi->calendar_widget, &QCalendarWidget::clicked, this,
+  connect(mCalendarWidget, &RoundedCalendarWidget::clicked, this,
           &QEventInfoPage::onCalendarClicked);
   connect(mCreateEventButton, &QPushButton::clicked, this,
           &QEventInfoPage::onCreateEventClicked);
@@ -48,12 +61,25 @@ void QEventInfoPage::connectSignals() {
 
 void QEventInfoPage::initDefaultStates() {
   mSelectedDate = QDate::currentDate();
-  mUi->calendar_widget->setSelectedDate(mSelectedDate);
+  mCalendarWidget->setSelectedDate(mSelectedDate);
+  updateCalendarHighlights();
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
   mSelectedDate = date;
+}
+
+void QEventInfoPage::updateCalendarHighlights() const {
+  QTextCharFormat currentDayFormat;
+  currentDayFormat.setFontWeight(QFont::DemiBold);
+  currentDayFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+  currentDayFormat.setUnderlineColor(
+      pcm::widgets::constants::kCalendarCurrentDayUnderlineColor);
+  currentDayFormat.setForeground(
+      pcm::widgets::constants::kCalendarCurrentDayForegroundColor);
+
+  mCalendarWidget->setDateTextFormat(QDate::currentDate(), currentDayFormat);
 }
 
 void QEventInfoPage::onCreateEventClicked() { openEventDialog(nullptr); }
