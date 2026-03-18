@@ -16,6 +16,7 @@
 
 // === Local ===
 #include "database.h"
+#include "client_charts_widget.h"
 #include "qclient.h"
 
 namespace oclero::qlementine {
@@ -30,7 +31,8 @@ class QClientInfoCardPage final : public QWidget {
   Q_OBJECT
 
 public:
-  explicit QClientInfoCardPage(QWidget *parent = nullptr);
+  explicit QClientInfoCardPage(std::shared_ptr<pcm::database::Database> db,
+                               QWidget *parent = nullptr);
 
   ~QClientInfoCardPage() override;
 
@@ -70,7 +72,9 @@ public slots:
 
 private:
   std::unique_ptr<Ui::ClientInfoCard> mUi;
+  std::shared_ptr<pcm::database::Database> mDb;
   oclero::qlementine::Switch *mIsActiveSwitch = nullptr;
+  ClientChartsWidget *mChartsWidget = nullptr;
   QClient mClientInfo;
 
   static int countAge(const QDate &birthDate);
@@ -80,4 +84,5 @@ private:
   void connectSignals() const;
 
   void setReadOnly(bool readOnly) const;
+  void refreshCharts() const;
 };

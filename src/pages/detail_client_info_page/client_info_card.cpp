@@ -8,8 +8,10 @@
 
 Q_LOGGING_CATEGORY(logClientInfoCard, "pcm.ClientInfoCard");
 
-QClientInfoCardPage::QClientInfoCardPage(QWidget *parent)
-    : QWidget(parent), mUi(std::make_unique<Ui::ClientInfoCard>()) {
+QClientInfoCardPage::QClientInfoCardPage(std::shared_ptr<pcm::database::Database> db,
+                                         QWidget *parent)
+    : QWidget(parent), mUi(std::make_unique<Ui::ClientInfoCard>()),
+      mDb(std::move(db)) {
   mUi->setupUi(this);
 
   mIsActiveSwitch = new oclero::qlementine::Switch(this);
@@ -17,6 +19,11 @@ QClientInfoCardPage::QClientInfoCardPage(QWidget *parent)
   mUi->gridLayout->replaceWidget(mUi->isActive, mIsActiveSwitch);
   mUi->isActive->hide();
   mUi->isActive->deleteLater();
+
+  mChartsWidget = new ClientChartsWidget(this);
+  mUi->verticalLayout_3->replaceWidget(mUi->graphicsPlaceholder, mChartsWidget);
+  mUi->graphicsPlaceholder->hide();
+  mUi->graphicsPlaceholder->deleteLater();
 
   mUi->editButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
   mUi->editButton->setIconSize(QSize(16, 16));
@@ -39,6 +46,7 @@ void QClientInfoCardPage::setClientInfo(
 
   emit provideClearUI();
   emit provideUpdateUI();
+  refreshCharts();
 }
 void QClientInfoCardPage::enterInEditMode() {
   setReadOnly(false);
@@ -221,4 +229,17 @@ void QClientInfoCardPage::clearUI() const {
   mUi->additionalInfoTextEdit->clear();
   mUi->avatarLabel->setText("??");
   mIsActiveSwitch->setChecked(false);
+}
+
+void QClientInfoCardPage::refreshCharts() const {
+  if (!mChartsWidget) {
+    return;
+  }
+
+  if (!mDb || mClientInfo.getId() <= 0) {
+    mChartsWidget->clear();
+    return;
+  }
+
+  mChartsWidget->setMonthlyStats(mDb->get_client_monthly_stats(mClientInfo.getId()));
 }

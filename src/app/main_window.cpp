@@ -47,13 +47,17 @@ MainWindow::MainWindow(QWidget *parent)
       new TabButton(QIcon(":/icons/calendar-solid-full.svg"), tr(": NAV_CALENDAR"), this);
   mBtnClients =
       new TabButton(QIcon(":/icons/users-line-solid-full.svg"), tr(": NAV_CLIENTS"), this);
+  mBtnAnalytics =
+      new TabButton(QIcon(":/icons/chart-area-solid-full.svg"), tr("Analytics"), this);
   mBtnProfile =
       new TabButton(QIcon(":/icons/users-gear-solid-full.svg"), tr(": NAV_DETAILS"), this);
 
   // Add buttons to the vertical layout
   mUi->verticalLayout->addWidget(mBtnCalendar);
   mUi->verticalLayout->addWidget(mBtnClients);
+  mUi->verticalLayout->addWidget(mBtnAnalytics);
   mUi->verticalLayout->addWidget(mBtnProfile);
+  mBtnProfile->hide();
 
   // Add stretch to push buttons to the top
   mUi->verticalLayout->addStretch();
@@ -100,9 +104,17 @@ void MainWindow::addEventInfoPage(QTimelineModel *model) {
   mPagesIndex.insertOrAssign(Pages::eventInfo, index);
 }
 
+void MainWindow::addAnalyticsPage(std::shared_ptr<pcm::database::Database> db) {
+  const auto page = new AnalyticsPage(std::move(db), this);
+  mPages.insertOrAssign(Pages::analytics, page);
 
-void MainWindow::addClientCardPage() {
-  const auto page = new QClientInfoCardPage(this);
+  const int index = mUi->stackedWidget->addWidget(page);
+  mPagesIndex.insertOrAssign(Pages::analytics, index);
+}
+
+
+void MainWindow::addClientCardPage(std::shared_ptr<pcm::database::Database> db) {
+  const auto page = new QClientInfoCardPage(std::move(db), this);
   mPages.insertOrAssign(Pages::clientCard, page);
 
   const int index = mUi->stackedWidget->addWidget(page);
@@ -125,6 +137,9 @@ void MainWindow::connectSignals() {
   connect(mBtnClients, &QPushButton::clicked,
           [this]() { showPage(Pages::clientInfo, mBtnClients); });
 
+  connect(mBtnAnalytics, &QPushButton::clicked,
+          [this]() { showPage(Pages::analytics, mBtnAnalytics); });
+
   connect(mBtnProfile, &QPushButton::clicked,
           [this]() { showPage(Pages::clientCard, mBtnProfile); });
 
@@ -134,7 +149,10 @@ void MainWindow::connectSignals() {
 
   // Switch to the client card page after selecting a client
   connect(clientInfoPage, &ClientInfo::displayButtonClicked,
-          [this]() { showPage(Pages::clientCard, mBtnProfile); });
+          [this]() {
+            setClientCardNavigationVisible(true);
+            showPage(Pages::clientCard, mBtnProfile);
+          });
 
   connect(mClientSearchInput, &QLineEdit::textChanged, clientInfoPage,
           &ClientInfo::setSearchQuery);
@@ -142,6 +160,7 @@ void MainWindow::connectSignals() {
   connect(mAddClientButton, &QPushButton::clicked, this, [this, clientCardPage]() {
     clientCardPage->setClientInfo(std::nullopt);
     clientCardPage->enterInEditMode();
+    setClientCardNavigationVisible(true);
     showPage(Pages::clientCard, mBtnProfile);
   });
 
@@ -180,6 +199,7 @@ void MainWindow::initDefaultStyle() const {
 void MainWindow::checkButton(QPushButton *btn) const {
   mBtnCalendar->setChecked(false);
   mBtnClients->setChecked(false);
+  mBtnAnalytics->setChecked(false);
   mBtnProfile->setChecked(false);
   btn->setChecked(true);
 }
@@ -189,10 +209,12 @@ void MainWindow::showPage(const Pages page, QPushButton *btn) {
     return;
   }
 
+  setClientCardNavigationVisible(page == Pages::clientCard);
   mUi->stackedWidget->setCurrentIndex(mPagesIndex[page]);
   mCurrentPage = page;
   applyPageCustomWidget(page);
   checkButton(btn);
+  refreshPageAppearance();
 
   if (pcm::app_settings::showStatusBarMessages()) {
     statusBar()->showMessage(tr("Opened %1").arg(pageTitle(page)), 2000);
@@ -214,6 +236,14 @@ void MainWindow::applyPageCustomWidget(const Pages page) {
     widget->show();
     mPageCustomWidgetLayout->addWidget(widget);
   }
+}
+
+void MainWindow::setClientCardNavigationVisible(const bool visible) const {
+  if (!mBtnProfile) {
+    return;
+  }
+
+  mBtnProfile->setVisible(visible);
 }
 
 void MainWindow::setupUtilityButtons() {
@@ -277,6 +307,8 @@ QString MainWindow::pageTitle(const Pages page) const {
       return tr("Clients");
     case Pages::eventInfo:
       return tr("Calendar");
+    case Pages::analytics:
+      return tr("Analytics");
     case Pages::clientCard:
       return tr("Details");
   }
@@ -288,6 +320,11 @@ void MainWindow::refreshPageAppearance() {
   if (const auto eventPage =
           dynamic_cast<QEventInfoPage *>(mPages.value(Pages::eventInfo, nullptr))) {
     eventPage->refreshAppearance();
+  }
+
+  if (const auto analyticsPage =
+          dynamic_cast<AnalyticsPage *>(mPages.value(Pages::analytics, nullptr))) {
+    analyticsPage->refresh();
   }
 }
 

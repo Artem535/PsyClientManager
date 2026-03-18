@@ -19,6 +19,31 @@
 
 namespace pcm::database {
 
+struct ClientMonthlyStats {
+  int year = 0;
+  int month = 0;
+  int sessions = 0;
+  double income = 0.0;
+};
+
+struct DashboardSummary {
+  int total_clients = 0;
+  int active_clients = 0;
+  int sessions_this_month = 0;
+  int work_sessions_this_month = 0;
+  int personal_sessions_this_month = 0;
+  double income_this_month = 0.0;
+};
+
+struct DashboardMonthlyStats {
+  int year = 0;
+  int month = 0;
+  int sessions = 0;
+  int work_sessions = 0;
+  int personal_sessions = 0;
+  double income = 0.0;
+};
+
 class Database {
 public:
   explicit Database(const pcm::config::Config &conf);
@@ -41,6 +66,10 @@ public:
   bool has_conflict(const DuckEvent &event);
   std::vector<DuckEvent> get_day_events(const int64_t &start_ms,
                                        const int64_t &end_ms);
+  std::vector<ClientMonthlyStats> get_client_monthly_stats(const int64_t &client_id,
+                                                           int months_back = 6);
+  DashboardSummary get_dashboard_summary();
+  std::vector<DashboardMonthlyStats> get_dashboard_monthly_stats(int months_back = 6);
 
   DuckClient get_client_by_event(const int64_t &event_id);
 

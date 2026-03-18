@@ -73,7 +73,8 @@ int Application::run(int argc, char *argv[]) {
 
   mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
   mMainWindow->addClientInfoPage(mClientModel);
-  mMainWindow->addClientCardPage();
+  mMainWindow->addAnalyticsPage(mDb);
+  mMainWindow->addClientCardPage(mDb);
   mMainWindow->connectSignals();
   connectSignals();
 

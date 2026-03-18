@@ -2,6 +2,7 @@
     <qresource prefix="/icons">
         <file alias="brain-solid-full.svg">icons/brain-solid-full.svg</file>
         <file alias="briefcase-solid-full.svg">icons/briefcase-solid-full.svg</file>
+        <file alias="chart-area-solid-full.svg">icons/chart-area-solid-full.svg</file>
         <file alias="calendar-solid-full.svg">icons/calendar-solid-full.svg</file>
         <file alias="calendar-plus-solid-full.svg">icons/calendar-plus-solid-full.svg</file>
         <file alias="coins-solid-full.svg">icons/coins-solid-full.svg</file>

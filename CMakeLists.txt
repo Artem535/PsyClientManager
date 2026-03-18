@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 
 # Define the project
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 
 if(Qt6_VERSION VERSION_LESS 6.8.0)
   message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
@@ -48,6 +48,25 @@ set(QLEMENTINE_SANDBOX OFF CACHE BOOL "" FORCE)
 set(QLEMENTINE_SHOWCASE OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/qlementine)
 
+qt_add_library(qcustomplot STATIC
+    third_party/qcustomplot/qcustomplot.cpp
+    third_party/qcustomplot/qcustomplot.h
+)
+target_include_directories(qcustomplot PUBLIC
+    ${CMAKE_SOURCE_DIR}/third_party/qcustomplot
+)
+set_target_properties(qcustomplot PROPERTIES
+    AUTOMOC ON
+    AUTOUIC OFF
+    AUTORCC OFF
+)
+target_link_libraries(qcustomplot PUBLIC
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::PrintSupport
+)
+
 qt_standard_project_setup()
 
 qt_add_translations(PsyClientManager
@@ -64,6 +83,7 @@ add_subdirectory(src/client_model)
 add_subdirectory(src/pages/client_info_page)
 add_subdirectory(src/pages/event_info_page)
 add_subdirectory(src/pages/detail_client_info_page)
+add_subdirectory(src/pages/analytics_page)
 add_subdirectory(src/timeline_widget)
 add_subdirectory(src/event_view)
 add_subdirectory(src/app)

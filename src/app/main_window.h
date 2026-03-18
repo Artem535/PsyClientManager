@@ -1,5 +1,6 @@
 #pragma once
 
+#include "analytics_page.h"
 #include "client_info.h"
 #include "event_info.h"
 #include "database.h"
@@ -35,7 +36,7 @@ public:
   /**
    * @brief Enum to identify the available pages in the application.
    */
-  enum class Pages { clientInfo, eventInfo, clientCard };
+  enum class Pages { clientInfo, eventInfo, analytics, clientCard };
 
   /**
    * @brief Constructor for the MainWindow class.
@@ -57,11 +58,12 @@ public:
    * @param model Pointer to the timeline model.
    */
   void addEventInfoPage(QTimelineModel *model);
+  void addAnalyticsPage(std::shared_ptr<pcm::database::Database> db);
 
   /**
    * @brief Adds the client card (details) page to the application.
    */
-  void addClientCardPage();
+  void addClientCardPage(std::shared_ptr<pcm::database::Database> db);
 
   /**
    * @brief Sets up all signal/slot connections between UI elements and logic.
@@ -110,6 +112,7 @@ private:
   // Navigation buttons
   TabButton *mBtnCalendar{nullptr};
   TabButton *mBtnClients{nullptr};
+  TabButton *mBtnAnalytics{nullptr};
   TabButton *mBtnProfile{nullptr};
   QWidget *mClientPageActions{nullptr};
   QLineEdit *mClientSearchInput{nullptr};
@@ -143,6 +146,7 @@ private:
    * @param page Target page.
    */
   void applyPageCustomWidget(Pages page);
+  void setClientCardNavigationVisible(bool visible) const;
   void setupUtilityButtons();
   void openSettingsDialog();
   void openAboutDialog();

@@ -2,6 +2,109 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
+    <name>AnalyticsPage</name>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="97"/>
+        <source>Total clients</source>
+        <translation>Total clients</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="99"/>
+        <source>Active clients</source>
+        <translation>Active clients</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="101"/>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="209"/>
+        <source>Sessions this month</source>
+        <translation>Sessions this month</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="103"/>
+        <source>Income this month</source>
+        <translation>Income this month</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="117"/>
+        <source>Monthly income and sessions</source>
+        <translation>Monthly income and sessions</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="124"/>
+        <source>Combined view for the last six months</source>
+        <translation>Combined view for the last six months</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="128"/>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="148"/>
+        <source>No events yet</source>
+        <translation>No events yet</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="140"/>
+        <source>Work vs personal sessions</source>
+        <translation>Work vs personal sessions</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="144"/>
+        <source>Monthly breakdown by event type</source>
+        <translation>Monthly breakdown by event type</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="209"/>
+        <source>work / total</source>
+        <translation>work / total</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="249"/>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="269"/>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="355"/>
+        <source>Sessions</source>
+        <translation>Sessions</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="256"/>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="270"/>
+        <source>Income</source>
+        <translation>Income</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="333"/>
+        <source>Work events</source>
+        <translation>Work events</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="339"/>
+        <source>Personal events</source>
+        <translation>Personal events</translation>
+    </message>
+</context>
+<context>
+    <name>ClientChartsWidget</name>
+    <message>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="133"/>
+        <source>Months</source>
+        <translation>Months</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="134"/>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="138"/>
+        <source>Sessions</source>
+        <translation>Sessions</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="135"/>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="144"/>
+        <source>Income</source>
+        <translation>Income</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="153"/>
+        <source>No client activity yet</source>
+        <translation>No client activity yet</translation>
+    </message>
+</context>
+<context>
     <name>ClientInfo</name>
     <message>
         <location filename="../ui/pages/clientinfo.ui" line="14"/>
@@ -9,13 +112,13 @@
         <translation>Client List</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="11"/>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="26"/>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="54"/>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="98"/>
         <source>: CLIENTS_LOADING</source>
         <translation>Loading clients</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="34"/>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="106"/>
         <source>: CLIENTS_LOADING_ERROR %1</source>
         <translation>Client loading error %1</translation>
     </message>
@@ -226,12 +329,17 @@
         <translation>Client</translation>
     </message>
     <message>
-        <location filename="../ui/pages/eventdetails.ui" line="164"/>
+        <location filename="../ui/pages/eventdetails.ui" line="121"/>
+        <source>Cost</source>
+        <translation>Cost</translation>
+    </message>
+    <message>
+        <location filename="../ui/pages/eventdetails.ui" line="184"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Add</translation>
     </message>
     <message>
-        <location filename="../ui/pages/eventdetails.ui" line="171"/>
+        <location filename="../ui/pages/eventdetails.ui" line="191"/>
         <source>: EVENT_EDIT_BUTTON</source>
         <translation>Edit</translation>
     </message>
@@ -244,7 +352,7 @@
         <translation>Event Calendar</translation>
     </message>
     <message>
-        <location filename="../ui/pages/eventinfo.ui" line="51"/>
+        <location filename="../ui/pages/eventinfo.ui" line="112"/>
         <source>: FREE_SLOTS_PLACEHOLDER</source>
         <translation>Free slots will be available in the next update</translation>
     </message>
@@ -257,56 +365,118 @@
         <translation>PsyClientManager</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="16"/>
+        <location filename="../src/app/main_window.cpp" line="47"/>
         <source>: NAV_CALENDAR</source>
         <translation>Calendar</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="17"/>
+        <location filename="../src/app/main_window.cpp" line="49"/>
         <source>: NAV_CLIENTS</source>
         <translation>Clients</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="18"/>
+        <location filename="../src/app/main_window.cpp" line="51"/>
+        <location filename="../src/app/main_window.cpp" line="311"/>
+        <source>Analytics</source>
+        <translation>Analytics</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="53"/>
         <source>: NAV_DETAILS</source>
         <translation>Details</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="84"/>
+        <source>Search clients</source>
+        <translation>Search clients</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="89"/>
+        <source>Add client</source>
+        <translation>Add client</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="220"/>
+        <source>Opened %1</source>
+        <translation>Opened %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="275"/>
+        <source>Settings</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="276"/>
+        <location filename="../src/app/main_window.cpp" line="293"/>
+        <source>About</source>
+        <translation>About</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="298"/>
+        <source>Desktop workspace for calendar scheduling, client management, and session tracking.</source>
+        <translation>Desktop workspace for calendar scheduling, client management, and session tracking.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="299"/>
+        <source>Built with Qt, DuckDB, and Qlementine.</source>
+        <translation>Built with Qt, DuckDB, and Qlementine.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="307"/>
+        <source>Clients</source>
+        <translation>Clients</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="309"/>
+        <source>Calendar</source>
+        <translation>Calendar</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="313"/>
+        <source>Details</source>
+        <translation>Details</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="316"/>
+        <source>Page</source>
+        <translation>Page</translation>
     </message>
 </context>
 <context>
     <name>QClientDelegate</name>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="82"/>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="85"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="104"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="97"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="119"/>
         <source>: CLIENT_AGE_YEARS %1</source>
         <translation>%1 years</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="131"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="153"/>
         <source>: CLIENT_EMAIL_EMPTY</source>
         <translation>Email not specified</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="138"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="160"/>
         <source>: CLIENT_PHONE_EMPTY</source>
         <translation>Phone not specified</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="169"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="191"/>
         <source>: VALUE_NOT_AVAILABLE</source>
         <translation>N/A</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="194"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="216"/>
         <source>: CLIENT_STATUS_ACTIVE</source>
         <translation>Client active</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="195"/>
+        <location filename="../src/client_model/qclient_delegate.cpp" line="217"/>
         <source>: CLIENT_STATUS_INACTIVE</source>
         <translation>Client inactive</translation>
     </message>
@@ -314,22 +484,22 @@
 <context>
     <name>QClientInfoCardPage</name>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="55"/>
+        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="78"/>
         <source>: WARNING_TITLE</source>
         <translation>Warning</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="56"/>
+        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="79"/>
         <source>: CLIENT_NAME_AND_LAST_NAME_REQUIRED</source>
         <translation>First and last name are required</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="109"/>
+        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="133"/>
         <source>: CLIENT_STATUS_ACTIVE</source>
         <translation>Client active</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="110"/>
+        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="134"/>
         <source>: CLIENT_STATUS_INACTIVE</source>
         <translation>Client inactive</translation>
     </message>
@@ -346,80 +516,213 @@
 <context>
     <name>QEventDetailsWidget</name>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="69"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="230"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="101"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_REGULAR</source>
         <translation>Regular</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="143"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="178"/>
         <source>: EVENT_NEW_TITLE</source>
         <translation>New event</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="230"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_WORK</source>
         <translation>Work</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="263"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="268"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="257"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="269"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="348"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="353"/>
         <source>: ERROR_TITLE</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="264"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="38"/>
+        <source> ₽</source>
+        <translation> ₽</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
+        <source>The selected time range overlaps an existing event.</source>
+        <translation>The selected time range overlaps an existing event.</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="270"/>
+        <source>Failed to save event to database</source>
+        <translation>Failed to save event to database</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="349"/>
         <source>: EVENT_TITLE_EMPTY_ERROR</source>
         <translation>Event title cannot be empty</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="269"/>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="354"/>
         <source>: EVENT_DURATION_INVALID_ERROR</source>
         <translation>End time must be later than start time</translation>
     </message>
 </context>
 <context>
-    <name>QEventItem</name>
-    <message>
-        <location filename="../src/event_view/event_item.cpp" line="227"/>
-        <source>: EVENT_CONTEXT_EDIT</source>
-        <translation>Edit</translation>
-    </message>
-    <message>
-        <location filename="../src/event_view/event_item.cpp" line="228"/>
-        <source>: EVENT_CONTEXT_DELETE</source>
-        <translation>Delete</translation>
-    </message>
-</context>
-<context>
     <name>QEventInfoPage</name>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="18"/>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="59"/>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="34"/>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="98"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Add</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="58"/>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="97"/>
         <source>: EVENT_EDIT_BUTTON</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="116"/>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="149"/>
         <source>: EVENT_DELETE_TITLE</source>
         <translation>Delete event</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="117"/>
+        <location filename="../src/pages/event_info_page/event_info.cpp" line="150"/>
         <source>: EVENT_DELETE_CONFIRMATION</source>
         <translation>Are you sure you want to delete this event?</translation>
     </message>
 </context>
 <context>
+    <name>QEventItem</name>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="259"/>
+        <source>: EVENT_CONTEXT_EDIT</source>
+        <translation>Edit</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="260"/>
+        <source>: EVENT_CONTEXT_DELETE</source>
+        <translation>Delete</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="39"/>
+        <source> ₽</source>
+        <translation> ₽</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsDialog</name>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="59"/>
+        <source>Settings</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="67"/>
+        <source>Application settings</source>
+        <translation>Application settings</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="74"/>
+        <source>Language</source>
+        <translation>Language</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="79"/>
+        <source>System default</source>
+        <translation>System default</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="80"/>
+        <source>Russian</source>
+        <translation>Russian</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="81"/>
+        <source>English</source>
+        <translation>English</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="83"/>
+        <source>Interface language</source>
+        <translation>Interface language</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="84"/>
+        <source>The selected language will be applied after restarting the application.</source>
+        <translation>The selected language will be applied after restarting the application.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="88"/>
+        <source>Database</source>
+        <translation>Database</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="92"/>
+        <source>Database directory</source>
+        <translation>Database directory</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="100"/>
+        <source>Open folder</source>
+        <translation>Open folder</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="106"/>
+        <source>Timeline colors</source>
+        <translation>Timeline colors</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="118"/>
+        <source> ₽</source>
+        <translation> ₽</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="120"/>
+        <source>Disallow overlapping events</source>
+        <translation>Disallow overlapping events</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="121"/>
+        <source>Reject saves when the selected time range intersects another event.</source>
+        <translation>Reject saves when the selected time range intersects another event.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="124"/>
+        <source>Default work event cost</source>
+        <translation>Default work event cost</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="125"/>
+        <source>Used to prefill new work sessions.</source>
+        <translation>Used to prefill new work sessions.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="128"/>
+        <source>Work events</source>
+        <translation>Work events</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="129"/>
+        <source>Accent color for work sessions in the timeline.</source>
+        <translation>Accent color for work sessions in the timeline.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="132"/>
+        <source>Personal events</source>
+        <translation>Personal events</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="133"/>
+        <source>Accent color for personal events in the timeline.</source>
+        <translation>Accent color for personal events in the timeline.</translation>
+    </message>
+</context>
+<context>
     <name>pcm::Application</name>
     <message>
-        <location filename="../src/app/application.cpp" line="41"/>
-        <location filename="../src/app/application.cpp" line="44"/>
+        <location filename="../src/app/application.cpp" line="104"/>
+        <location filename="../src/app/application.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
     </message>
