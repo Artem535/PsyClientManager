@@ -280,6 +280,11 @@ void MainWindow::setupUtilityButtons() {
 
   connect(mBtnSettings, &QPushButton::clicked, this, &MainWindow::openSettingsDialog);
   connect(mBtnAbout, &QPushButton::clicked, this, &MainWindow::openAboutDialog);
+
+  if (mUi->stackedWidget != nullptr) {
+    mUi->stackedWidget->setFocusPolicy(Qt::StrongFocus);
+    mUi->stackedWidget->setFocus();
+  }
 }
 
 void MainWindow::openSettingsDialog() {

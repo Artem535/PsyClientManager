@@ -11,8 +11,14 @@ public:
   using QSortFilterProxyModel::QSortFilterProxyModel;
 
   void setQuery(const QString &query) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    beginFilterChange();
+    mQuery = query.trimmed().toCaseFolded();
+    endFilterChange(QSortFilterProxyModel::Direction::Rows);
+#else
     mQuery = query.trimmed().toCaseFolded();
     invalidateFilter();
+#endif
   }
 
 protected:
