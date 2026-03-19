@@ -11,6 +11,7 @@ set(CMAKE_AUTOUIC ON)
 project(PsyClientManager VERSION 0.1.0 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
+option(PCM_BUILD_TESTS "Build project tests" OFF)
 
 if(Qt6_VERSION VERSION_LESS 6.8.0)
   message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
@@ -91,9 +92,10 @@ add_subdirectory(src/app)
 
 include_directories(src/app)
 
-# Enabling tests 
-enable_testing()
-add_subdirectory(test)
+if(PCM_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(test)
+endif()
 
 # Add the main executable
 qt_add_executable(PsyClientManager src/main.cpp
