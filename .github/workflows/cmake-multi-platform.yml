@@ -93,7 +93,6 @@ jobs:
 
       - name: Install Qt (Windows)
         if: runner.os == 'Windows'
-        id: install-qt-windows
         uses: jurplel/install-qt-action@v4
         with:
           aqtversion: '==3.3.*'
@@ -102,12 +101,6 @@ jobs:
           target: ${{ matrix.qt_target }}
           arch: ${{ matrix.qt_arch }}
           cache: true
-
-      - name: Export Qt environment (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          "Qt6_DIR=${{ steps.install-qt-windows.outputs.Qt6_DIR }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Setup MSVC environment
         if: runner.os == 'Windows'
@@ -239,9 +232,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $qtDir = "${{ steps.install-qt-windows.outputs.Qt6_DIR }}"
-          $qtBin = Join-Path $qtDir "..\..\bin"
-          $qtBin = [System.IO.Path]::GetFullPath($qtBin)
+          $qtBin = Join-Path $env:QT_ROOT_DIR "bin"
           & (Join-Path $qtBin "windeployqt.exe") `
             --release `
             --svg `
