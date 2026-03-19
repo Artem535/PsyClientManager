@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QString>
+#include <QTime>
 
 namespace pcm::app_settings {
 
@@ -24,5 +25,14 @@ void setPersonalEventColor(const QColor &color);
 
 double defaultWorkEventCost();
 void setDefaultWorkEventCost(double cost);
+
+QTime workDayStart();
+void setWorkDayStart(const QTime &time);
+
+QTime workDayEnd();
+void setWorkDayEnd(const QTime &time);
+
+int defaultSessionDurationMinutes();
+void setDefaultSessionDurationMinutes(int minutes);
 
 } // namespace pcm::app_settings

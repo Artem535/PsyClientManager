@@ -122,6 +122,26 @@
         <source>: CLIENTS_LOADING_ERROR %1</source>
         <translation>Ошибка загрузки клиентов %1</translation>
     </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="156"/>
+        <source>this client</source>
+        <translation>этого клиента</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="159"/>
+        <source>Delete client</source>
+        <translation>Удалить клиента</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="160"/>
+        <source>Delete %1? This action cannot be undone.</source>
+        <translation>Удалить %1? Это действие нельзя отменить.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="84"/>
+        <source>Show inactive</source>
+        <translation>Показать неактивных</translation>
+    </message>
 </context>
 <context>
     <name>ClientInfoCard</name>
@@ -688,6 +708,36 @@
         <translation>Запрещать сохранение, если выбранный интервал пересекается с другим событием.</translation>
     </message>
     <message>
+        <location filename="../src/app/settings_dialog.cpp" line="135"/>
+        <source>Work day start</source>
+        <translation>Начало рабочего дня</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="136"/>
+        <source>Start time used for quick session suggestions.</source>
+        <translation>Время начала, используемое для быстрых предложений сессий.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="139"/>
+        <source>Work day end</source>
+        <translation>Конец рабочего дня</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="140"/>
+        <source>End time used for quick session suggestions.</source>
+        <translation>Время окончания, используемое для быстрых предложений сессий.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="143"/>
+        <source>Default session duration</source>
+        <translation>Длительность сессии по умолчанию</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="144"/>
+        <source>Duration used for quick session suggestions and new sessions.</source>
+        <translation>Длительность, используемая для быстрых предложений и новых сессий.</translation>
+    </message>
+    <message>
         <location filename="../src/app/settings_dialog.cpp" line="124"/>
         <source>Default work event cost</source>
         <translation>Стоимость рабочего события по умолчанию</translation>
@@ -716,6 +766,25 @@
         <location filename="../src/app/settings_dialog.cpp" line="133"/>
         <source>Accent color for personal events in the timeline.</source>
         <translation>Акцентный цвет личных событий в таймлайне.</translation>
+    </message>
+</context>
+<context>
+    <name>QuickSlotsWidget</name>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="17"/>
+        <source>Quick session slots</source>
+        <translation>Быстрые слоты сессий</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="30"/>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="101"/>
+        <source>No quick slots available for the selected day.</source>
+        <translation>Для выбранного дня нет доступных быстрых слотов.</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="64"/>
+        <source>Quick slots are not configured yet.</source>
+        <translation>Быстрые слоты пока не настроены.</translation>
     </message>
 </context>
 <context>

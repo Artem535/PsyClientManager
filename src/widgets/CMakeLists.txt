@@ -13,6 +13,7 @@ qt_add_library(${TARGET_NAME} STATIC
         app_settings.cpp
         tab_button.cpp
         rounded_calendar_widget.cpp
+        quick_slots_widget.cpp
 )
 
 #add_dependencies(${TARGET_NAME}

@@ -17,6 +17,10 @@
 
 #include <memory>
 
+namespace oclero::qlementine {
+class Switch;
+}
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -90,6 +94,7 @@ signals:
    * @param client The client data to save.
    */
   void provideSaveClient(const DuckClient &client);
+  void provideRemoveClient(int64_t clientId);
 
   /**
    * @brief Emitted when a client-event association should be saved.
@@ -116,6 +121,7 @@ private:
   TabButton *mBtnProfile{nullptr};
   QWidget *mClientPageActions{nullptr};
   QLineEdit *mClientSearchInput{nullptr};
+  oclero::qlementine::Switch *mShowInactiveClientsSwitch{nullptr};
   QPushButton *mAddClientButton{nullptr};
   QPushButton *mBtnSettings{nullptr};
   QPushButton *mBtnAbout{nullptr};

@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QSettings>
+#include <QTime>
 
 namespace {
 constexpr auto kConfirmEventDeletionKey = "event/confirmDeletion";
@@ -11,6 +12,9 @@ constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
 constexpr auto kPersonalEventColorKey = "timeline/personalEventColor";
 constexpr auto kDefaultWorkEventCostKey = "event/defaultWorkEventCost";
+constexpr auto kWorkDayStartKey = "event/workDayStart";
+constexpr auto kWorkDayEndKey = "event/workDayEnd";
+constexpr auto kDefaultSessionDurationMinutesKey = "event/defaultSessionDurationMinutes";
 
 QColor defaultWorkEventColor() {
   return QColor(173, 216, 230);
@@ -22,6 +26,18 @@ QColor defaultPersonalEventColor() {
 
 double defaultWorkEventCostValue() {
   return 2500.0;
+}
+
+QTime defaultWorkDayStartValue() {
+  return QTime(9, 0);
+}
+
+QTime defaultWorkDayEndValue() {
+  return QTime(18, 0);
+}
+
+int defaultSessionDurationMinutesValue() {
+  return 60;
 }
 } // namespace
 
@@ -96,6 +112,38 @@ double defaultWorkEventCost() {
 void setDefaultWorkEventCost(const double cost) {
   QSettings settings;
   settings.setValue(kDefaultWorkEventCostKey, cost);
+}
+
+QTime workDayStart() {
+  QSettings settings;
+  return settings.value(kWorkDayStartKey, defaultWorkDayStartValue()).toTime();
+}
+
+void setWorkDayStart(const QTime &time) {
+  QSettings settings;
+  settings.setValue(kWorkDayStartKey, time);
+}
+
+QTime workDayEnd() {
+  QSettings settings;
+  return settings.value(kWorkDayEndKey, defaultWorkDayEndValue()).toTime();
+}
+
+void setWorkDayEnd(const QTime &time) {
+  QSettings settings;
+  settings.setValue(kWorkDayEndKey, time);
+}
+
+int defaultSessionDurationMinutes() {
+  QSettings settings;
+  return settings
+      .value(kDefaultSessionDurationMinutesKey, defaultSessionDurationMinutesValue())
+      .toInt();
+}
+
+void setDefaultSessionDurationMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kDefaultSessionDurationMinutesKey, minutes);
 }
 
 } // namespace pcm::app_settings

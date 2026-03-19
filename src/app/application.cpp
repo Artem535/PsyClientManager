@@ -84,7 +84,28 @@ int Application::run(int argc, char *argv[]) {
 }
 void Application::saveClient(const DuckClient &client) {
   qCDebug(logApplication) << "Application::saveClient| Client id:" << client.id;
-  mDb->add_client(client);
+  if (client.id > 0) {
+    mDb->update_client(client);
+  } else {
+    mDb->add_client(client);
+  }
+  if (mClientModel) {
+    mClientModel->reload();
+  }
+}
+
+void Application::removeClient(const int64_t clientId) {
+  qCDebug(logApplication) << "Application::removeClient| Client id:" << clientId;
+  if (clientId <= 0) {
+    return;
+  }
+
+  if (!mDb->remove_client(clientId)) {
+    qCWarning(logApplication) << "Application::removeClient| Failed to remove client:"
+                              << clientId;
+    return;
+  }
+
   if (mClientModel) {
     mClientModel->reload();
   }
@@ -122,6 +143,8 @@ void Application::saveClientEventPair(const int64_t clientId,
 void Application::connectSignals() {
   connect(mMainWindow.get(), &MainWindow::provideSaveClient, this,
           &Application::saveClient);
+  connect(mMainWindow.get(), &MainWindow::provideRemoveClient, this,
+          &Application::removeClient);
   connect(mMainWindow.get(), &MainWindow::provideClientEventPairSave, this,
           &Application::saveClientEventPair);
 

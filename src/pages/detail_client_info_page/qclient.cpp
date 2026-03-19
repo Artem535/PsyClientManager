@@ -94,7 +94,7 @@ DuckClient QClient::toDuckClient() const {
 
   // Birthdate stored as UTC seconds since epoch
   client.birthday_date = QDateTime(getBirthDate(), QTime(12, 0), QTimeZone::UTC)
-                             .toSecsSinceEpoch();
+                             .toMSecsSinceEpoch();
 
   // Location info
   client.country = getCountry().toStdString();

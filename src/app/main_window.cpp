@@ -3,6 +3,7 @@
 #include "ui/app/ui_mainwindow.h"
 
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
+#include <oclero/qlementine/widgets/Switch.hpp>
 
 #include <QApplication>
 #include <QIcon>
@@ -85,12 +86,17 @@ void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
   mClientSearchInput->setClearButtonEnabled(true);
   mClientSearchInput->setMinimumWidth(260);
 
+  mShowInactiveClientsSwitch =
+      new oclero::qlementine::Switch(mClientPageActions);
+  mShowInactiveClientsSwitch->setText(tr("Show inactive"));
+
   mAddClientButton = new QPushButton(QIcon(":/icons/user-plus-solid-full.svg"),
                                      tr("Add client"), mClientPageActions);
   mAddClientButton->setIconSize(QSize(16, 16));
   mAddClientButton->setCursor(Qt::PointingHandCursor);
 
   actionsLayout->addWidget(mClientSearchInput, 1);
+  actionsLayout->addWidget(mShowInactiveClientsSwitch, 0);
   actionsLayout->addWidget(mAddClientButton, 0);
   setPageCustomWidget(Pages::clientInfo, mClientPageActions);
 }
@@ -154,8 +160,13 @@ void MainWindow::connectSignals() {
             showPage(Pages::clientCard, mBtnProfile);
           });
 
+  connect(clientInfoPage, &ClientInfo::removeButtonClicked, this,
+          [this](const int64_t clientId) { emit provideRemoveClient(clientId); });
+
   connect(mClientSearchInput, &QLineEdit::textChanged, clientInfoPage,
           &ClientInfo::setSearchQuery);
+  connect(mShowInactiveClientsSwitch, &QAbstractButton::toggled, clientInfoPage,
+          &ClientInfo::setShowInactiveClients);
 
   connect(mAddClientButton, &QPushButton::clicked, this, [this, clientCardPage]() {
     clientCardPage->setClientInfo(std::nullopt);

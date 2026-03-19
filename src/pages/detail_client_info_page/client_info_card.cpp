@@ -169,6 +169,7 @@ void QClientInfoCardPage::setReadOnly(const bool readOnly) const {
   mUi->timezoneInput->setReadOnly(readOnly);
   mUi->diagnosisTextEdit->setReadOnly(readOnly);
   mUi->additionalInfoTextEdit->setReadOnly(readOnly);
+  mIsActiveSwitch->setEnabled(!readOnly);
 }
 
 void QClientInfoCardPage::initDefaultStyle() {

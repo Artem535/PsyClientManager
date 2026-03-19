@@ -23,6 +23,7 @@ public:
 
 private slots:
   void saveClient(const DuckClient &client);
+  void removeClient(int64_t clientId);
   void fillClientComboBox(QComboBox *box);
   void saveClientEventPair(const int64_t clientId, const int64_t eventId);
 

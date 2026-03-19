@@ -54,6 +54,7 @@ public:
   bool remove_event(const int64_t &id);
 
   int64_t add_client(const DuckClient &client);
+  bool update_client(const DuckClient &client);
   bool remove_client(const int64_t &id);
   std::unique_ptr<DuckClient> get_client(const int64_t &id);
   std::vector<std::unique_ptr<DuckClient>> get_clients();

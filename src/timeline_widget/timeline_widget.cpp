@@ -71,3 +71,8 @@ void QTimelineWidget::removeEvent(const int64_t id) const {
 bool QTimelineWidget::hasConflict(const DuckEvent &event) const {
   return mModel && mModel->hasConflict(event);
 }
+
+const QVector<DuckEvent> &QTimelineWidget::events() const {
+  static const QVector<DuckEvent> emptyEvents;
+  return mModel ? mModel->events() : emptyEvents;
+}

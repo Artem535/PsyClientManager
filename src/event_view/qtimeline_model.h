@@ -43,6 +43,7 @@ public:
   void removeEvent(int64_t id);
   void updateEvent(const DuckEvent &event, bool allowOverlap = true);
   bool hasConflict(const DuckEvent &event) const;
+  const QVector<DuckEvent> &events() const;
 
   QModelIndex indexForEventId(int64_t id) const;
 

@@ -13,6 +13,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSpinBox>
+#include <QTimeEdit>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -116,10 +118,31 @@ void SettingsDialog::setupUi() {
   mDefaultWorkCostSpinBox->setMaximum(1'000'000.0);
   mDefaultWorkCostSpinBox->setSingleStep(100.0);
   mDefaultWorkCostSpinBox->setSuffix(tr(" ₽"));
+  mWorkDayStartEdit = new QTimeEdit(eventsBox);
+  mWorkDayStartEdit->setDisplayFormat("HH:mm");
+  mWorkDayEndEdit = new QTimeEdit(eventsBox);
+  mWorkDayEndEdit->setDisplayFormat("HH:mm");
+  mDefaultSessionDurationSpinBox = new QSpinBox(eventsBox);
+  mDefaultSessionDurationSpinBox->setMinimum(5);
+  mDefaultSessionDurationSpinBox->setMaximum(480);
+  mDefaultSessionDurationSpinBox->setSingleStep(5);
+  mDefaultSessionDurationSpinBox->setSuffix(tr(" min"));
   eventsLayout->addWidget(
       makeSettingRow(tr("Disallow overlapping events"),
                      tr("Reject saves when the selected time range intersects another event."),
                      mPreventOverlapsSwitch, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Work day start"),
+                     tr("Start time used for quick session suggestions."),
+                     mWorkDayStartEdit, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Work day end"),
+                     tr("End time used for quick session suggestions."),
+                     mWorkDayEndEdit, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Default session duration"),
+                     tr("Duration used for quick session suggestions and new sessions."),
+                     mDefaultSessionDurationSpinBox, eventsBox));
   eventsLayout->addWidget(
       makeSettingRow(tr("Default work event cost"),
                      tr("Used to prefill new work sessions."),
@@ -146,6 +169,10 @@ void SettingsDialog::loadSettings() const {
   mDatabasePathLabel->setText(
       QString::fromStdString(mConfig.db_conf.value_.db_pth.toString()));
   mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
+  mWorkDayStartEdit->setTime(pcm::app_settings::workDayStart());
+  mWorkDayEndEdit->setTime(pcm::app_settings::workDayEnd());
+  mDefaultSessionDurationSpinBox->setValue(
+      pcm::app_settings::defaultSessionDurationMinutes());
   mDefaultWorkCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
@@ -161,6 +188,18 @@ void SettingsDialog::connectSignals() const {
   connect(mPreventOverlapsSwitch, &QAbstractButton::toggled, this,
           [](const bool checked) {
             pcm::app_settings::setPreventEventOverlaps(checked);
+          });
+  connect(mWorkDayStartEdit, &QTimeEdit::timeChanged, this,
+          [](const QTime &time) {
+            pcm::app_settings::setWorkDayStart(time);
+          });
+  connect(mWorkDayEndEdit, &QTimeEdit::timeChanged, this,
+          [](const QTime &time) {
+            pcm::app_settings::setWorkDayEnd(time);
+          });
+  connect(mDefaultSessionDurationSpinBox, &QSpinBox::valueChanged, this,
+          [](const int minutes) {
+            pcm::app_settings::setDefaultSessionDurationMinutes(minutes);
           });
   connect(mDefaultWorkCostSpinBox, &QDoubleSpinBox::valueChanged, this,
           [](const double value) {

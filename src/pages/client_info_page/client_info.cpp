@@ -10,6 +10,17 @@ class ClientFilterModel final : public QSortFilterProxyModel {
 public:
   using QSortFilterProxyModel::QSortFilterProxyModel;
 
+  void setShowInactiveClients(const bool showInactive) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    beginFilterChange();
+    mShowInactiveClients = showInactive;
+    endFilterChange(QSortFilterProxyModel::Direction::Rows);
+#else
+    mShowInactiveClients = showInactive;
+    invalidateFilter();
+#endif
+  }
+
   void setQuery(const QString &query) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
     beginFilterChange();
@@ -24,14 +35,18 @@ public:
 protected:
   bool filterAcceptsRow(int source_row,
                         const QModelIndex &source_parent) const override {
+    const auto index = sourceModel()->index(source_row, 0, source_parent);
+    const auto clientVar = sourceModel()->data(index, QClientModel::ClientRoles::Full_object);
+    const auto client = clientVar.value<DuckClient>();
+
+    if (!mShowInactiveClients && !client.client_active) {
+      return false;
+    }
+
     const auto needle = mQuery;
     if (needle.isEmpty()) {
       return true;
     }
-
-    const auto index = sourceModel()->index(source_row, 0, source_parent);
-    const auto clientVar = sourceModel()->data(index, QClientModel::ClientRoles::Full_object);
-    const auto client = clientVar.value<DuckClient>();
 
     const QString haystack =
         QStringList{
@@ -47,6 +62,7 @@ protected:
 
 private:
   QString mQuery;
+  bool mShowInactiveClients = false;
 };
 
 } // namespace
@@ -127,6 +143,14 @@ void ClientInfo::setSearchQuery(const QString &query) const {
   static_cast<ClientFilterModel *>(mFilterModel)->setQuery(query);
 }
 
+void ClientInfo::setShowInactiveClients(const bool showInactive) const {
+  if (!mFilterModel) {
+    return;
+  }
+
+  static_cast<ClientFilterModel *>(mFilterModel)->setShowInactiveClients(showInactive);
+}
+
 void ClientInfo::connectSignals(const QClientDelegate *delegate) {
   connect(
       delegate, &QClientDelegate::displayButtonClicked, [&](const auto index) {
@@ -142,5 +166,27 @@ void ClientInfo::connectSignals(const QClientDelegate *delegate) {
   connect(
       delegate, &QClientDelegate::removeButtonClicked, [&](const auto index) {
         qCDebug(logClientInfo) << "Remove button clicked for index: " << index;
+
+        const QVariant clientVar =
+            index.data(QClientModel::ClientRoles::Full_object);
+        const auto client = clientVar.value<DuckClient>();
+        if (client.id <= 0) {
+          return;
+        }
+
+        const auto firstName = QString::fromStdString(client.name.value_or(""));
+        const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+        const auto clientName = QString("%1 %2").arg(firstName, lastName).trimmed();
+        const auto promptName = clientName.isEmpty() ? tr("this client") : clientName;
+
+        const auto reply = QMessageBox::question(
+            this, tr("Delete client"),
+            tr("Delete %1? This action cannot be undone.").arg(promptName),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+          return;
+        }
+
+        emit removeButtonClicked(client.id);
       });
 }

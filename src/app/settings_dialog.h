@@ -9,6 +9,8 @@ class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
 class QPushButton;
+class QSpinBox;
+class QTimeEdit;
 
 namespace oclero::qlementine {
 class ColorEditor;
@@ -35,6 +37,9 @@ private:
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};
   QDoubleSpinBox *mDefaultWorkCostSpinBox{nullptr};
+  QTimeEdit *mWorkDayStartEdit{nullptr};
+  QTimeEdit *mWorkDayEndEdit{nullptr};
+  QSpinBox *mDefaultSessionDurationSpinBox{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
 };

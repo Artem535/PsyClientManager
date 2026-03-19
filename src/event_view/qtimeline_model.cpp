@@ -162,6 +162,10 @@ bool QTimelineModel::hasConflict(const DuckEvent &event) const {
   return mDb && mDb->has_conflict(event);
 }
 
+const QVector<DuckEvent> &QTimelineModel::events() const {
+  return mEvents;
+}
+
 QModelIndex QTimelineModel::indexForEventId(int64_t id) const {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {

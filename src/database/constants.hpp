@@ -107,9 +107,31 @@ FROM Client
 RETURNING id
 )duckdb";
 
+constexpr auto kUpdateClientQuery = R"duckdb(
+UPDATE Client
+SET name = $1,
+    last_name = $2,
+    additional_info = $3,
+    diagnosis = $4,
+    birthday_date = $5,
+    email = $6,
+    phone_number = $7,
+    client_active = $8,
+    country = $9,
+    city = $10,
+    time_zone = $11
+WHERE id = $12
+)duckdb";
+
 constexpr auto kSelectClientByIdQuery = "SELECT * FROM Client WHERE id = $1";
 constexpr auto kSelectAllClientsQuery = "SELECT * FROM Client";
 constexpr auto kSelectAllClientIdsQuery = "SELECT id FROM Client";
+constexpr auto kHasClientEventsQuery =
+    "SELECT 1 FROM EventClient WHERE client_id = $1 LIMIT 1";
+constexpr auto kDeactivateClientByIdQuery =
+    "UPDATE Client SET client_active = FALSE WHERE id = $1";
+constexpr auto kDeleteEventClientByClientIdQuery =
+    "DELETE FROM EventClient WHERE client_id = $1";
 constexpr auto kDeleteClientByIdQuery = "DELETE FROM Client WHERE id = $1";
 
 constexpr auto kInsertEventClientQuery = R"duckdb(

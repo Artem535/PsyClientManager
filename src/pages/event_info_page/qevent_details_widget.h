@@ -48,7 +48,9 @@ public:
   /**
    * @brief Clears the form and switches to "create new event" mode.
    */
-  void startCreatingNewEvent(const QDate &date = QDate::currentDate());
+  void startCreatingNewEvent(const QDate &date = QDate::currentDate(),
+                             std::optional<QTime> startTime = std::nullopt,
+                             std::optional<int> durationMinutes = std::nullopt);
 
   /**
    * @brief Configures widget for usage inside a modal dialog.

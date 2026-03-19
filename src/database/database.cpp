@@ -7,6 +7,14 @@ duckdb::Value fkOrNull(const int64_t id) {
                 : duckdb::Value();
 }
 
+duckdb::Value timestampMsOrNull(const std::optional<int64_t> &ms_opt) {
+  if (!ms_opt.has_value()) {
+    return duckdb::Value();
+  }
+
+  return db_utils::toDuckTimestamp(*ms_opt * 1000);
+}
+
 int32_t statusOrDefault(const int64_t id) {
   return static_cast<int32_t>(id > 0 ? id : 1);
 }
@@ -186,7 +194,7 @@ int64_t Database::add_client(const DuckClient &client) {
        db_utils::toDuckValue(client.last_name),
        db_utils::toDuckValue(client.additional_info),
        db_utils::toDuckValue(client.diagnosis),
-       db_utils::toDuckTimestamp(client.birthday_date),
+       timestampMsOrNull(client.birthday_date),
        db_utils::toDuckValue(client.email),
        db_utils::toDuckValue(client.phone_number),
        duckdb::Value::BOOLEAN(client.client_active),
@@ -206,6 +214,37 @@ int64_t Database::add_client(const DuckClient &client) {
   }
 
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+bool Database::update_client(const DuckClient &client) {
+  if (client.id <= 0) {
+    PLOG_WARNING << "Attempt to update client with invalid id: " << client.id;
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kUpdateClientQuery,
+      {db_utils::toDuckValue(client.name),
+       db_utils::toDuckValue(client.last_name),
+       db_utils::toDuckValue(client.additional_info),
+       db_utils::toDuckValue(client.diagnosis),
+       timestampMsOrNull(client.birthday_date),
+       db_utils::toDuckValue(client.email),
+       db_utils::toDuckValue(client.phone_number),
+       duckdb::Value::BOOLEAN(client.client_active),
+       db_utils::toDuckValue(client.country),
+       db_utils::toDuckValue(client.city),
+       db_utils::toDuckValue(client.time_zone),
+       duckdb::Value::BIGINT(client.id)});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to update client (id=" << client.id
+               << "): " << result->GetError();
+    return false;
+  }
+
+  return true;
 }
 
 std::unique_ptr<DuckClient> Database::get_client(const int64_t &id) {
@@ -275,11 +314,48 @@ bool Database::remove_client(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result =
-      executePrepared(conn, constance::kDeleteClientByIdQuery, {duckdb::Value::BIGINT(id)});
-  if (!result || result->HasError()) {
+  auto linkCheckResult = executePrepared(
+      conn, constance::kHasClientEventsQuery,
+      {duckdb::Value::BIGINT(id)});
+  if (!linkCheckResult || linkCheckResult->HasError()) {
+    PLOG_ERROR << "Failed to check client-event links (id=" << id
+               << "): " << linkCheckResult->GetError();
+    return false;
+  }
+
+  const auto hasLinkedEvents = [&]() {
+    auto chunk = linkCheckResult->Fetch();
+    return chunk && chunk->size() > 0;
+  }();
+
+  if (hasLinkedEvents) {
+    auto deactivateResult = executePrepared(
+        conn, constance::kDeactivateClientByIdQuery,
+        {duckdb::Value::BIGINT(id)});
+    if (!deactivateResult || deactivateResult->HasError()) {
+      PLOG_ERROR << "Failed to deactivate client (id=" << id
+                 << "): " << deactivateResult->GetError();
+      return false;
+    }
+
+    PLOG_DEBUG << "Client hidden by deactivation: id=" << id;
+    return true;
+  }
+
+  auto unlinkResult = executePrepared(
+      conn, constance::kDeleteEventClientByClientIdQuery,
+      {duckdb::Value::BIGINT(id)});
+  if (!unlinkResult || unlinkResult->HasError()) {
+    PLOG_ERROR << "Failed to unlink client from events (id=" << id
+               << "): " << unlinkResult->GetError();
+    return false;
+  }
+
+  auto deleteResult = executePrepared(
+      conn, constance::kDeleteClientByIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!deleteResult || deleteResult->HasError()) {
     PLOG_ERROR << "Failed to delete client (id=" << id
-               << "): " << result->GetError();
+               << "): " << deleteResult->GetError();
     return false;
   }
   PLOG_DEBUG << "Client deleted: id=" << id;

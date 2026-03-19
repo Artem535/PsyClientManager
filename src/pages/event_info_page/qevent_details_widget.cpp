@@ -167,7 +167,9 @@ void QEventDetailsWidget::startEditingEvent(
   initEditStyle();
 }
 
-void QEventDetailsWidget::startCreatingNewEvent(const QDate &date) {
+void QEventDetailsWidget::startCreatingNewEvent(const QDate &date,
+                                                const std::optional<QTime> startTime,
+                                                const std::optional<int> durationMinutes) {
   mCreatingNewEvent = true;
   mInEditMode = true;
   emit provideEditModeChanged();
@@ -179,6 +181,12 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date) {
                      crtDateTime.addSecs(3600));
   loadEvent(mCurrentEvent.data());
   mUI->mEventDate->setDate(date);
+  if (startTime.has_value()) {
+    const auto duration = durationMinutes.value_or(
+        pcm::app_settings::defaultSessionDurationMinutes());
+    mUI->mTimeFrom->setTime(*startTime);
+    mUI->mTimeTo->setTime(startTime->addSecs(duration * 60));
+  }
   mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   initEditStyle();
 }

@@ -5,10 +5,10 @@
 
 #include <QDialog>
 #include <QIcon>
-#include <QLayout>
 #include <QMessageBox>
 #include <QSize>
 #include <QTextCharFormat>
+#include <QTimeZone>
 #include <QVBoxLayout>
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
@@ -25,6 +25,10 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
   mUi->calendarCardLayout->replaceWidget(mUi->calendar_widget, mCalendarWidget);
   mUi->calendar_widget->hide();
   mUi->calendar_widget->deleteLater();
+
+  mQuickSlotsWidget = new QuickSlotsWidget(this);
+  mUi->verticalLayout->insertWidget(2, mQuickSlotsWidget);
+  mUi->label->hide();
 
   mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_layout->addWidget(mTimelineWidget, 0, 0, 2, 1);
@@ -60,6 +64,10 @@ void QEventInfoPage::connectSignals() {
           &QEventInfoPage::onTimelineEventEditRequested);
   connect(mTimelineWidget, &QTimelineWidget::eventDeleteRequested, this,
           &QEventInfoPage::onTimelineEventDeleteRequested);
+  connect(mTimelineWidget, &QTimelineWidget::needSceneUpdate, this,
+          &QEventInfoPage::refreshQuickSlots);
+  connect(mQuickSlotsWidget, &QuickSlotsWidget::quickSlotSelected, this,
+          &QEventInfoPage::openQuickEventDialog);
 
   connect(this, &QEventInfoPage::clientResolved, this,
           &QEventInfoPage::onClientResolved);
@@ -70,10 +78,12 @@ void QEventInfoPage::initDefaultStates() {
   mCalendarWidget->setSelectedDate(mSelectedDate);
   updateCalendarHighlights();
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+  refreshQuickSlots();
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
   mSelectedDate = date;
+  refreshQuickSlots();
 }
 
 void QEventInfoPage::updateCalendarHighlights() const {
@@ -89,6 +99,46 @@ void QEventInfoPage::updateCalendarHighlights() const {
 }
 
 void QEventInfoPage::onCreateEventClicked() { openEventDialog(nullptr); }
+
+void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
+                                          const int durationMinutes) {
+  auto dialog = QDialog(this);
+  dialog.setModal(true);
+  dialog.setWindowTitle(tr(": EVENT_ADD_BUTTON"));
+
+  auto layout = QVBoxLayout(&dialog);
+  layout.setContentsMargins(0, 0, 0, 0);
+
+  auto *detailsWidget = new QEventDetailsWidget(&dialog);
+  detailsWidget->setDialogMode(true);
+  detailsWidget->setConflictChecker([this](const DuckEvent &event) {
+    return pcm::app_settings::preventEventOverlaps() && mTimelineWidget &&
+           mTimelineWidget->hasConflict(event);
+  });
+  layout.addWidget(detailsWidget);
+
+  mActiveEventDetailsWidget = detailsWidget;
+
+  connect(detailsWidget, &QEventDetailsWidget::provideEventSave, this,
+          &QEventInfoPage::onEventSaved);
+  connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, this,
+          &QEventInfoPage::onEditingCanceled);
+  connect(detailsWidget, &QEventDetailsWidget::provideDialogAccept, &dialog,
+          &QDialog::accept);
+  connect(detailsWidget, &QEventDetailsWidget::provideEditingCanceled, &dialog,
+          &QDialog::reject);
+  connect(detailsWidget, &QEventDetailsWidget::provideFillClientComboBox, this,
+          [this](QComboBox *comboBox) {
+            emit provideFillClientComboBox(comboBox);
+          });
+
+  detailsWidget->startCreatingNewEvent(mSelectedDate, startTime, durationMinutes);
+
+  dialog.resize(460, 620);
+  dialog.exec();
+
+  mActiveEventDetailsWidget.clear();
+}
 
 void QEventInfoPage::openEventDialog(QEventItem *event,
                                      const std::optional<int64_t> clientId) {
@@ -157,6 +207,7 @@ void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
 
   mTimelineWidget->removeEvent(eventId);
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+  refreshQuickSlots();
 }
 
 void QEventInfoPage::editEventWithDialog(QEventItem *event) {
@@ -206,6 +257,7 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
 
   // Force reload from DB to avoid stale UI state.
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+  refreshQuickSlots();
 }
 
 void QEventInfoPage::onEditingCanceled() {}
@@ -218,4 +270,36 @@ void QEventInfoPage::refreshAppearance() {
 
   mTimelineWidget->updateScene();
   mTimelineWidget->update();
+  refreshQuickSlots();
+}
+
+void QEventInfoPage::refreshQuickSlots() const {
+  if (!mQuickSlotsWidget || !mTimelineWidget) {
+    return;
+  }
+  mQuickSlotsWidget->setSelectedDate(mSelectedDate);
+  mQuickSlotsWidget->setBusyIntervals(currentBusyIntervals());
+}
+
+QVector<QPair<QDateTime, QDateTime>> QEventInfoPage::currentBusyIntervals() const {
+  QVector<QPair<QDateTime, QDateTime>> intervals;
+  intervals.reserve(mTimelineWidget ? mTimelineWidget->events().size() : 0);
+
+  for (const auto &event : mTimelineWidget->events()) {
+    if (!event.start_date.has_value() || !event.end_date.has_value()) {
+      continue;
+    }
+
+    const auto start =
+        QDateTime::fromMSecsSinceEpoch(*event.start_date, QTimeZone::systemTimeZone());
+    const auto end =
+        QDateTime::fromMSecsSinceEpoch(*event.end_date, QTimeZone::systemTimeZone());
+    if (!start.isValid() || !end.isValid() || start >= end) {
+      continue;
+    }
+
+    intervals.append(qMakePair(start, end));
+  }
+
+  return intervals;
 }

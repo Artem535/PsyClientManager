@@ -122,6 +122,26 @@
         <source>: CLIENTS_LOADING_ERROR %1</source>
         <translation>Client loading error %1</translation>
     </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="156"/>
+        <source>this client</source>
+        <translation>this client</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="159"/>
+        <source>Delete client</source>
+        <translation>Delete client</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/client_info_page/client_info.cpp" line="160"/>
+        <source>Delete %1? This action cannot be undone.</source>
+        <translation>Delete %1? This action cannot be undone.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="84"/>
+        <source>Show inactive</source>
+        <translation>Show inactive</translation>
+    </message>
 </context>
 <context>
     <name>ClientInfoCard</name>
@@ -688,6 +708,36 @@
         <translation>Reject saves when the selected time range intersects another event.</translation>
     </message>
     <message>
+        <location filename="../src/app/settings_dialog.cpp" line="135"/>
+        <source>Work day start</source>
+        <translation>Work day start</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="136"/>
+        <source>Start time used for quick session suggestions.</source>
+        <translation>Start time used for quick session suggestions.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="139"/>
+        <source>Work day end</source>
+        <translation>Work day end</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="140"/>
+        <source>End time used for quick session suggestions.</source>
+        <translation>End time used for quick session suggestions.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="143"/>
+        <source>Default session duration</source>
+        <translation>Default session duration</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="144"/>
+        <source>Duration used for quick session suggestions and new sessions.</source>
+        <translation>Duration used for quick session suggestions and new sessions.</translation>
+    </message>
+    <message>
         <location filename="../src/app/settings_dialog.cpp" line="124"/>
         <source>Default work event cost</source>
         <translation>Default work event cost</translation>
@@ -716,6 +766,25 @@
         <location filename="../src/app/settings_dialog.cpp" line="133"/>
         <source>Accent color for personal events in the timeline.</source>
         <translation>Accent color for personal events in the timeline.</translation>
+    </message>
+</context>
+<context>
+    <name>QuickSlotsWidget</name>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="17"/>
+        <source>Quick session slots</source>
+        <translation>Quick session slots</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="30"/>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="101"/>
+        <source>No quick slots available for the selected day.</source>
+        <translation>No quick slots available for the selected day.</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/quick_slots_widget.cpp" line="64"/>
+        <source>Quick slots are not configured yet.</source>
+        <translation>Quick slots are not configured yet.</translation>
     </message>
 </context>
 <context>

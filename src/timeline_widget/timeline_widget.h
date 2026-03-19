@@ -31,6 +31,7 @@ public slots:
     void updateEvent(const DuckEvent &event, bool allowOverlap = true) const;
     void removeEvent(int64_t id) const;
     [[nodiscard]] bool hasConflict(const DuckEvent &event) const;
+    const QVector<DuckEvent> &events() const;
 
 signals:
     void eventSelected(QEventItem *event);
