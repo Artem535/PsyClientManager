@@ -1,0 +1,54 @@
+== Architecture
+
+=== Layered View
+
+- `Application` layer
+: bootstraps app, wires cross-module signals.
+- `UI Shell` layer (`MainWindow`)
+: navigation + page host + top custom area.
+- `Feature pages`
+: client list, event management, client details.
+- `Model/View` layer
+: Qt models and graphics timeline.
+- `Persistence` layer
+: `Database` (DuckDB).
+
+=== Runtime Graph
+
+[source,text]
+----
+main.cpp
+  -> pcm::Application
+      -> MainWindow
+          -> QStackedWidget pages
+              -> QEventInfoPage
+              -> ClientInfo
+              -> QClientInfoCardPage
+      -> Database
+      -> QClientModel
+      -> QTimelineModel
+----
+
+=== Signal Wiring (High Level)
+
+- `QClientInfoCardPage::provideSaveClient` -> `MainWindow::provideSaveClient` -> `Application::saveClient` -> `Database::add_client`
+- `QEventDetailsWidget::provideClientEventPairSave` -> `MainWindow::provideClientEventPairSave` -> `Application::saveClientEventPair` -> `Database::add_event_client`
+- `QEventInfoPage::provideFillClientComboBox` -> `Application::fillClientComboBox`
+- `QEventInfoPage::provideClientByEventId` -> `Application` resolves via `Database::get_client_by_event`.
+
+=== Build Composition
+
+Top-level `CMakeLists.txt` composes static libraries by module:
+
+- `PsyClientManager_config`
+- `PsyClientManager_database`
+- `PsyClientManager_client_model`
+- `PsyClientManager_client_page`
+- `PsyClientManager_client_info_card_page`
+- `PsyClientManager_event_view`
+- `PsyClientManager_timeline_widget`
+- `PsyClientManager_event_page`
+- `PsyClientManager_widgets`
+- `PsyClientManager_app`
+
+Executable target: `PsyClientManager`.

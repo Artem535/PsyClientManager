@@ -1,0 +1,12 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "artem535",
+        "projectKey": "Artem535_PsyClientManager"
+    },
+    "slint.libraryPaths": {
+        "widgets": "ui/widgets/",
+        "pages": "ui/pages/"
+    },
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
+
+}
