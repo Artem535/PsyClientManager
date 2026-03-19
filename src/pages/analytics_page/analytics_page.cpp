@@ -203,8 +203,8 @@ void AnalyticsPage::updateSummaryCards(
   mActiveClientsCard.value->setText(QLocale().toString(summary.active_clients));
   mSessionsCard.value->setText(
       QStringLiteral("%1 / %2")
-          .arg(QLocale().toString(summary.sessions_this_month),
-               QLocale().toString(summary.work_sessions_this_month)));
+          .arg(QLocale().toString(summary.work_sessions_this_month),
+               QLocale().toString(summary.sessions_this_month)));
   mSessionsCard.caption->setText(
       tr("Sessions this month") + QStringLiteral(" · ") + tr("work / total"));
   mIncomeCard.value->setText(formatCurrency(summary.income_this_month));
