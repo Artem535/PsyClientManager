@@ -17,4 +17,9 @@ target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_dependencies(${TARGET_NAME} ${PROJECT_NAME}_config)
 
-target_link_libraries(${TARGET_NAME}  ${PROJECT_NAME}_config Poco::Foundation plog::plog duckdb_static)
+target_link_libraries(${TARGET_NAME}
+  ${PROJECT_NAME}_config
+  Poco::Foundation
+  plog::plog
+  ${DuckDB_LIBRARIES}
+)
