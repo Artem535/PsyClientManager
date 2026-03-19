@@ -32,7 +32,7 @@ jobs:
           - os: windows-latest
             qt_version: 6.10.2
             qt_arch: win64_msvc2022_64
-            artifact_name: PsyClientManager-windows-deploy
+            artifact_name: PsyClientManager-windows-installer
             qt_host: windows
             qt_target: desktop
 
@@ -101,6 +101,12 @@ jobs:
           target: ${{ matrix.qt_target }}
           arch: ${{ matrix.qt_arch }}
           cache: true
+
+      - name: Setup MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Install Qt (Linux official installer)
         if: runner.os == 'Linux' && steps.cache-qt-linux.outputs.cache-hit != 'true'
@@ -235,14 +241,21 @@ jobs:
             --dir build-release/packages/PsyClientManager `
             build-release/packages/PsyClientManager/PsyClientManager.exe
 
-      - name: Archive Windows deploy
+      - name: Install Inno Setup
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive `
-            -Path build-release/packages/PsyClientManager/* `
-            -DestinationPath build-release/packages/PsyClientManager-windows.zip `
-            -Force
+          choco install innosetup --no-progress -y
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ matrix.qt_version }}" `
+            "/DMySourceDir=${{ github.workspace }}\build-release\packages\PsyClientManager" `
+            "/DMyOutputDir=${{ github.workspace }}\build-release\packages" `
+            "${{ github.workspace }}\packaging\PsyClientManager.iss"
 
       - name: Download linuxdeployqt
         if: runner.os == 'Linux'
@@ -274,9 +287,18 @@ jobs:
           mkdir -p build-release/packages
           find . -maxdepth 1 -type f -name '*.AppImage' ! -name 'linuxdeploy*.AppImage' -exec mv {} build-release/packages/ \;
 
-      - name: Upload package
+      - name: Upload Linux package
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: build-release/packages/*
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: build-release/packages/PsyClientManager-windows-setup.exe
           if-no-files-found: error
