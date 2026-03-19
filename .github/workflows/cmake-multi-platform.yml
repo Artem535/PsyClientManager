@@ -240,6 +240,15 @@ jobs:
             --dir build-release/packages/PsyClientManager `
             build-release/packages/PsyClientManager/PsyClientManager.exe
 
+      - name: Copy vcpkg runtime DLLs
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item `
+            -Path build-release/vcpkg_installed/x64-windows/bin/*.dll `
+            -Destination build-release/packages/PsyClientManager `
+            -Force
+
       - name: Install Inno Setup
         if: runner.os == 'Windows'
         shell: pwsh
