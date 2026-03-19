@@ -11,9 +11,8 @@ public:
   using QSortFilterProxyModel::QSortFilterProxyModel;
 
   void setQuery(const QString &query) {
-    beginFilterChange();
     mQuery = query.trimmed().toCaseFolded();
-    endFilterChange(QSortFilterProxyModel::Direction::Rows);
+    invalidateFilter();
   }
 
 protected:

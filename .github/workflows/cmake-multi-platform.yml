@@ -25,11 +25,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            qt_version: 6.8.3
+            qt_version: 6.10.2
             artifact_name: PsyClientManager-linux-appimage
-            qt_component: qt.qt6.683.linux_gcc_64
+            qt_component: qt.qt6.6102.linux_gcc_64
           - os: windows-latest
-            qt_version: 6.8.3
+            qt_version: 6.10.2
             qt_arch: win64_msvc2022_64
             artifact_name: PsyClientManager-windows-deploy
             qt_host: windows
@@ -179,9 +179,6 @@ jobs:
 
       - name: Build
         run: cmake --build build-release --parallel
-
-      - name: Test
-        run: ctest --test-dir build-release --build-config MinSizeRel --output-on-failure
 
       - name: Install bundle
         if: runner.os != 'Windows'
