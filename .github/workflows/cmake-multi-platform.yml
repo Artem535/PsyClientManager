@@ -339,3 +339,62 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: build-release/packages/PsyClientManager-windows-setup.exe
           if-no-files-found: error
+
+  publish:
+    name: Publish Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read app version
+        run: |
+          APP_VERSION="$(sed -n 's/.*project([^)]*VERSION \([0-9.]\+\).*/\1/p' CMakeLists.txt | head -n 1)"
+          if [ -z "$APP_VERSION" ]; then
+            echo "Failed to read app version from CMakeLists.txt" >&2
+            exit 1
+          fi
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$APP_VERSION" >> "$GITHUB_ENV"
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PsyClientManager-linux-appimage
+          path: release/linux
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PsyClientManager-macos-dmg
+          path: release/macos
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PsyClientManager-windows-installer
+          path: release/windows
+
+      - name: Normalize release asset names
+        run: |
+          mkdir -p release/assets
+          find release/linux -type f -name '*.AppImage' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-linux.AppImage" \;
+          find release/macos -type f -name '*.dmg' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-macos.dmg" \;
+          find release/windows -type f -name '*.exe' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-windows-setup.exe" \;
+          ls -lah release/assets
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "PsyClientManager $APP_VERSION" \
+              --generate-notes
+          gh release upload "$RELEASE_TAG" release/assets/* --clobber
