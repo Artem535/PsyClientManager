@@ -137,11 +137,6 @@
         <source>Delete %1? This action cannot be undone.</source>
         <translation>Delete %1? This action cannot be undone.</translation>
     </message>
-    <message>
-        <location filename="../src/app/main_window.cpp" line="84"/>
-        <source>Show inactive</source>
-        <translation>Show inactive</translation>
-    </message>
 </context>
 <context>
     <name>ClientInfoCard</name>
@@ -378,6 +373,69 @@
     </message>
 </context>
 <context>
+    <name>ClientNotesPage</name>
+    <message>
+        <source>Notes</source>
+        <translation>Notes</translation>
+    </message>
+    <message>
+        <source>No client selected</source>
+        <translation>No client selected</translation>
+    </message>
+    <message>
+        <source>No notes yet</source>
+        <translation>No notes yet</translation>
+    </message>
+    <message>
+        <source>Write a note in Markdown...</source>
+        <translation>Write a note in Markdown...</translation>
+    </message>
+    <message>
+        <source>Attach files</source>
+        <translation>Attach files</translation>
+    </message>
+    <message>
+        <source>Add note</source>
+        <translation>Add note</translation>
+    </message>
+    <message>
+        <source>All files (*);;Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.svg)</source>
+        <translation>All files (*);;Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.svg)</translation>
+    </message>
+    <message>
+        <source>Select a client to open notes.</source>
+        <translation>Select a client to open notes.</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Unknown time</translation>
+    </message>
+    <message>
+        <source>Open image: %1</source>
+        <translation>Open image: %1</translation>
+    </message>
+    <message>
+        <source>Open file: %1</source>
+        <translation>Open file: %1</translation>
+    </message>
+    <message>
+        <source>Image: %1</source>
+        <translation>Image: %1</translation>
+    </message>
+    <message>
+        <source>File: %1</source>
+        <translation>File: %1</translation>
+    </message>
+    <message>
+        <source>%1  •  Double-click to remove</source>
+        <translation>%1  •  Double-click to remove</translation>
+    </message>
+    <message>
+        <source>Unnamed client</source>
+        <translation>Unnamed client</translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
         <location filename="../ui/app/mainwindow.ui" line="23"/>
@@ -406,6 +464,12 @@
         <translation>Details</translation>
     </message>
     <message>
+        <location filename="../src/app/main_window.cpp" line="56"/>
+        <location filename="../src/app/main_window.cpp" line="315"/>
+        <source>Notes</source>
+        <translation>Notes</translation>
+    </message>
+    <message>
         <location filename="../src/app/main_window.cpp" line="84"/>
         <source>Search clients</source>
         <translation>Search clients</translation>
@@ -414,6 +478,11 @@
         <location filename="../src/app/main_window.cpp" line="89"/>
         <source>Add client</source>
         <translation>Add client</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="88"/>
+        <source>Show inactive</source>
+        <translation>Show inactive</translation>
     </message>
     <message>
         <location filename="../src/app/main_window.cpp" line="220"/>

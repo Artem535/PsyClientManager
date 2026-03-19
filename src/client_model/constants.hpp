@@ -11,9 +11,9 @@ namespace pcm::widgets::constants {
  */
 constexpr double kFirstColumnWidth = 0.20;  ///< Name + Age
 constexpr double kSecondColumnWidth = 0.20; ///< Contacts
-constexpr double kThirdColumnWidth = 0.20;  ///< Last session date
-constexpr double kFourthColumnWidth = 0.20; ///< Status chip
-constexpr double kFifthColumnWidth = 0.20;  ///< Action buttons
+constexpr double kThirdColumnWidth = 0.16;  ///< Last session date
+constexpr double kFourthColumnWidth = 0.18; ///< Status chip
+constexpr double kFifthColumnWidth = 0.26;  ///< Action buttons
 
 /**
  * @brief Fixed height of the client card in pixels.
@@ -28,8 +28,8 @@ constexpr int kSideMargin = 10;
 /**
  * @brief Status chip geometry.
  */
-constexpr int kChipWidth = 80;
-constexpr int kChipHeight = 20;
+constexpr int kChipWidth = 96;
+constexpr int kChipHeight = 24;
 constexpr int kChipMarginBottom = 8;
 
 /**

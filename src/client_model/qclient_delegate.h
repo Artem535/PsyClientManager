@@ -32,6 +32,7 @@ class QClientDelegate final : public QStyledItemDelegate {
 
 signals:
   void displayButtonClicked(const QModelIndex &index);
+  void notesButtonClicked(const QModelIndex &index);
   void removeButtonClicked(const QModelIndex &index);
 
 public:
@@ -100,7 +101,7 @@ public:
                              const DuckClient &client);
 
   /**
-   * @brief Draws the fifth column (two action buttons) and update them coords
+   * @brief Draws the fifth column (three action buttons) and update them coords
    * in buttonRects.
    * @param painter The painter used for drawing.
    * @param option Style options for the item.
@@ -109,7 +110,13 @@ public:
   static void drawActions(QPainter *painter, const QStyleOptionViewItem &option,
                           const DuckClient &client);
 
-  static std::pair<QRect, QRect>
+  struct ActionButtonRects {
+    QRect displayRect;
+    QRect notesRect;
+    QRect removeRect;
+  };
+
+  static ActionButtonRects
   calculateButtonRects(const QStyleOptionViewItem &option);
 
   bool editorEvent(QEvent *event, QAbstractItemModel *model,
@@ -124,5 +131,5 @@ private:
    */
   static int countAge(const QDate &birthDate);
 
-  mutable QHash<QPersistentModelIndex, std::pair<QRect, QRect>> mButtonRects;
+  mutable QHash<QPersistentModelIndex, ActionButtonRects> mButtonRects;
 };

@@ -54,6 +54,24 @@ CREATE TABLE IF NOT EXISTS EventClient (
     event_id INTEGER NOT NULL REFERENCES Event(id),
     UNIQUE (client_id, event_id)
 );
+
+CREATE TABLE IF NOT EXISTS ClientNote (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL REFERENCES Client(id),
+    body_markdown TEXT,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ClientNoteAttachment (
+    id INTEGER PRIMARY KEY,
+    note_id INTEGER NOT NULL REFERENCES ClientNote(id),
+    file_name TEXT,
+    relative_path TEXT,
+    mime_type TEXT,
+    size_bytes BIGINT,
+    created_at TIMESTAMP NOT NULL
+);
 )duckdb";
 
 constexpr auto kSchemaMigrations = R"duckdb(
@@ -139,6 +157,36 @@ INSERT INTO EventClient (id, client_id, event_id)
 SELECT COALESCE(MAX(id), 0) + 1, $1, $2
 FROM EventClient
 RETURNING id
+)duckdb";
+
+constexpr auto kInsertClientNoteQuery = R"duckdb(
+INSERT INTO ClientNote (id, client_id, body_markdown, created_at, updated_at)
+SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, $4
+FROM ClientNote
+RETURNING id
+)duckdb";
+
+constexpr auto kSelectClientNotesQuery = R"duckdb(
+SELECT id, client_id, body_markdown, created_at, updated_at
+FROM ClientNote
+WHERE client_id = $1
+ORDER BY created_at ASC, id ASC
+)duckdb";
+
+constexpr auto kInsertClientNoteAttachmentQuery = R"duckdb(
+INSERT INTO ClientNoteAttachment (
+    id, note_id, file_name, relative_path, mime_type, size_bytes, created_at
+)
+SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, $4, $5, $6
+FROM ClientNoteAttachment
+RETURNING id
+)duckdb";
+
+constexpr auto kSelectNoteAttachmentsQuery = R"duckdb(
+SELECT id, note_id, file_name, relative_path, mime_type, size_bytes, created_at
+FROM ClientNoteAttachment
+WHERE note_id = $1
+ORDER BY created_at ASC, id ASC
 )duckdb";
 
 constexpr auto kHasConflictQuery = R"duckdb(

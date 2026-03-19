@@ -61,6 +61,10 @@ public:
   std::vector<int64_t> get_client_ids();
 
   int64_t add_event_client(const int64_t &event_id, const int64_t &client_id);
+  int64_t add_client_note(const DuckClientNote &note);
+  std::vector<DuckClientNote> get_client_notes(int64_t client_id);
+  int64_t add_client_note_attachment(const DuckClientNoteAttachment &attachment);
+  std::vector<DuckClientNoteAttachment> get_note_attachments(int64_t note_id);
 
   // std::vector<int64_t> get_event_ids(int64_t date);
 

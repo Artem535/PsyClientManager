@@ -102,7 +102,7 @@ void ClientChartsWidget::clear() {
 void ClientChartsWidget::initPlot() {
   mPlot->setMinimumHeight(280);
   mPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-  mPlot->setBackground(QBrush(pcm::widgets::constants::kCalendarCardBackgroundColor));
+  mPlot->setBackground(Qt::NoBrush);
   mPlot->axisRect()->setBackground(Qt::transparent);
   mPlot->legend->setVisible(true);
   mPlot->legend->setBrush(Qt::NoBrush);

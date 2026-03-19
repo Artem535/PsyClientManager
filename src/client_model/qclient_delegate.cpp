@@ -22,6 +22,10 @@ QIcon displayClientIcon() {
 QIcon removeClientIcon() {
   return QIcon(":/icons/user-minus-solid-full.svg");
 }
+
+QIcon notesClientIcon() {
+  return QIcon(":/icons/notes.svg");
+}
 } // namespace
 
 QClientDelegate::QClientDelegate(QObject *parent)
@@ -237,7 +241,10 @@ void QClientDelegate::drawStatusChip(QPainter *painter,
 void QClientDelegate::drawActions(QPainter *painter,
                                   const QStyleOptionViewItem &option,
                                   const DuckClient & /*client*/) {
-  const auto [btn1Rect, btn2Rect] = calculateButtonRects(option);
+  const auto buttonRects = calculateButtonRects(option);
+  const auto &btn1Rect = buttonRects.displayRect;
+  const auto &btn2Rect = buttonRects.notesRect;
+  const auto &btn3Rect = buttonRects.removeRect;
 
   const auto outlineColor = QColor(255, 255, 255, 56);
   painter->setBrush(Qt::NoBrush);
@@ -245,21 +252,27 @@ void QClientDelegate::drawActions(QPainter *painter,
 
   painter->drawEllipse(btn1Rect);
   painter->drawEllipse(btn2Rect);
+  painter->drawEllipse(btn3Rect);
 
   const auto displayPixmap =
       displayClientIcon().pixmap(QSize(btn1Rect.width() - 10, btn1Rect.height() - 10));
+  const auto notesPixmap =
+      notesClientIcon().pixmap(QSize(btn2Rect.width() - 10, btn2Rect.height() - 10));
   const auto removePixmap =
-      removeClientIcon().pixmap(QSize(btn2Rect.width() - 10, btn2Rect.height() - 10));
+      removeClientIcon().pixmap(QSize(btn3Rect.width() - 10, btn3Rect.height() - 10));
 
   painter->drawPixmap(btn1Rect.center().x() - displayPixmap.width() / 2,
                       btn1Rect.center().y() - displayPixmap.height() / 2,
                       displayPixmap);
-  painter->drawPixmap(btn2Rect.center().x() - removePixmap.width() / 2,
-                      btn2Rect.center().y() - removePixmap.height() / 2,
+  painter->drawPixmap(btn2Rect.center().x() - notesPixmap.width() / 2,
+                      btn2Rect.center().y() - notesPixmap.height() / 2,
+                      notesPixmap);
+  painter->drawPixmap(btn3Rect.center().x() - removePixmap.width() / 2,
+                      btn3Rect.center().y() - removePixmap.height() / 2,
                       removePixmap);
 }
 
-std::pair<QRect, QRect>
+QClientDelegate::ActionButtonRects
 QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
   const QRect cardRect = option.rect;
   const int cardWidth = cardRect.width();
@@ -281,13 +294,16 @@ QClientDelegate::calculateButtonRects(const QStyleOptionViewItem &option) {
   constexpr int btnSize = cst::kActionBtnSize;
   constexpr int btnMargin = cst::kActionBtnMargin;
 
-  const QRect btn2Rect(fifthRect.right() - btnSize,
+  const QRect btn3Rect(fifthRect.right() - btnSize,
+                       fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
+
+  const QRect btn2Rect(btn3Rect.left() - btnMargin - btnSize,
                        fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
 
   const QRect btn1Rect(btn2Rect.left() - btnMargin - btnSize,
                        fifthRect.center().y() - btnSize / 2, btnSize, btnSize);
 
-  return {btn1Rect, btn2Rect};
+  return {btn1Rect, btn2Rect, btn3Rect};
 }
 
 bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
@@ -311,16 +327,20 @@ bool QClientDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
 
   const auto buttonRects =
       mButtonRects.value(QPersistentModelIndex(index), calculateButtonRects(option));
-  const auto [button1Rect, button2Rect] = buttonRects;
   const auto pos = mouseEvent->pos();
 
-  if (button1Rect.contains(pos)) {
-    emit displayButtonClicked(index);
+  if (buttonRects.removeRect.contains(pos)) {
+    emit removeButtonClicked(index);
     return true;
   }
 
-  if (button2Rect.contains(pos)) {
-    emit removeButtonClicked(index);
+  if (buttonRects.notesRect.contains(pos)) {
+    emit notesButtonClicked(index);
+    return true;
+  }
+
+  if (buttonRects.displayRect.contains(pos)) {
+    emit displayButtonClicked(index);
     return true;
   }
 

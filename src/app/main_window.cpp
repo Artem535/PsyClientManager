@@ -52,13 +52,17 @@ MainWindow::MainWindow(QWidget *parent)
       new TabButton(QIcon(":/icons/chart-area-solid-full.svg"), tr("Analytics"), this);
   mBtnProfile =
       new TabButton(QIcon(":/icons/users-gear-solid-full.svg"), tr(": NAV_DETAILS"), this);
+  mBtnNotes =
+      new TabButton(QIcon(":/icons/notes.svg"), tr("Notes"), this);
 
   // Add buttons to the vertical layout
   mUi->verticalLayout->addWidget(mBtnCalendar);
   mUi->verticalLayout->addWidget(mBtnClients);
   mUi->verticalLayout->addWidget(mBtnAnalytics);
   mUi->verticalLayout->addWidget(mBtnProfile);
+  mUi->verticalLayout->addWidget(mBtnNotes);
   mBtnProfile->hide();
+  mBtnNotes->hide();
 
   // Add stretch to push buttons to the top
   mUi->verticalLayout->addStretch();
@@ -127,12 +131,22 @@ void MainWindow::addClientCardPage(std::shared_ptr<pcm::database::Database> db) 
   mPagesIndex.insertOrAssign(Pages::clientCard, index);
 }
 
+void MainWindow::addClientNotesPage(std::shared_ptr<pcm::database::Database> db) {
+  const auto page = new ClientNotesPage(std::move(db), this);
+  mPages.insertOrAssign(Pages::clientNotes, page);
+
+  const int index = mUi->stackedWidget->addWidget(page);
+  mPagesIndex.insertOrAssign(Pages::clientNotes, index);
+}
+
 
 void MainWindow::connectSignals() {
   const auto clientInfoPage =
       dynamic_cast<ClientInfo *>(mPages[Pages::clientInfo]);
   const auto clientCardPage =
       dynamic_cast<QClientInfoCardPage *>(mPages[Pages::clientCard]);
+  const auto clientNotesPage =
+      dynamic_cast<ClientNotesPage *>(mPages[Pages::clientNotes]);
   const auto eventInfoPage =
       dynamic_cast<QEventInfoPage *>(mPages[Pages::eventInfo]);
 
@@ -148,6 +162,8 @@ void MainWindow::connectSignals() {
 
   connect(mBtnProfile, &QPushButton::clicked,
           [this]() { showPage(Pages::clientCard, mBtnProfile); });
+  connect(mBtnNotes, &QPushButton::clicked,
+          [this]() { showPage(Pages::clientNotes, mBtnNotes); });
 
   // When a client is selected in the list, show its info in the client card page
   connect(clientInfoPage, &ClientInfo::displayButtonClicked, clientCardPage,
@@ -156,9 +172,16 @@ void MainWindow::connectSignals() {
   // Switch to the client card page after selecting a client
   connect(clientInfoPage, &ClientInfo::displayButtonClicked,
           [this]() {
-            setClientCardNavigationVisible(true);
+            setClientNavigationVisible(Pages::clientCard, true);
             showPage(Pages::clientCard, mBtnProfile);
           });
+
+  connect(clientInfoPage, &ClientInfo::notesButtonClicked, clientNotesPage,
+          &ClientNotesPage::setClientInfo);
+  connect(clientInfoPage, &ClientInfo::notesButtonClicked, [this]() {
+    setClientNavigationVisible(Pages::clientNotes, true);
+    showPage(Pages::clientNotes, mBtnNotes);
+  });
 
   connect(clientInfoPage, &ClientInfo::removeButtonClicked, this,
           [this](const int64_t clientId) { emit provideRemoveClient(clientId); });
@@ -171,7 +194,7 @@ void MainWindow::connectSignals() {
   connect(mAddClientButton, &QPushButton::clicked, this, [this, clientCardPage]() {
     clientCardPage->setClientInfo(std::nullopt);
     clientCardPage->enterInEditMode();
-    setClientCardNavigationVisible(true);
+    setClientNavigationVisible(Pages::clientCard, true);
     showPage(Pages::clientCard, mBtnProfile);
   });
 
@@ -212,6 +235,7 @@ void MainWindow::checkButton(QPushButton *btn) const {
   mBtnClients->setChecked(false);
   mBtnAnalytics->setChecked(false);
   mBtnProfile->setChecked(false);
+  mBtnNotes->setChecked(false);
   btn->setChecked(true);
 }
 
@@ -220,7 +244,6 @@ void MainWindow::showPage(const Pages page, QPushButton *btn) {
     return;
   }
 
-  setClientCardNavigationVisible(page == Pages::clientCard);
   mUi->stackedWidget->setCurrentIndex(mPagesIndex[page]);
   mCurrentPage = page;
   applyPageCustomWidget(page);
@@ -249,12 +272,22 @@ void MainWindow::applyPageCustomWidget(const Pages page) {
   }
 }
 
-void MainWindow::setClientCardNavigationVisible(const bool visible) const {
-  if (!mBtnProfile) {
-    return;
+void MainWindow::setClientNavigationVisible(const Pages page,
+                                            const bool visible) const {
+  switch (page) {
+    case Pages::clientCard:
+      if (mBtnProfile) {
+        mBtnProfile->setVisible(visible);
+      }
+      break;
+    case Pages::clientNotes:
+      if (mBtnNotes) {
+        mBtnNotes->setVisible(visible);
+      }
+      break;
+    default:
+      break;
   }
-
-  mBtnProfile->setVisible(visible);
 }
 
 void MainWindow::setupUtilityButtons() {
@@ -327,6 +360,8 @@ QString MainWindow::pageTitle(const Pages page) const {
       return tr("Analytics");
     case Pages::clientCard:
       return tr("Details");
+    case Pages::clientNotes:
+      return tr("Notes");
   }
 
   return tr("Page");
@@ -341,6 +376,11 @@ void MainWindow::refreshPageAppearance() {
   if (const auto analyticsPage =
           dynamic_cast<AnalyticsPage *>(mPages.value(Pages::analytics, nullptr))) {
     analyticsPage->refresh();
+  }
+
+  if (const auto notesPage =
+          dynamic_cast<ClientNotesPage *>(mPages.value(Pages::clientNotes, nullptr))) {
+    notesPage->refresh();
   }
 }
 

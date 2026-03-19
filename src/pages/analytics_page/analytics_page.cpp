@@ -155,7 +155,7 @@ void AnalyticsPage::buildUi() {
 
 void AnalyticsPage::initPlot(QCustomPlot *plot, const QString &placeholderText) const {
   plot->setMinimumHeight(260);
-  plot->setBackground(QBrush(pcm::widgets::constants::kCalendarCardBackgroundColor));
+  plot->setBackground(Qt::NoBrush);
   plot->axisRect()->setBackground(Qt::transparent);
   plot->legend->setVisible(true);
   plot->legend->setBrush(Qt::NoBrush);

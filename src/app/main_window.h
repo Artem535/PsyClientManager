@@ -2,6 +2,7 @@
 
 #include "analytics_page.h"
 #include "client_info.h"
+#include "client_notes_page.h"
 #include "event_info.h"
 #include "database.h"
 #include "client_info_card.h"
@@ -16,6 +17,7 @@
 #include <QHBoxLayout>
 
 #include <memory>
+#include <optional>
 
 namespace oclero::qlementine {
 class Switch;
@@ -40,7 +42,7 @@ public:
   /**
    * @brief Enum to identify the available pages in the application.
    */
-  enum class Pages { clientInfo, eventInfo, analytics, clientCard };
+  enum class Pages { clientInfo, eventInfo, analytics, clientCard, clientNotes };
 
   /**
    * @brief Constructor for the MainWindow class.
@@ -68,6 +70,7 @@ public:
    * @brief Adds the client card (details) page to the application.
    */
   void addClientCardPage(std::shared_ptr<pcm::database::Database> db);
+  void addClientNotesPage(std::shared_ptr<pcm::database::Database> db);
 
   /**
    * @brief Sets up all signal/slot connections between UI elements and logic.
@@ -119,6 +122,7 @@ private:
   TabButton *mBtnClients{nullptr};
   TabButton *mBtnAnalytics{nullptr};
   TabButton *mBtnProfile{nullptr};
+  TabButton *mBtnNotes{nullptr};
   QWidget *mClientPageActions{nullptr};
   QLineEdit *mClientSearchInput{nullptr};
   oclero::qlementine::Switch *mShowInactiveClientsSwitch{nullptr};
@@ -152,7 +156,7 @@ private:
    * @param page Target page.
    */
   void applyPageCustomWidget(Pages page);
-  void setClientCardNavigationVisible(bool visible) const;
+  void setClientNavigationVisible(Pages page, bool visible) const;
   void setupUtilityButtons();
   void openSettingsDialog();
   void openAboutDialog();

@@ -137,11 +137,6 @@
         <source>Delete %1? This action cannot be undone.</source>
         <translation>Удалить %1? Это действие нельзя отменить.</translation>
     </message>
-    <message>
-        <location filename="../src/app/main_window.cpp" line="84"/>
-        <source>Show inactive</source>
-        <translation>Показать неактивных</translation>
-    </message>
 </context>
 <context>
     <name>ClientInfoCard</name>
@@ -378,6 +373,69 @@
     </message>
 </context>
 <context>
+    <name>ClientNotesPage</name>
+    <message>
+        <source>Notes</source>
+        <translation>Заметки</translation>
+    </message>
+    <message>
+        <source>No client selected</source>
+        <translation>Клиент не выбран</translation>
+    </message>
+    <message>
+        <source>No notes yet</source>
+        <translation>Заметок пока нет</translation>
+    </message>
+    <message>
+        <source>Write a note in Markdown...</source>
+        <translation>Напишите заметку в Markdown...</translation>
+    </message>
+    <message>
+        <source>Attach files</source>
+        <translation>Прикрепить файлы</translation>
+    </message>
+    <message>
+        <source>Add note</source>
+        <translation>Добавить заметку</translation>
+    </message>
+    <message>
+        <source>All files (*);;Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.svg)</source>
+        <translation>Все файлы (*);;Изображения (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.svg)</translation>
+    </message>
+    <message>
+        <source>Select a client to open notes.</source>
+        <translation>Выберите клиента, чтобы открыть заметки.</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Время неизвестно</translation>
+    </message>
+    <message>
+        <source>Open image: %1</source>
+        <translation>Открыть изображение: %1</translation>
+    </message>
+    <message>
+        <source>Open file: %1</source>
+        <translation>Открыть файл: %1</translation>
+    </message>
+    <message>
+        <source>Image: %1</source>
+        <translation>Изображение: %1</translation>
+    </message>
+    <message>
+        <source>File: %1</source>
+        <translation>Файл: %1</translation>
+    </message>
+    <message>
+        <source>%1  •  Double-click to remove</source>
+        <translation>%1  •  Двойной клик для удаления</translation>
+    </message>
+    <message>
+        <source>Unnamed client</source>
+        <translation>Клиент без имени</translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
         <location filename="../ui/app/mainwindow.ui" line="23"/>
@@ -414,6 +472,11 @@
         <location filename="../src/app/main_window.cpp" line="89"/>
         <source>Add client</source>
         <translation>Добавить клиента</translation>
+    </message>
+    <message>
+        <location filename="../src/app/main_window.cpp" line="88"/>
+        <source>Show inactive</source>
+        <translation>Показать неактивных</translation>
     </message>
     <message>
         <location filename="../src/app/main_window.cpp" line="220"/>

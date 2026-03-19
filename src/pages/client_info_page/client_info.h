@@ -39,6 +39,7 @@ public:
 
 signals:
   void displayButtonClicked(const std::optional<DuckClient> &client);
+  void notesButtonClicked(const std::optional<DuckClient> &client);
   void removeButtonClicked(int64_t clientId);
 
 private:

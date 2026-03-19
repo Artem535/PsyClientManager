@@ -6,6 +6,7 @@
         <file alias="calendar-solid-full.svg">icons/calendar-solid-full.svg</file>
         <file alias="calendar-plus-solid-full.svg">icons/calendar-plus-solid-full.svg</file>
         <file alias="coins-solid-full.svg">icons/coins-solid-full.svg</file>
+        <file alias="notes.svg">icons/notes.svg</file>
         <file alias="user-minus-solid-full.svg">icons/user-minus-solid-full.svg</file>
         <file alias="user-pen-solid-full.svg">icons/user-pen-solid-full.svg</file>
         <file alias="user-plus-solid-full.svg">icons/user-plus-solid-full.svg</file>

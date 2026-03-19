@@ -404,6 +404,128 @@ int64_t Database::add_event_client(const int64_t &event_id,
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
 }
 
+int64_t Database::add_client_note(const DuckClientNote &note) {
+  if (note.client_id <= 0) {
+    PLOG_WARNING << "Invalid client_id for ClientNote: " << note.client_id;
+    return 0;
+  }
+
+  const Poco::Timestamp now;
+  const auto createdAtMs =
+      note.created_at.value_or(static_cast<int64_t>(now.epochMicroseconds() / 1000));
+  const auto updatedAtMs = note.updated_at.value_or(createdAtMs);
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kInsertClientNoteQuery,
+      duckdb::vector<duckdb::Value>{
+          duckdb::Value::BIGINT(note.client_id),
+          db_utils::toDuckValue(note.body_markdown),
+          db_utils::toDuckTimestamp(createdAtMs * 1000),
+          db_utils::toDuckTimestamp(updatedAtMs * 1000)});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to insert client note: " << result->GetError();
+    return 0;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    PLOG_ERROR << "Empty result from RETURNING id in add_client_note";
+    return 0;
+  }
+
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+std::vector<DuckClientNote> Database::get_client_notes(const int64_t client_id) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectClientNotesQuery, {duckdb::Value::BIGINT(client_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch client notes for client_id=" << client_id
+               << ": " << result->GetError();
+    return {};
+  }
+
+  std::vector<DuckClientNote> notes;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      notes.emplace_back(*chunk, i);
+    }
+  }
+
+  return notes;
+}
+
+int64_t Database::add_client_note_attachment(
+    const DuckClientNoteAttachment &attachment) {
+  if (attachment.note_id <= 0) {
+    PLOG_WARNING << "Invalid note_id for ClientNoteAttachment: "
+                 << attachment.note_id;
+    return 0;
+  }
+
+  const Poco::Timestamp now;
+  const auto createdAtMs =
+      attachment.created_at.value_or(static_cast<int64_t>(now.epochMicroseconds() / 1000));
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kInsertClientNoteAttachmentQuery,
+      duckdb::vector<duckdb::Value>{
+          duckdb::Value::BIGINT(attachment.note_id),
+          db_utils::toDuckValue(attachment.file_name),
+          db_utils::toDuckValue(attachment.relative_path),
+          db_utils::toDuckValue(attachment.mime_type),
+          db_utils::toDuckValue(attachment.size_bytes),
+          db_utils::toDuckTimestamp(createdAtMs * 1000)});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to insert client note attachment: "
+               << result->GetError();
+    return 0;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    PLOG_ERROR << "Empty result from RETURNING id in add_client_note_attachment";
+    return 0;
+  }
+
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+std::vector<DuckClientNoteAttachment>
+Database::get_note_attachments(const int64_t note_id) {
+  if (note_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectNoteAttachmentsQuery,
+      duckdb::vector<duckdb::Value>{duckdb::Value::BIGINT(note_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch note attachments for note_id=" << note_id
+               << ": " << result->GetError();
+    return {};
+  }
+
+  std::vector<DuckClientNoteAttachment> attachments;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      attachments.emplace_back(*chunk, i);
+    }
+  }
+
+  return attachments;
+}
+
 // --- Events by date / conflict ---
 
 // std::vector<int64_t> Database::get_event_ids(const int64_t date_microseconds) {

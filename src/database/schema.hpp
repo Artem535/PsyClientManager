@@ -168,3 +168,62 @@ inline std::ostream &operator<<(std::ostream &os, const DuckEventClient &ec) {
      << ", event_id=" << ec.event_id << "}";
   return os;
 }
+
+// --- DuckClientNote ---
+struct DuckClientNote {
+  std::int64_t id = -1;
+  std::int64_t client_id = -1;
+  std::optional<std::string> body_markdown = std::nullopt;
+  std::optional<std::int64_t> created_at = std::nullopt;
+  std::optional<std::int64_t> updated_at = std::nullopt;
+
+  DuckClientNote() = default;
+  DuckClientNote(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+    id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
+    client_id = db_utils::toInt32AsInt64(chunk.GetValue(1, index));
+    body_markdown = db_utils::toOptionalString(chunk.GetValue(2, index));
+    created_at = db_utils::toOptionalTimestampMs(chunk.GetValue(3, index));
+    updated_at = db_utils::toOptionalTimestampMs(chunk.GetValue(4, index));
+  }
+};
+inline std::ostream &operator<<(std::ostream &os, const DuckClientNote &note) {
+  os << "DuckClientNote{id=" << note.id << ", client_id=" << note.client_id
+     << ", body_markdown=";
+  print_optional(os, note.body_markdown) << ", created_at=";
+  print_optional(os, note.created_at) << ", updated_at=";
+  print_optional(os, note.updated_at) << "}";
+  return os;
+}
+
+// --- DuckClientNoteAttachment ---
+struct DuckClientNoteAttachment {
+  std::int64_t id = -1;
+  std::int64_t note_id = -1;
+  std::optional<std::string> file_name = std::nullopt;
+  std::optional<std::string> relative_path = std::nullopt;
+  std::optional<std::string> mime_type = std::nullopt;
+  std::optional<std::int64_t> size_bytes = std::nullopt;
+  std::optional<std::int64_t> created_at = std::nullopt;
+
+  DuckClientNoteAttachment() = default;
+  DuckClientNoteAttachment(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+    id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
+    note_id = db_utils::toInt32AsInt64(chunk.GetValue(1, index));
+    file_name = db_utils::toOptionalString(chunk.GetValue(2, index));
+    relative_path = db_utils::toOptionalString(chunk.GetValue(3, index));
+    mime_type = db_utils::toOptionalString(chunk.GetValue(4, index));
+    size_bytes = db_utils::toOptionalInt32AsInt64(chunk.GetValue(5, index));
+    created_at = db_utils::toOptionalTimestampMs(chunk.GetValue(6, index));
+  }
+};
+inline std::ostream &operator<<(std::ostream &os,
+                                const DuckClientNoteAttachment &attachment) {
+  os << "DuckClientNoteAttachment{id=" << attachment.id
+     << ", note_id=" << attachment.note_id << ", file_name=";
+  print_optional(os, attachment.file_name) << ", relative_path=";
+  print_optional(os, attachment.relative_path) << ", mime_type=";
+  print_optional(os, attachment.mime_type) << ", size_bytes=";
+  print_optional(os, attachment.size_bytes) << ", created_at=";
+  print_optional(os, attachment.created_at) << "}";
+  return os;
+}

@@ -3,7 +3,7 @@
 #define MyAppExeName "PsyClientManager.exe"
 
 #ifndef MyAppVersion
-  #define MyAppVersion "0.1.0"
+  #define MyAppVersion "0.1.1"
 #endif
 
 #ifndef MySourceDir

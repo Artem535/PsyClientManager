@@ -164,6 +164,17 @@ void ClientInfo::connectSignals(const QClientDelegate *delegate) {
       });
 
   connect(
+      delegate, &QClientDelegate::notesButtonClicked, [&](const auto index) {
+        qCDebug(logClientInfo) << "Notes button clicked for index: " << index;
+
+        const QVariant clientVar =
+            index.data(QClientModel::ClientRoles::Full_object);
+        const auto client = clientVar.value<DuckClient>();
+
+        emit notesButtonClicked(client);
+      });
+
+  connect(
       delegate, &QClientDelegate::removeButtonClicked, [&](const auto index) {
         qCDebug(logClientInfo) << "Remove button clicked for index: " << index;
 
