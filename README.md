@@ -4,7 +4,9 @@ PsyClientManager is a desktop application for scheduling sessions, managing clie
 
 It is built as a native Qt Widgets application and targets Linux, Windows, and macOS.
 
-## Highlights
+![PsyClientManager Preview](docs/preview.png)
+
+## 🧠 Overview
 
 - Calendar-based session planning
 - Client list with search and detail pages
@@ -14,7 +16,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Dark UI powered by Qlementine
 - Cross-platform packaging through GitHub Actions
 
-## Current Features
+## 📋 Features
 
 - Calendar page with custom month view
 - Timeline view for daily events
@@ -29,7 +31,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Configurable colors for work and personal events
 - Quick access to the local database folder
 
-## Planned Improvements
+## 🛣 Roadmap
 
 - Recurring events
 - Richer analytics and business reports
@@ -39,7 +41,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Improved settings and personalization
 - Broader release automation and polish for all platforms
 
-## Tech Stack
+## ⚙ Tech Stack
 
 - `C++20`
 - `Qt 6.10`
@@ -49,7 +51,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - `vcpkg`
 - `CMake`
 
-## Project Layout
+## 📁 Project Layout
 
 - `src/` application code
 - `ui/` Qt Designer forms
@@ -59,7 +61,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - `packaging/` platform packaging assets
 - `docs/asciidoc/` project documentation
 
-## Getting Started
+## 🚀 Getting Started
 
 Clone the repository with submodules:
 
@@ -74,7 +76,7 @@ If the repository is already cloned:
 git submodule update --init --recursive
 ```
 
-## Local Build
+## 🛠 Local Build
 
 The project uses `vcpkg` through `CMakePresets.json`.
 
@@ -92,7 +94,7 @@ cmake --build build-release --parallel
 
 The main binary is produced in `build-release/`.
 
-## Dependencies
+## 🧱 Dependencies
 
 Manifest dependencies are defined in:
 
@@ -101,7 +103,7 @@ Manifest dependencies are defined in:
 
 The build expects `VCPKG_ROOT` to point to a valid `vcpkg` checkout.
 
-## Qlementine Integration
+## 🎨 Qlementine Integration
 
 `Qlementine` is tracked as a submodule in `third_party/qlementine`.
 
@@ -112,7 +114,7 @@ The repository applies a local compatibility patch automatically during CMake co
 
 No manual patch step is required during normal builds.
 
-## Tests
+## 🧪 Tests
 
 Tests are disabled by default.
 
@@ -123,7 +125,7 @@ cmake --preset vcpkg-release -DPCM_BUILD_TESTS=ON
 cmake --build build-release --parallel
 ```
 
-## Packaging
+## 📦 Packaging
 
 GitHub Actions builds platform packages for:
 
@@ -133,7 +135,7 @@ GitHub Actions builds platform packages for:
 
 Build artifacts are attached to workflow runs in the `Actions` tab.
 
-## Releases
+## 🏷 Releases
 
 Publishing is configured only for merges to `main`.
 
@@ -148,7 +150,7 @@ The application version is defined in:
 
 - `CMakeLists.txt`
 
-## Roadmap Notes
+## 🎯 Development Focus
 
 The project is under active development. The current focus is on:
 
@@ -157,12 +159,12 @@ The project is under active development. The current focus is on:
 - expanding analytics
 - preparing a cleaner release flow for public builds
 
-## Documentation
+## 📚 Documentation
 
 Additional documentation lives in:
 
 - `docs/asciidoc/index.adoc`
 
-## License
+## 📜 License
 
 This repository is distributed under `GPLv3`.
