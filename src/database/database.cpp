@@ -13,7 +13,7 @@ int32_t statusOrDefault(const int64_t id) {
 
 std::unique_ptr<duckdb::QueryResult> executePrepared(
     duckdb::Connection &conn, const std::string &query,
-    std::vector<duckdb::Value> values) {
+    duckdb::vector<duckdb::Value> values) {
   auto statement = conn.Prepare(query);
   if (!statement || statement->HasError()) {
     return nullptr;
