@@ -1,0 +1,20 @@
+{
+  "name": "default-1",
+  "version": "1",
+  "dependencies": [
+    "gtest",
+    {
+      "name": "icu",
+      "platform": "windows"
+    },
+    "plog",
+    "poco",
+    {
+      "name": "reflectcpp",
+      "features": [
+        "yaml"
+      ]
+    },
+    "duckdb"
+  ]
+}

@@ -1,0 +1,3 @@
+[submodule "third_party/qlementine"]
+	path = third_party/qlementine
+	url = https://github.com/oclero/qlementine.git

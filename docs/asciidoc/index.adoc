@@ -1,0 +1,14 @@
+= PsyClientManager Documentation
+:toc: left
+:toclevels: 2
+:sectnums:
+
+This documentation describes the current implementation of `PsyClientManager`.
+
+include::01-overview.adoc[]
+include::02-build-run.adoc[]
+include::03-architecture.adoc[]
+include::04-ui-layout.adoc[]
+include::05-modules.adoc[]
+include::06-database-and-data-model.adoc[]
+include::07-testing.adoc[]

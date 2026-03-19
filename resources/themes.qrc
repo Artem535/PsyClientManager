@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="brain-solid-full.svg">icons/brain-solid-full.svg</file>
+        <file alias="briefcase-solid-full.svg">icons/briefcase-solid-full.svg</file>
+        <file alias="chart-area-solid-full.svg">icons/chart-area-solid-full.svg</file>
+        <file alias="calendar-solid-full.svg">icons/calendar-solid-full.svg</file>
+        <file alias="calendar-plus-solid-full.svg">icons/calendar-plus-solid-full.svg</file>
+        <file alias="coins-solid-full.svg">icons/coins-solid-full.svg</file>
+        <file alias="notes.svg">icons/notes.svg</file>
+        <file alias="user-minus-solid-full.svg">icons/user-minus-solid-full.svg</file>
+        <file alias="user-pen-solid-full.svg">icons/user-pen-solid-full.svg</file>
+        <file alias="user-plus-solid-full.svg">icons/user-plus-solid-full.svg</file>
+        <file alias="user-solid-full.svg">icons/user-solid-full.svg</file>
+        <file alias="users-gear-solid-full.svg">icons/users-gear-solid-full.svg</file>
+        <file alias="users-line-solid-full.svg">icons/users-line-solid-full.svg</file>
+    </qresource>
+    <qresource prefix="/themes">
+        <file alias="qlementine_dark.json">themes/qlementine_dark.json</file>
+    </qresource>
+</RCC>
