@@ -1,12 +1,45 @@
 # PsyClientManager
 
-Desktop application for client management, scheduling, and lightweight analytics.
+PsyClientManager is a desktop application for scheduling sessions, managing clients, and tracking lightweight practice analytics.
 
-Project documentation in AsciiDoc:
+It is built as a native Qt Widgets application and targets Linux, Windows, and macOS.
 
-- `docs/asciidoc/index.adoc`
+## Highlights
 
-## Stack
+- Calendar-based session planning
+- Client list with search and detail pages
+- Work and personal event separation
+- Session cost tracking
+- Analytics dashboard with charts
+- Dark UI powered by Qlementine
+- Cross-platform packaging through GitHub Actions
+
+## Current Features
+
+- Calendar page with custom month view
+- Timeline view for daily events
+- Creation and editing of work and personal events
+- Linked client selection for work events
+- Default pricing for work sessions
+- Optional prevention of overlapping events
+- Client list with search and quick actions
+- Client detail page with charts
+- Analytics dashboard with summary cards and plots
+- Language selection in settings
+- Configurable colors for work and personal events
+- Quick access to the local database folder
+
+## Planned Improvements
+
+- Recurring events
+- Richer analytics and business reports
+- Better calendar interactions and editing flows
+- Export and backup options
+- More detailed client history
+- Improved settings and personalization
+- Broader release automation and polish for all platforms
+
+## Tech Stack
 
 - `C++20`
 - `Qt 6.10`
@@ -16,12 +49,23 @@ Project documentation in AsciiDoc:
 - `vcpkg`
 - `CMake`
 
-## Repository Setup
+## Project Layout
+
+- `src/` application code
+- `ui/` Qt Designer forms
+- `resources/` themes and icons
+- `translation/` Qt Linguist translations
+- `third_party/` vendored dependencies and submodules
+- `packaging/` platform packaging assets
+- `docs/asciidoc/` project documentation
+
+## Getting Started
 
 Clone the repository with submodules:
 
 ```bash
 git clone --recursive <repo-url>
+cd PsyClientManager
 ```
 
 If the repository is already cloned:
@@ -46,44 +90,79 @@ Build:
 cmake --build build-release --parallel
 ```
 
-The main executable will be produced in `build-release/`.
+The main binary is produced in `build-release/`.
 
 ## Dependencies
 
-Manifest dependencies are declared in:
+Manifest dependencies are defined in:
 
 - `vcpkg.json`
 - `vcpkg-configuration.json`
 
-The project expects a working `VCPKG_ROOT`.
+The build expects `VCPKG_ROOT` to point to a valid `vcpkg` checkout.
 
-## Qlementine
+## Qlementine Integration
 
-`Qlementine` is tracked as a git submodule in `third_party/qlementine`.
+`Qlementine` is tracked as a submodule in `third_party/qlementine`.
 
-The project applies a local compatibility patch during CMake configure:
+The repository applies a local compatibility patch automatically during CMake configure:
 
-- patch file: `patches/qlementine/0001-guard-widget-animation-manager-on-destroy.patch`
-- patch script: `scripts/apply_qlementine_patch.cmake`
+- patch: `patches/qlementine/0001-guard-widget-animation-manager-on-destroy.patch`
+- script: `scripts/apply_qlementine_patch.cmake`
 
-No manual patch step is required during normal configure/build.
+No manual patch step is required during normal builds.
 
-## CI Packaging
+## Tests
 
-GitHub Actions builds packages for both target platforms:
+Tests are disabled by default.
 
-- `Linux`: `AppImage`
-- `Windows`: deploy bundle via `windeployqt`
-
-Artifacts are available from the corresponding workflow run in the `Actions` tab.
-
-## Notes
-
-- Tests are disabled by default. To enable them explicitly, configure with:
+To enable them explicitly:
 
 ```bash
 cmake --preset vcpkg-release -DPCM_BUILD_TESTS=ON
+cmake --build build-release --parallel
 ```
 
-- The Windows CI job uses the MSVC toolchain.
-- The Linux CI job installs Qt through the official Qt installer and packages the app as `AppImage`.
+## Packaging
+
+GitHub Actions builds platform packages for:
+
+- `Linux` as `AppImage`
+- `Windows` as an `Inno Setup` installer
+- `macOS` as `DMG`
+
+Build artifacts are attached to workflow runs in the `Actions` tab.
+
+## Releases
+
+Publishing is configured only for merges to `main`.
+
+The release workflow:
+
+1. builds all supported platform packages
+2. reads the application version from `CMakeLists.txt`
+3. creates or updates a GitHub Release tagged as `v<version>`
+4. uploads Linux, Windows, and macOS release artifacts
+
+The application version is defined in:
+
+- `CMakeLists.txt`
+
+## Roadmap Notes
+
+The project is under active development. The current focus is on:
+
+- stabilizing cross-platform packaging
+- improving day-to-day scheduling UX
+- expanding analytics
+- preparing a cleaner release flow for public builds
+
+## Documentation
+
+Additional documentation lives in:
+
+- `docs/asciidoc/index.adoc`
+
+## License
+
+This repository is distributed under `GPLv3`.
