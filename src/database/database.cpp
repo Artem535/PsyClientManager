@@ -18,7 +18,8 @@ std::unique_ptr<duckdb::QueryResult> executePrepared(
   if (!statement || statement->HasError()) {
     return nullptr;
   }
-  return statement->Execute(values);
+  auto boundValues = std::move(values);
+  return statement->Execute(boundValues);
 }
 } // namespace
 
