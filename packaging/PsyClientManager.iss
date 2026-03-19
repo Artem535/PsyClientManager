@@ -14,6 +14,10 @@
   #define MyOutputDir "."
 #endif
 
+#ifndef MyIconFile
+  #define MyIconFile "resources\icons\PsyClientManager.ico"
+#endif
+
 [Setup]
 AppId={{A9A95C24-4C51-4E52-89F6-1FC95B3900E8}
 AppName={#MyAppName}
@@ -27,7 +31,7 @@ OutputBaseFilename=PsyClientManager-windows-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=resources\icons\PsyClientManager.ico
+SetupIconFile={#MyIconFile}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]

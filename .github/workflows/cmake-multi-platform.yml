@@ -263,6 +263,7 @@ jobs:
             "/DMyAppVersion=${{ matrix.qt_version }}" `
             "/DMySourceDir=${{ github.workspace }}\build-release\packages\PsyClientManager" `
             "/DMyOutputDir=${{ github.workspace }}\build-release\packages" `
+            "/DMyIconFile=${{ github.workspace }}\resources\icons\PsyClientManager.ico" `
             "${{ github.workspace }}\packaging\PsyClientManager.iss"
 
       - name: Download linuxdeployqt
