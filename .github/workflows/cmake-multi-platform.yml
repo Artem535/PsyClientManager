@@ -14,6 +14,7 @@ env:
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.cache/vcpkg/archives
   VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
   VCPKG_INSTALL_OPTIONS: --debug
+  VCPKG_COMMIT: 62159a45e18f3a9ac0548628dcaf74fcb60c6ff9
 
 jobs:
   build:
@@ -161,6 +162,8 @@ jobs:
           if [ ! -d "${{ github.workspace }}/vcpkg/.git" ]; then
             git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
           fi
+          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "${VCPKG_COMMIT}"
+          git -C "${{ github.workspace }}/vcpkg" checkout --force "${VCPKG_COMMIT}"
           "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
           echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> "$GITHUB_ENV"
 
@@ -171,6 +174,8 @@ jobs:
           if (!(Test-Path "${{ github.workspace }}/vcpkg/.git")) {
             git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
           }
+          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "$env:VCPKG_COMMIT"
+          git -C "${{ github.workspace }}/vcpkg" checkout --force "$env:VCPKG_COMMIT"
           & "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
           "VCPKG_ROOT=${{ github.workspace }}/vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -182,7 +187,7 @@ jobs:
 
       - name: Install bundle
         if: runner.os != 'Windows'
-        run: cmake --install build-release --config MinSizeRel --prefix build-release/install
+        run: cmake --install build-release --config MinSizeRel --prefix "${{ github.workspace }}/build-release/install"
 
       - name: Prepare Windows deploy directory
         if: runner.os == 'Windows'
@@ -223,8 +228,8 @@ jobs:
       - name: Build AppImage
         if: runner.os == 'Linux'
         run: |
-          mkdir -p build-release/AppDir
-          cmake --install build-release --config MinSizeRel --prefix build-release/AppDir/usr
+          mkdir -p "${{ github.workspace }}/build-release/AppDir"
+          cmake --install build-release --config MinSizeRel --prefix "${{ github.workspace }}/build-release/AppDir/usr"
           QT_PREFIX="${{ github.workspace }}/Qt/${{ matrix.qt_version }}/gcc_64"
           export PATH="$QT_PREFIX/bin:$PATH"
           export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
