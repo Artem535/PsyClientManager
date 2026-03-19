@@ -10,6 +10,16 @@ duckdb::Value fkOrNull(const int64_t id) {
 int32_t statusOrDefault(const int64_t id) {
   return static_cast<int32_t>(id > 0 ? id : 1);
 }
+
+std::unique_ptr<duckdb::QueryResult> executePrepared(
+    duckdb::Connection &conn, const std::string &query,
+    std::vector<duckdb::Value> values) {
+  auto statement = conn.Prepare(query);
+  if (!statement || statement->HasError()) {
+    return nullptr;
+  }
+  return statement->Execute(values);
+}
 } // namespace
 
 Database::Database(const config::Config &conf) {
@@ -50,18 +60,19 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result =
-      conn.Query(constance::kInsertEventQuery,
-                 db_utils::toDuckValue(event.name),
-                 db_utils::toDuckValue(event.description), event.is_work_event,
-                 statusOrDefault(event.event_stat_id),
-                 statusOrDefault(event.payment_stat_id),
-                 db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
-                 db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-                 db_utils::toDuckValue(event.duration),
-                 db_utils::toDuckValue(event.cost));
+  auto result = executePrepared(
+      conn, constance::kInsertEventQuery,
+      {db_utils::toDuckValue(event.name),
+       db_utils::toDuckValue(event.description),
+       duckdb::Value::BOOLEAN(event.is_work_event),
+       duckdb::Value::INTEGER(statusOrDefault(event.event_stat_id)),
+       duckdb::Value::INTEGER(statusOrDefault(event.payment_stat_id)),
+       db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+       db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
+       db_utils::toDuckValue(event.duration),
+       db_utils::toDuckValue(event.cost)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
     return 0;
   }
@@ -91,17 +102,20 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kUpdateEventQuery,
-                           db_utils::toDuckValue(event.name),
-                           db_utils::toDuckValue(event.description),
-                           event.is_work_event, fkOrNull(event.event_stat_id),
-                           fkOrNull(event.payment_stat_id),
-                           db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
-                           db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-                           db_utils::toDuckValue(event.duration),
-                           db_utils::toDuckValue(event.cost), event.id);
+  auto result = executePrepared(
+      conn, constance::kUpdateEventQuery,
+      {db_utils::toDuckValue(event.name),
+       db_utils::toDuckValue(event.description),
+       duckdb::Value::BOOLEAN(event.is_work_event),
+       fkOrNull(event.event_stat_id),
+       fkOrNull(event.payment_stat_id),
+       db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+       db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
+       db_utils::toDuckValue(event.duration),
+       db_utils::toDuckValue(event.cost),
+       duckdb::Value::BIGINT(event.id)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to update event (id=" << event.id
                << "): " << result->GetError();
     return false;
@@ -117,15 +131,18 @@ bool Database::remove_event(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto relationResult = conn.Query(constance::kDeleteEventClientByEventIdQuery, id);
-  if (relationResult->HasError()) {
+  auto relationResult = executePrepared(
+      conn, constance::kDeleteEventClientByEventIdQuery,
+      {duckdb::Value::BIGINT(id)});
+  if (!relationResult || relationResult->HasError()) {
     PLOG_ERROR << "Failed to delete EventClient links for event (id=" << id
                << "): " << relationResult->GetError();
     return false;
   }
 
-  auto result = conn.Query(constance::kDeleteEventByIdQuery, id);
-  if (result->HasError()) {
+  auto result =
+      executePrepared(conn, constance::kDeleteEventByIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to delete event (id=" << id
                << "): " << result->GetError();
     return false;
@@ -141,8 +158,9 @@ std::unique_ptr<DuckEvent> Database::get_event(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kSelectEventByIdQuery, id);
-  if (result->HasError()) {
+  auto result =
+      executePrepared(conn, constance::kSelectEventByIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to query event (id=" << id
                << "): " << result->GetError();
     return nullptr;
@@ -161,19 +179,21 @@ std::unique_ptr<DuckEvent> Database::get_event(const int64_t &id) {
 
 int64_t Database::add_client(const DuckClient &client) {
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(
-      constance::kInsertClientQuery,
-      db_utils::toDuckValue(client.name),
-      db_utils::toDuckValue(client.last_name),
-      db_utils::toDuckValue(client.additional_info),
-      db_utils::toDuckValue(client.diagnosis),
-      db_utils::toDuckTimestamp(client.birthday_date),
-      db_utils::toDuckValue(client.email),
-      db_utils::toDuckValue(client.phone_number), client.client_active,
-      db_utils::toDuckValue(client.country), db_utils::toDuckValue(client.city),
-      db_utils::toDuckValue(client.time_zone));
+  auto result = executePrepared(
+      conn, constance::kInsertClientQuery,
+      {db_utils::toDuckValue(client.name),
+       db_utils::toDuckValue(client.last_name),
+       db_utils::toDuckValue(client.additional_info),
+       db_utils::toDuckValue(client.diagnosis),
+       db_utils::toDuckTimestamp(client.birthday_date),
+       db_utils::toDuckValue(client.email),
+       db_utils::toDuckValue(client.phone_number),
+       duckdb::Value::BOOLEAN(client.client_active),
+       db_utils::toDuckValue(client.country),
+       db_utils::toDuckValue(client.city),
+       db_utils::toDuckValue(client.time_zone)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert client: " << result->GetError();
     return 0;
   }
@@ -194,8 +214,9 @@ std::unique_ptr<DuckClient> Database::get_client(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kSelectClientByIdQuery, id);
-  if (result->HasError()) {
+  auto result =
+      executePrepared(conn, constance::kSelectClientByIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to query client (id=" << id
                << "): " << result->GetError();
     return nullptr;
@@ -253,8 +274,9 @@ bool Database::remove_client(const int64_t &id) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kDeleteClientByIdQuery, id);
-  if (result->HasError()) {
+  auto result =
+      executePrepared(conn, constance::kDeleteClientByIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to delete client (id=" << id
                << "): " << result->GetError();
     return false;
@@ -273,8 +295,10 @@ int64_t Database::add_event_client(const int64_t &event_id,
   }
 
   duckdb::Connection conn(*mDb);
-  auto removeResult = conn.Query(constance::kDeleteEventClientByEventIdQuery, event_id);
-  if (removeResult->HasError()) {
+  auto removeResult = executePrepared(
+      conn, constance::kDeleteEventClientByEventIdQuery,
+      {duckdb::Value::BIGINT(event_id)});
+  if (!removeResult || removeResult->HasError()) {
     PLOG_ERROR << "Failed to clear EventClient links for event_id=" << event_id
                << ": " << removeResult->GetError();
     return 0;
@@ -284,10 +308,11 @@ int64_t Database::add_event_client(const int64_t &event_id,
     return 0;
   }
 
-  auto result = conn.Query(constance::kInsertEventClientQuery,
-                           client_id, event_id);
+  auto result = executePrepared(
+      conn, constance::kInsertEventClientQuery,
+      {duckdb::Value::BIGINT(client_id), duckdb::Value::BIGINT(event_id)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to link event_id=" << event_id
                << " and client_id=" << client_id << ": " << result->GetError();
     return 0;
@@ -335,12 +360,13 @@ bool Database::has_conflict(const DuckEvent &event) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kHasConflictQuery,
-                           event.id,
-                           db_utils::toDuckTimestamp(event.end_date.value() * 1000),
-                           db_utils::toDuckTimestamp(event.start_date.value() * 1000));
+  auto result = executePrepared(
+      conn, constance::kHasConflictQuery,
+      {duckdb::Value::BIGINT(event.id),
+       db_utils::toDuckTimestamp(event.end_date.value() * 1000),
+       db_utils::toDuckTimestamp(event.start_date.value() * 1000)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Conflict check failed: " << result->GetError();
     return false;
   }
@@ -357,12 +383,12 @@ Database::get_day_events(const int64_t &start_ms, const int64_t &end_ms) {
              << "] range_micros=[" << start_day << ", " << end_day << "]";
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(
-      constance::kSelectDayEventsQuery,
-      db_utils::toDuckTimestamp(std::make_optional(end_day)),
-      db_utils::toDuckTimestamp(std::make_optional(start_day)));
+  auto result = executePrepared(
+      conn, constance::kSelectDayEventsQuery,
+      {db_utils::toDuckTimestamp(std::make_optional(end_day)),
+       db_utils::toDuckTimestamp(std::make_optional(start_day))});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to get day events: " << result->GetError();
     return {};
   }
@@ -388,10 +414,11 @@ Database::get_client_monthly_stats(const int64_t &client_id, const int months_ba
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kSelectClientMonthlyStatsQuery,
-                           client_id, months_back);
+  auto result = executePrepared(
+      conn, constance::kSelectClientMonthlyStatsQuery,
+      {duckdb::Value::BIGINT(client_id), duckdb::Value::INTEGER(months_back)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to get monthly stats for client " << client_id << ": "
                << result->GetError();
     return {};
@@ -443,10 +470,11 @@ Database::get_dashboard_monthly_stats(const int months_back) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kSelectDashboardMonthlyStatsQuery,
-                           months_back);
+  auto result = executePrepared(
+      conn, constance::kSelectDashboardMonthlyStatsQuery,
+      {duckdb::Value::INTEGER(months_back)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to get dashboard monthly stats: " << result->GetError();
     return {};
   }
@@ -470,10 +498,10 @@ Database::get_dashboard_monthly_stats(const int months_back) {
 
 DuckClient Database::get_client_by_event(const int64_t &event_id) {
   duckdb::Connection conn(*mDb);
-  auto result = conn.Query(constance::kSelectClientByEventQuery,
-                           event_id);
+  auto result = executePrepared(
+      conn, constance::kSelectClientByEventQuery, {duckdb::Value::BIGINT(event_id)});
 
-  if (result->HasError()) {
+  if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to get client for event " << event_id << ": "
                << result->GetError();
     throw std::runtime_error("Client not found for event: " +
