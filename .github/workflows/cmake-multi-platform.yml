@@ -130,6 +130,19 @@ jobs:
             ${{ github.workspace }}/build-release/vcpkg_installed
           key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
 
+      - name: Prepare vcpkg cache directories
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
+          mkdir -p "${VCPKG_DOWNLOADS}"
+
+      - name: Prepare vcpkg cache directories (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DOWNLOADS | Out-Null
+
       - name: Bootstrap vcpkg (Linux)
         if: runner.os != 'Windows'
         run: |
