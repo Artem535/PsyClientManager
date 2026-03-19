@@ -29,6 +29,12 @@ jobs:
             qt_version: 6.10.2
             artifact_name: PsyClientManager-linux-appimage
             qt_component: qt.qt6.6102.linux_gcc_64
+          - os: macos-latest
+            qt_version: 6.10.2
+            qt_arch: clang_64
+            artifact_name: PsyClientManager-macos-dmg
+            qt_host: mac
+            qt_target: desktop
           - os: windows-latest
             qt_version: 6.10.2
             qt_arch: win64_msvc2022_64
@@ -92,7 +98,7 @@ jobs:
           key: ${{ runner.os }}-qt-${{ matrix.qt_version }}-gcc_64
 
       - name: Install Qt (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' || runner.os == 'macOS'
         uses: jurplel/install-qt-action@v4
         with:
           aqtversion: '==3.3.*'
@@ -107,6 +113,13 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      - name: Export Qt environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "Qt6_DIR=${QT_ROOT_DIR}/lib/cmake/Qt6" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${QT_ROOT_DIR}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
+          echo "${QT_ROOT_DIR}/bin" >> "$GITHUB_PATH"
 
       - name: Install Qt (Linux official installer)
         if: runner.os == 'Linux' && steps.cache-qt-linux.outputs.cache-hit != 'true'
@@ -302,6 +315,21 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: build-release/packages/*
+          if-no-files-found: error
+
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p build-release/packages
+          macdeployqt build-release/PsyClientManager.app -dmg
+          mv build-release/*.dmg build-release/packages/
+
+      - name: Upload macOS package
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: build-release/packages/*.dmg
           if-no-files-found: error
 
       - name: Upload Windows installer
