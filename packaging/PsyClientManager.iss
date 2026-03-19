@@ -27,6 +27,7 @@ OutputBaseFilename=PsyClientManager-windows-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=resources\icons\PsyClientManager.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]

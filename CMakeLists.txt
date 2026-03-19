@@ -97,9 +97,23 @@ if(PCM_BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
+set(PCM_APP_SOURCES
+    src/main.cpp
+    resources/themes.qrc
+)
+
+if(WIN32)
+  set(PCM_APP_ICON_PATH "${CMAKE_SOURCE_DIR}/resources/icons/PsyClientManager.ico")
+  configure_file(
+      "${CMAKE_SOURCE_DIR}/packaging/windows/app_icon.rc.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc"
+      @ONLY
+  )
+  list(APPEND PCM_APP_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc")
+endif()
+
 # Add the main executable
-qt_add_executable(PsyClientManager src/main.cpp
-        resources/themes.qrc)
+qt_add_executable(PsyClientManager ${PCM_APP_SOURCES})
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
