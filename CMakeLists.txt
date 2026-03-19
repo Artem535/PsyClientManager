@@ -114,6 +114,9 @@ endif()
 
 # Add the main executable
 qt_add_executable(PsyClientManager ${PCM_APP_SOURCES})
+set_target_properties(PsyClientManager PROPERTIES
+    WIN32_EXECUTABLE TRUE
+)
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
