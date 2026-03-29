@@ -71,6 +71,10 @@ public:
   bool has_conflict(const DuckEvent &event);
   std::vector<DuckEvent> get_day_events(const int64_t &start_ms,
                                        const int64_t &end_ms);
+  std::vector<DuckEvent> get_upcoming_events(const int64_t &start_ms,
+                                             const int64_t &end_ms);
+  bool mark_event_reminder_notified(const int64_t &event_id,
+                                    const int64_t &notified_at_ms);
   std::vector<ClientMonthlyStats> get_client_monthly_stats(const int64_t &client_id,
                                                            int months_back = 6);
   DashboardSummary get_dashboard_summary();

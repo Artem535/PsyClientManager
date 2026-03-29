@@ -105,6 +105,26 @@ void SettingsDialog::setupUi() {
   databaseLayout->addWidget(mOpenDatabaseFolderButton, 0, Qt::AlignLeft);
   rootLayout->addWidget(databaseBox);
 
+  auto *notificationsBox = new QGroupBox(tr("Notifications"), this);
+  auto *notificationsLayout = new QVBoxLayout(notificationsBox);
+  notificationsLayout->setContentsMargins(16, 16, 16, 16);
+  notificationsLayout->setSpacing(14);
+  mNotificationsEnabledSwitch = new oclero::qlementine::Switch(notificationsBox);
+  mNotificationLeadMinutesSpinBox = new QSpinBox(notificationsBox);
+  mNotificationLeadMinutesSpinBox->setMinimum(1);
+  mNotificationLeadMinutesSpinBox->setMaximum(24 * 60);
+  mNotificationLeadMinutesSpinBox->setSingleStep(5);
+  mNotificationLeadMinutesSpinBox->setSuffix(tr(" min"));
+  notificationsLayout->addWidget(
+      makeSettingRow(tr("Session reminders"),
+                     tr("Show a desktop notification before a scheduled session starts."),
+                     mNotificationsEnabledSwitch, notificationsBox));
+  notificationsLayout->addWidget(
+      makeSettingRow(tr("Notify before start"),
+                     tr("How many minutes before the session the reminder should appear."),
+                     mNotificationLeadMinutesSpinBox, notificationsBox));
+  rootLayout->addWidget(notificationsBox);
+
   auto *eventsBox = new QGroupBox(tr("Timeline colors"), this);
   auto *eventsLayout = new QVBoxLayout(eventsBox);
   eventsLayout->setContentsMargins(16, 16, 16, 16);
@@ -168,6 +188,11 @@ void SettingsDialog::loadSettings() const {
   mLanguageCombo->setCurrentIndex(languageIndex >= 0 ? languageIndex : 0);
   mDatabasePathLabel->setText(
       QString::fromStdString(mConfig.db_conf.value_.db_pth.toString()));
+  mNotificationsEnabledSwitch->setChecked(pcm::app_settings::notificationsEnabled());
+  mNotificationLeadMinutesSpinBox->setValue(
+      pcm::app_settings::notificationLeadMinutes());
+  mNotificationLeadMinutesSpinBox->setEnabled(
+      mNotificationsEnabledSwitch->isChecked());
   mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
   mWorkDayStartEdit->setTime(pcm::app_settings::workDayStart());
   mWorkDayEndEdit->setTime(pcm::app_settings::workDayEnd());
@@ -185,6 +210,15 @@ void SettingsDialog::connectSignals() const {
   });
   connect(mOpenDatabaseFolderButton, &QPushButton::clicked, this,
           &SettingsDialog::openDatabaseFolder);
+  connect(mNotificationsEnabledSwitch, &QAbstractButton::toggled, this,
+          [this](const bool checked) {
+            pcm::app_settings::setNotificationsEnabled(checked);
+            mNotificationLeadMinutesSpinBox->setEnabled(checked);
+          });
+  connect(mNotificationLeadMinutesSpinBox, &QSpinBox::valueChanged, this,
+          [](const int minutes) {
+            pcm::app_settings::setNotificationLeadMinutes(minutes);
+          });
   connect(mPreventOverlapsSwitch, &QAbstractButton::toggled, this,
           [](const bool checked) {
             pcm::app_settings::setPreventEventOverlaps(checked);

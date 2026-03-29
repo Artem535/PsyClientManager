@@ -11,6 +11,14 @@
 
 Q_LOGGING_CATEGORY(logEventDetails, "pcm.EventDetails")
 
+namespace {
+constexpr int64_t kPaymentPendingId = 1;
+constexpr int64_t kPaymentPaidId = 2;
+constexpr int64_t kPaymentCanceledId = 3;
+constexpr int64_t kPaymentRefundedId = 4;
+constexpr int64_t kPaymentSkippedId = 5;
+}
+
 QEventDetailsWidget::QEventDetailsWidget(QWidget *parent)
     : QWidget(parent), mUI(std::make_unique<Ui::EventDetails>()) {
   mUI->setupUi(this);
@@ -36,6 +44,16 @@ void QEventDetailsWidget::initUi() {
   mUI->mCostSpinBox->setMaximum(1'000'000.0);
   mUI->mCostSpinBox->setSingleStep(100.0);
   mUI->mCostSpinBox->setSuffix(tr(" ₽"));
+  mUI->mPaymentStatusComboBox->addItem(tr("Pending"),
+                                       QVariant::fromValue(kPaymentPendingId));
+  mUI->mPaymentStatusComboBox->addItem(tr("Paid"),
+                                       QVariant::fromValue(kPaymentPaidId));
+  mUI->mPaymentStatusComboBox->addItem(tr("Canceled"),
+                                       QVariant::fromValue(kPaymentCanceledId));
+  mUI->mPaymentStatusComboBox->addItem(tr("Refunded"),
+                                       QVariant::fromValue(kPaymentRefundedId));
+  mUI->mPaymentStatusComboBox->addItem(tr("Skipped"),
+                                       QVariant::fromValue(kPaymentSkippedId));
 
   mEventTypeSwitch = new oclero::qlementine::Switch(this);
   mEventTypeSwitch->setText(mUI->mEventType->text());
@@ -80,6 +98,8 @@ void QEventDetailsWidget::initDefaultStyle() {
   mUI->mClientComboxBoxLabel->setVisible(isVisible);
   mUI->mCostLabel->setVisible(isVisible);
   mUI->mCostSpinBox->setVisible(isVisible);
+  mUI->mPaymentStatusLabel->setVisible(isVisible);
+  mUI->mPaymentStatusComboBox->setVisible(isVisible);
   mEventTypeSwitch->setEnabled(false);
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
@@ -135,6 +155,12 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   mEventTypeSwitch->setChecked(isWorkItem);
   mUI->mCostSpinBox->setValue(
       event->cost().value_or(pcm::app_settings::defaultWorkEventCost()));
+  const auto paymentStatusData = QVariant::fromValue(event->paymentStatusId());
+  if (const int paymentIndex =
+          mUI->mPaymentStatusComboBox->findData(paymentStatusData);
+      paymentIndex != -1) {
+    mUI->mPaymentStatusComboBox->setCurrentIndex(paymentIndex);
+  }
 
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
@@ -188,6 +214,8 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date,
     mUI->mTimeTo->setTime(startTime->addSecs(duration * 60));
   }
   mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
+  mUI->mPaymentStatusComboBox->setCurrentIndex(
+      mUI->mPaymentStatusComboBox->findData(QVariant::fromValue(kPaymentPendingId)));
   initEditStyle();
 }
 
@@ -256,6 +284,10 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setCost(mEventTypeSwitch->isChecked()
                                ? std::make_optional(mUI->mCostSpinBox->value())
                                : std::nullopt);
+    mCurrentEvent->setPaymentStatusId(
+        mEventTypeSwitch->isChecked()
+            ? mUI->mPaymentStatusComboBox->currentData().toLongLong()
+            : kPaymentSkippedId);
   }
 
   if (mCurrentEvent) {
@@ -321,8 +353,23 @@ void QEventDetailsWidget::onEventTypeToggled(bool checked) {
   mUI->mClientComboxBoxLabel->setVisible(checked);
   mUI->mCostLabel->setVisible(checked);
   mUI->mCostSpinBox->setVisible(checked);
+  mUI->mPaymentStatusLabel->setVisible(checked);
+  mUI->mPaymentStatusComboBox->setVisible(checked);
   if (checked && mCreatingNewEvent && mUI->mCostSpinBox->value() <= 0.0) {
     mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
+  }
+  if (!checked) {
+    const auto skippedIndex =
+        mUI->mPaymentStatusComboBox->findData(QVariant::fromValue(kPaymentSkippedId));
+    if (skippedIndex != -1) {
+      mUI->mPaymentStatusComboBox->setCurrentIndex(skippedIndex);
+    }
+  } else if (mUI->mPaymentStatusComboBox->currentData().toLongLong() == kPaymentSkippedId) {
+    const auto pendingIndex =
+        mUI->mPaymentStatusComboBox->findData(QVariant::fromValue(kPaymentPendingId));
+    if (pendingIndex != -1) {
+      mUI->mPaymentStatusComboBox->setCurrentIndex(pendingIndex);
+    }
   }
 }
 
@@ -380,5 +427,8 @@ DuckEvent QEventDetailsWidget::collectEventData() const {
   event.duration = (event.end_date.value_or(0) - event.start_date.value_or(0)) / 1000; // in seconds
   event.cost = event.is_work_event ? std::make_optional(mUI->mCostSpinBox->value())
                                    : std::nullopt;
+  event.payment_stat_id =
+      event.is_work_event ? mUI->mPaymentStatusComboBox->currentData().toLongLong()
+                          : kPaymentSkippedId;
   return event;
 }

@@ -33,6 +33,8 @@ private:
   QComboBox *mLanguageCombo{nullptr};
   QLabel *mDatabasePathLabel{nullptr};
   QPushButton *mOpenDatabaseFolderButton{nullptr};
+  oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};
+  QSpinBox *mNotificationLeadMinutesSpinBox{nullptr};
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};

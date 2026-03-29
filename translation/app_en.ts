@@ -349,6 +349,11 @@
         <translation>Cost</translation>
     </message>
     <message>
+        <location filename="../ui/pages/eventdetails.ui" line="131"/>
+        <source>Payment status</source>
+        <translation>Payment status</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/eventdetails.ui" line="184"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Add</translation>
@@ -634,6 +639,31 @@
         <translation> ₽</translation>
     </message>
     <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="47"/>
+        <source>Pending</source>
+        <translation>Pending</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="49"/>
+        <source>Paid</source>
+        <translation>Paid</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="51"/>
+        <source>Canceled</source>
+        <translation>Canceled</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="53"/>
+        <source>Refunded</source>
+        <translation>Refunded</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="55"/>
+        <source>Skipped</source>
+        <translation>Skipped</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
         <source>The selected time range overlaps an existing event.</source>
         <translation>The selected time range overlaps an existing event.</translation>
@@ -680,6 +710,31 @@
 </context>
 <context>
     <name>QEventItem</name>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="29"/>
+        <source>Paid</source>
+        <translation>Paid</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="31"/>
+        <source>Canceled</source>
+        <translation>Canceled</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="33"/>
+        <source>Refunded</source>
+        <translation>Refunded</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="35"/>
+        <source>Skipped</source>
+        <translation>Skipped</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="38"/>
+        <source>Pending</source>
+        <translation>Pending</translation>
+    </message>
     <message>
         <location filename="../src/event_view/event_item.cpp" line="259"/>
         <source>: EVENT_CONTEXT_EDIT</source>
@@ -755,6 +810,31 @@
         <location filename="../src/app/settings_dialog.cpp" line="100"/>
         <source>Open folder</source>
         <translation>Open folder</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="103"/>
+        <source>Notifications</source>
+        <translation>Notifications</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="112"/>
+        <source>Session reminders</source>
+        <translation>Session reminders</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="113"/>
+        <source>Show a desktop notification before a scheduled session starts.</source>
+        <translation>Show a desktop notification before a scheduled session starts.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="116"/>
+        <source>Notify before start</source>
+        <translation>Notify before start</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="117"/>
+        <source>How many minutes before the session the reminder should appear.</source>
+        <translation>How many minutes before the session the reminder should appear.</translation>
     </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="106"/>
@@ -859,10 +939,50 @@
 <context>
     <name>pcm::Application</name>
     <message>
+        <location filename="../src/app/application.cpp" line="91"/>
+        <source>PsyClientManager</source>
+        <translation>PsyClientManager</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="92"/>
+        <source>The app is still running in the system tray.</source>
+        <translation>The app is still running in the system tray.</translation>
+    </message>
+    <message>
         <location filename="../src/app/application.cpp" line="104"/>
         <location filename="../src/app/application.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="164"/>
+        <source>Upcoming session</source>
+        <translation>Upcoming session</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="181"/>
+        <source>Client: %1</source>
+        <translation>Client: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="187"/>
+        <source>Session</source>
+        <translation>Session</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="187"/>
+        <source>%1 at %2</source>
+        <translation>%1 at %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="198"/>
+        <source>Open</source>
+        <translation>Open</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="199"/>
+        <source>Quit</source>
+        <translation>Quit</translation>
     </message>
 </context>
 </TS>
