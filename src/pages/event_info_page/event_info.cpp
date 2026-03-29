@@ -98,7 +98,7 @@ void QEventInfoPage::updateCalendarHighlights() const {
   mCalendarWidget->setDateTextFormat(QDate::currentDate(), currentDayFormat);
 }
 
-void QEventInfoPage::onCreateEventClicked() { openEventDialog(nullptr); }
+void QEventInfoPage::onCreateEventClicked() { openEventDialog(std::nullopt); }
 
 void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
                                           const int durationMinutes) {
@@ -140,11 +140,11 @@ void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
   mActiveEventDetailsWidget.clear();
 }
 
-void QEventInfoPage::openEventDialog(QEventItem *event,
+void QEventInfoPage::openEventDialog(const std::optional<DuckEvent> &event,
                                      const std::optional<int64_t> clientId) {
   auto dialog = QDialog(this);
   dialog.setModal(true);
-  dialog.setWindowTitle(event ? tr(": EVENT_EDIT_BUTTON")
+  dialog.setWindowTitle(event.has_value() ? tr(": EVENT_EDIT_BUTTON")
                               : tr(": EVENT_ADD_BUTTON"));
 
   auto layout = QVBoxLayout(&dialog);
@@ -173,8 +173,10 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
             emit provideFillClientComboBox(comboBox);
           });
 
-  if (event) {
-    detailsWidget->startEditingEvent(event, clientId);
+  std::unique_ptr<QEventItem> editingEvent;
+  if (event.has_value()) {
+    editingEvent = std::make_unique<QEventItem>(*event);
+    detailsWidget->startEditingEvent(editingEvent.get(), clientId);
   } else {
     detailsWidget->startCreatingNewEvent(mSelectedDate);
   }
@@ -185,12 +187,12 @@ void QEventInfoPage::openEventDialog(QEventItem *event,
   mActiveEventDetailsWidget.clear();
 }
 
-void QEventInfoPage::onTimelineEventSelected(QEventItem *event) {
-  editEventWithDialog(event);
+void QEventInfoPage::onTimelineEventSelected(const int64_t eventId) {
+  editEventWithDialog(eventId);
 }
 
-void QEventInfoPage::onTimelineEventEditRequested(QEventItem *event) {
-  editEventWithDialog(event);
+void QEventInfoPage::onTimelineEventEditRequested(const int64_t eventId) {
+  editEventWithDialog(eventId);
 }
 
 void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
@@ -210,15 +212,17 @@ void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
   refreshQuickSlots();
 }
 
-void QEventInfoPage::editEventWithDialog(QEventItem *event) {
-  if (!event)
+void QEventInfoPage::editEventWithDialog(const int64_t eventId) {
+  const auto event = mTimelineWidget ? mTimelineWidget->eventById(eventId) : std::nullopt;
+  if (!event.has_value()) {
     return;
+  }
 
-  qCDebug(logEventInfo) << "Selected event with ID:" << event->getId();
+  qCDebug(logEventInfo) << "Selected event with ID:" << eventId;
 
   std::optional<int64_t> clientId{std::nullopt};
-  if (event->isWorkItem()) {
-    emit provideClientByEventId(event->getId());
+  if (event->is_work_event) {
+    emit provideClientByEventId(eventId);
     clientId = mClientId;
   }
 
@@ -250,9 +254,9 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
         eventDetails, !pcm::app_settings::preventEventOverlaps());
   }
 
-  if (eventDetails.is_work_event && selectedClientId > 0 && eventDetails.id > 0) {
+  if (eventDetails.id > 0) {
     emit provideClientEventPairSave(selectedClientId, eventDetails.id);
-    event->setClientName(selectedClientName);
+    event->setClientName(eventDetails.is_work_event ? selectedClientName : QString{});
   }
 
   // Force reload from DB to avoid stale UI state.

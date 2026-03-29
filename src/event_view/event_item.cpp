@@ -9,12 +9,34 @@
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
 namespace {
+constexpr int64_t kPaymentPendingId = 1;
+constexpr int64_t kPaymentPaidId = 2;
+constexpr int64_t kPaymentCanceledId = 3;
+constexpr int64_t kPaymentRefundedId = 4;
+constexpr int64_t kPaymentSkippedId = 5;
+
 QString formatEventCost(const std::optional<double>& cost) {
   if (!cost.has_value()) {
     return {};
   }
 
   return QLocale(QLocale::Russian).toString(*cost, 'f', 0) + QStringLiteral(" ₽");
+}
+
+QString paymentStatusLabel(const int64_t paymentStatusId) {
+  switch (paymentStatusId) {
+  case kPaymentPaidId:
+    return QEventItem::tr("Paid");
+  case kPaymentCanceledId:
+    return QEventItem::tr("Canceled");
+  case kPaymentRefundedId:
+    return QEventItem::tr("Refunded");
+  case kPaymentSkippedId:
+    return QEventItem::tr("Skipped");
+  case kPaymentPendingId:
+  default:
+    return QEventItem::tr("Pending");
+  }
 }
 } // namespace
 
@@ -42,6 +64,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mTitle = QString::fromStdString(event.name.value_or(""));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
+  mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -69,6 +92,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mTitle = QString::fromStdString(event.name.value_or("Undefined"));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
+  mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -98,6 +122,7 @@ DuckEvent QEventItem::toEvent() const {
   event.end_date = mEndTime.toUTC().toMSecsSinceEpoch();
   event.duration = mDuration;
   event.cost = mCost;
+  event.payment_stat_id = mIsWorkItem ? mPaymentStatusId : kPaymentSkippedId;
   return event;
 }
 
@@ -130,6 +155,7 @@ QDateTime QEventItem::getEndTime() const { return mEndTime; }
 QString QEventItem::getTitle() const { return mTitle; }
 QString QEventItem::getClientName() const { return mClientName; }
 std::optional<double> QEventItem::cost() const { return mCost; }
+int64_t QEventItem::paymentStatusId() const { return mPaymentStatusId; }
 unsigned long QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
@@ -151,6 +177,15 @@ void QEventItem::setCost(std::optional<double> cost) {
   if (mCost == cost)
     return;
   mCost = std::move(cost);
+  update();
+}
+
+void QEventItem::setPaymentStatusId(const int64_t paymentStatusId) {
+  const auto normalizedId = paymentStatusId > 0 ? paymentStatusId : kPaymentPendingId;
+  if (mPaymentStatusId == normalizedId) {
+    return;
+  }
+  mPaymentStatusId = normalizedId;
   update();
 }
 
@@ -243,9 +278,13 @@ QVariant QEventItem::itemChange(const GraphicsItemChange change,
 
 void QEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
   if (event && event->button() == Qt::LeftButton) {
-    emit itemSelected();
+    const auto eventTitle = mTitle;
+    setSelected(true);
     qCInfo(logPcmEventItem) << "EventItem::mousePressEvent| Item selected:"
-                            << mTitle;
+                            << eventTitle;
+    emit itemSelected();
+    event->accept();
+    return;
   }
   QGraphicsObject::mousePressEvent(event);
 }
@@ -386,6 +425,7 @@ void QEventItem::paint(QPainter *painter,
 
     appendEntry(userPixmap, mClientName, secondaryFont);
     appendEntry(coinsPixmap, costText, secondaryFont);
+    appendEntry(coinsPixmap, paymentStatusLabel(mPaymentStatusId), secondaryFont);
 
     const qreal maxWidth = right - left;
     std::vector<int> rowStarts{0};

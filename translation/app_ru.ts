@@ -349,6 +349,11 @@
         <translation>Стоимость</translation>
     </message>
     <message>
+        <location filename="../ui/pages/eventdetails.ui" line="131"/>
+        <source>Payment status</source>
+        <translation>Статус оплаты</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/eventdetails.ui" line="184"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Добавить</translation>
@@ -628,6 +633,31 @@
         <translation> ₽</translation>
     </message>
     <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="47"/>
+        <source>Pending</source>
+        <translation>Не оплачено</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="49"/>
+        <source>Paid</source>
+        <translation>Оплачено</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="51"/>
+        <source>Canceled</source>
+        <translation>Отменено</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="53"/>
+        <source>Refunded</source>
+        <translation>Возврат</translation>
+    </message>
+    <message>
+        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="55"/>
+        <source>Skipped</source>
+        <translation>Без оплаты</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
         <source>The selected time range overlaps an existing event.</source>
         <translation>Выбранный интервал времени пересекается с существующим событием.</translation>
@@ -674,6 +704,31 @@
 </context>
 <context>
     <name>QEventItem</name>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="29"/>
+        <source>Paid</source>
+        <translation>Оплачено</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="31"/>
+        <source>Canceled</source>
+        <translation>Отменено</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="33"/>
+        <source>Refunded</source>
+        <translation>Возврат</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="35"/>
+        <source>Skipped</source>
+        <translation>Без оплаты</translation>
+    </message>
+    <message>
+        <location filename="../src/event_view/event_item.cpp" line="38"/>
+        <source>Pending</source>
+        <translation>Не оплачено</translation>
+    </message>
     <message>
         <location filename="../src/event_view/event_item.cpp" line="259"/>
         <source>: EVENT_CONTEXT_EDIT</source>
@@ -749,6 +804,31 @@
         <location filename="../src/app/settings_dialog.cpp" line="100"/>
         <source>Open folder</source>
         <translation>Открыть папку</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="103"/>
+        <source>Notifications</source>
+        <translation>Уведомления</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="112"/>
+        <source>Session reminders</source>
+        <translation>Напоминания о сеансах</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="113"/>
+        <source>Show a desktop notification before a scheduled session starts.</source>
+        <translation>Показывать системное уведомление перед началом запланированного сеанса.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="116"/>
+        <source>Notify before start</source>
+        <translation>Напомнить до начала</translation>
+    </message>
+    <message>
+        <location filename="../src/app/settings_dialog.cpp" line="117"/>
+        <source>How many minutes before the session the reminder should appear.</source>
+        <translation>За сколько минут до сеанса нужно показать напоминание.</translation>
     </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="106"/>
@@ -853,10 +933,50 @@
 <context>
     <name>pcm::Application</name>
     <message>
+        <location filename="../src/app/application.cpp" line="91"/>
+        <source>PsyClientManager</source>
+        <translation>PsyClientManager</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="92"/>
+        <source>The app is still running in the system tray.</source>
+        <translation>Приложение продолжает работать в системном трее.</translation>
+    </message>
+    <message>
         <location filename="../src/app/application.cpp" line="104"/>
         <location filename="../src/app/application.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Не указано</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="164"/>
+        <source>Upcoming session</source>
+        <translation>Предстоящий сеанс</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="181"/>
+        <source>Client: %1</source>
+        <translation>Клиент: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="187"/>
+        <source>Session</source>
+        <translation>Сеанс</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="187"/>
+        <source>%1 at %2</source>
+        <translation>%1 в %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="198"/>
+        <source>Open</source>
+        <translation>Открыть</translation>
+    </message>
+    <message>
+        <location filename="../src/app/application.cpp" line="199"/>
+        <source>Quit</source>
+        <translation>Выйти</translation>
     </message>
 </context>
 </TS>

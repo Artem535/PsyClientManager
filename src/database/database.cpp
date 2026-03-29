@@ -111,6 +111,32 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
   }
 
   duckdb::Connection conn(*mDb);
+  std::vector<int64_t> linkedClientIds;
+  auto linkedClientsResult = executePrepared(
+      conn, constance::kSelectClientIdsByEventIdQuery,
+      {duckdb::Value::BIGINT(event.id)});
+  if (!linkedClientsResult || linkedClientsResult->HasError()) {
+    PLOG_ERROR << "Failed to fetch EventClient links for event (id=" << event.id
+               << "): " << linkedClientsResult->GetError();
+    return false;
+  }
+
+  while (auto chunk = linkedClientsResult->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      linkedClientIds.push_back(
+          static_cast<int64_t>(chunk->GetValue(0, i).GetValue<int32_t>()));
+    }
+  }
+
+  auto unlinkResult = executePrepared(
+      conn, constance::kDeleteEventClientByEventIdQuery,
+      {duckdb::Value::BIGINT(event.id)});
+  if (!unlinkResult || unlinkResult->HasError()) {
+    PLOG_ERROR << "Failed to unlink clients before event update (id="
+               << event.id << "): " << unlinkResult->GetError();
+    return false;
+  }
+
   auto result = executePrepared(
       conn, constance::kUpdateEventQuery,
       {db_utils::toDuckValue(event.name),
@@ -125,6 +151,16 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
+    for (const auto clientId : linkedClientIds) {
+      auto restoreResult = executePrepared(
+          conn, constance::kInsertEventClientQuery,
+          {duckdb::Value::BIGINT(clientId), duckdb::Value::BIGINT(event.id)});
+      if (!restoreResult || restoreResult->HasError()) {
+        PLOG_ERROR << "Failed to restore EventClient link for event (id="
+                   << event.id << ", client_id=" << clientId
+                   << "): " << restoreResult->GetError();
+      }
+    }
     PLOG_ERROR << "Failed to update event (id=" << event.id
                << "): " << result->GetError();
     return false;
@@ -604,6 +640,54 @@ Database::get_day_events(const int64_t &start_ms, const int64_t &end_ms) {
   }
   PLOG_DEBUG << "get_day_events loaded count=" << events.size();
   return events;
+}
+
+std::vector<DuckEvent>
+Database::get_upcoming_events(const int64_t &start_ms, const int64_t &end_ms) {
+  if (end_ms < start_ms) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectUpcomingEventsQuery,
+      {db_utils::toDuckTimestamp(std::make_optional(start_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(end_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get upcoming events: " << result->GetError();
+    return {};
+  }
+
+  std::vector<DuckEvent> events;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      events.emplace_back(*chunk, i);
+    }
+  }
+
+  return events;
+}
+
+bool Database::mark_event_reminder_notified(const int64_t &event_id,
+                                            const int64_t &notified_at_ms) {
+  if (event_id <= 0 || notified_at_ms <= 0) {
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kMarkEventReminderNotifiedQuery,
+      {duckdb::Value::BIGINT(event_id),
+       db_utils::toDuckTimestamp(std::make_optional(notified_at_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to mark reminder as notified for event " << event_id
+               << ": " << result->GetError();
+    return false;
+  }
+
+  return true;
 }
 
 std::vector<ClientMonthlyStats>

@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS Event (
     start_date TIMESTAMP,
     end_date TIMESTAMP,
     duration INTEGER,
-    cost DOUBLE
+    cost DOUBLE,
+    reminder_notified_at TIMESTAMP
 );
 
 -- Many-to-many relationship between clients and events
@@ -76,6 +77,7 @@ CREATE TABLE IF NOT EXISTS ClientNoteAttachment (
 
 constexpr auto kSchemaMigrations = R"duckdb(
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS cost DOUBLE;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS reminder_notified_at TIMESTAMP;
 )duckdb";
 
 constexpr auto kInsertEventQuery = R"duckdb(
@@ -102,7 +104,11 @@ SET name = $1,
     start_date = $6,
     end_date = $7,
     duration = $8,
-    cost = $9
+    cost = $9,
+    reminder_notified_at = CASE
+        WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
+        ELSE reminder_notified_at
+    END
 WHERE id = $10
 )duckdb";
 
@@ -110,6 +116,8 @@ constexpr auto kDeleteEventClientByEventIdQuery =
     "DELETE FROM EventClient WHERE event_id = $1";
 constexpr auto kDeleteEventByIdQuery = "DELETE FROM Event WHERE id = $1";
 constexpr auto kSelectEventByIdQuery = "SELECT * FROM Event WHERE id = $1";
+constexpr auto kSelectClientIdsByEventIdQuery =
+    "SELECT client_id FROM EventClient WHERE event_id = $1 ORDER BY id";
 
 constexpr auto kInsertClientQuery = R"duckdb(
 INSERT INTO Client (
@@ -202,6 +210,22 @@ SELECT * FROM Event
 WHERE start_date <= $1 AND end_date >= $2
 )duckdb";
 
+constexpr auto kSelectUpcomingEventsQuery = R"duckdb(
+SELECT * FROM Event
+WHERE start_date IS NOT NULL
+  AND start_date >= $1
+  AND start_date <= $2
+  AND event_stat_id != 3
+  AND reminder_notified_at IS NULL
+ORDER BY start_date ASC
+)duckdb";
+
+constexpr auto kMarkEventReminderNotifiedQuery = R"duckdb(
+UPDATE Event
+SET reminder_notified_at = $2
+WHERE id = $1
+)duckdb";
+
 constexpr auto kSelectClientByEventQuery = R"duckdb(
 SELECT c.*
 FROM Client c
@@ -215,7 +239,10 @@ WITH event_stats AS (
         CAST(year(e.start_date) AS INTEGER) AS event_year,
         CAST(month(e.start_date) AS INTEGER) AS event_month,
         COUNT(*) AS sessions,
-        COALESCE(SUM(CASE WHEN e.is_work_event THEN COALESCE(e.cost, 0) ELSE 0 END), 0) AS income
+        COALESCE(SUM(CASE
+            WHEN e.is_work_event AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
+            ELSE 0
+        END), 0) AS income
     FROM Event e
     JOIN EventClient ec ON ec.event_id = e.id
     WHERE ec.client_id = $1
@@ -238,7 +265,10 @@ SELECT
     (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value) AS sessions_this_month,
     (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.is_work_event = TRUE) AS work_sessions_this_month,
     (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.is_work_event = FALSE) AS personal_sessions_this_month,
-    (SELECT COALESCE(SUM(CASE WHEN e.is_work_event THEN COALESCE(e.cost, 0) ELSE 0 END), 0)
+    (SELECT COALESCE(SUM(CASE
+         WHEN e.is_work_event AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
+         ELSE 0
+     END), 0)
      FROM Event e, month_start ms
      WHERE e.start_date >= ms.value) AS income_this_month
 )duckdb";
@@ -250,7 +280,10 @@ SELECT
     COUNT(*) AS sessions,
     COUNT(*) FILTER (WHERE e.is_work_event = TRUE) AS work_sessions,
     COUNT(*) FILTER (WHERE e.is_work_event = FALSE) AS personal_sessions,
-    COALESCE(SUM(CASE WHEN e.is_work_event THEN COALESCE(e.cost, 0) ELSE 0 END), 0) AS income
+    COALESCE(SUM(CASE
+        WHEN e.is_work_event AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
+        ELSE 0
+    END), 0) AS income
 FROM Event e
 WHERE e.start_date IS NOT NULL
   AND e.start_date >= date_trunc('month', current_timestamp) - (($1 - 1) * INTERVAL '1 month')

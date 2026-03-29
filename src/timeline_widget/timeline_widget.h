@@ -32,10 +32,11 @@ public slots:
     void removeEvent(int64_t id) const;
     [[nodiscard]] bool hasConflict(const DuckEvent &event) const;
     const QVector<DuckEvent> &events() const;
+    std::optional<DuckEvent> eventById(int64_t eventId) const;
 
 signals:
-    void eventSelected(QEventItem *event);
-    void eventEditRequested(QEventItem *event);
+    void eventSelected(int64_t eventId);
+    void eventEditRequested(int64_t eventId);
     void eventDeleteRequested(int64_t eventId);
 
     void needSceneUpdate();

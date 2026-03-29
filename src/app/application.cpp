@@ -2,7 +2,9 @@
 #include "../widgets/app_settings.h"
 
 #include <QLocale>
+#include <QMenu>
 #include <QStringList>
+#include <QTimeZone>
 #include <QTranslator>
 #include <QIcon>
 #include <oclero/qlementine.hpp>
@@ -11,16 +13,21 @@ Q_LOGGING_CATEGORY(logApplication, "pcm.Application")
 
 namespace pcm {
 
+namespace {
+constexpr int kNotificationPollIntervalMs = 30 * 1000;
+}
+
 Application::Application() {
   mDb = std::make_shared<database::Database>(mConf);
 }
 
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
+  app.setQuitOnLastWindowClosed(false);
   app.setOrganizationName("PsyClientManager");
   app.setApplicationName("PsyClientManager");
   app.setApplicationDisplayName("PsyClientManager");
-  app.setApplicationVersion("0.1.1");
+  app.setApplicationVersion("0.1.2");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);
@@ -77,12 +84,34 @@ int Application::run(int argc, char *argv[]) {
   mMainWindow->addClientCardPage(mDb);
   mMainWindow->addClientNotesPage(mDb);
   mMainWindow->connectSignals();
+  mMainWindow->installEventFilter(this);
   connectSignals();
+  initializeNotifications();
 
   mMainWindow->show();
 
   return app.exec();
 }
+
+bool Application::eventFilter(QObject *watched, QEvent *event) {
+  if (watched == mMainWindow.get() && event != nullptr &&
+      event->type() == QEvent::Close && !mIsQuitting) {
+    if (mTrayIcon) {
+      event->ignore();
+      mMainWindow->hide();
+      if (!mTrayCloseHintShown && QSystemTrayIcon::supportsMessages()) {
+        mTrayIcon->showMessage(tr("PsyClientManager"),
+                               tr("The app is still running in the system tray."),
+                               QSystemTrayIcon::Information, 5000);
+        mTrayCloseHintShown = true;
+      }
+      return true;
+    }
+  }
+
+  return QObject::eventFilter(watched, event);
+}
+
 void Application::saveClient(const DuckClient &client) {
   qCDebug(logApplication) << "Application::saveClient| Client id:" << client.id;
   if (client.id > 0) {
@@ -139,6 +168,114 @@ void Application::saveClientEventPair(const int64_t clientId,
                           << clientId << " Event id:" << eventId;
 
   mDb->add_event_client(eventId, clientId);
+}
+
+QString Application::notificationKey(const DuckEvent &event) const {
+  return QStringLiteral("%1:%2")
+      .arg(event.id)
+      .arg(event.start_date.value_or(0));
+}
+
+QString Application::notificationTitleForEvent(const DuckEvent &event) const {
+  return tr("Upcoming session");
+}
+
+QString Application::notificationBodyForEvent(const DuckEvent &event) const {
+  const auto startTime = QDateTime::fromMSecsSinceEpoch(
+                             event.start_date.value_or(0), QTimeZone::UTC)
+                             .toLocalTime();
+  const QString title = QString::fromStdString(event.name.value_or(""));
+  const QString timeText = QLocale().toString(startTime, "dd.MM.yyyy HH:mm");
+
+  QString clientText;
+  if (event.is_work_event) {
+    try {
+      const auto client = mDb->get_client_by_event(event.id);
+      const auto firstName = QString::fromStdString(client.name.value_or(""));
+      const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+      const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+      if (!fullName.isEmpty()) {
+        clientText = tr("Client: %1").arg(fullName);
+      }
+    } catch (const std::exception &) {
+    }
+  }
+
+  QString body = tr("%1 at %2").arg(title.isEmpty() ? tr("Session") : title, timeText);
+  if (!clientText.isEmpty()) {
+    body += QStringLiteral("\n") + clientText;
+  }
+  return body;
+}
+
+void Application::initializeNotifications() {
+  mTrayIcon =
+      std::make_unique<QSystemTrayIcon>(QIcon(":/icons/brain-solid-full.svg"));
+  mTrayIcon->setToolTip(QStringLiteral("PsyClientManager"));
+
+  auto *trayMenu = new QMenu();
+  auto *openAction = trayMenu->addAction(tr("Open"));
+  auto *quitAction = trayMenu->addAction(tr("Quit"));
+  connect(openAction, &QAction::triggered, this, &Application::restoreMainWindow);
+  connect(quitAction, &QAction::triggered, this, &Application::quitApplication);
+  mTrayIcon->setContextMenu(trayMenu);
+  connect(mTrayIcon.get(), &QSystemTrayIcon::activated, this,
+          [this](const QSystemTrayIcon::ActivationReason reason) {
+            if (reason == QSystemTrayIcon::Trigger ||
+                reason == QSystemTrayIcon::DoubleClick) {
+              restoreMainWindow();
+            }
+          });
+
+  mTrayIcon->show();
+
+  mNotificationTimer.setInterval(kNotificationPollIntervalMs);
+  connect(&mNotificationTimer, &QTimer::timeout, this,
+          &Application::checkUpcomingEventNotifications);
+  mNotificationTimer.start();
+
+  checkUpcomingEventNotifications();
+}
+
+void Application::restoreMainWindow() {
+  if (!mMainWindow) {
+    return;
+  }
+
+  mMainWindow->show();
+  mMainWindow->raise();
+  mMainWindow->activateWindow();
+}
+
+void Application::quitApplication() {
+  mIsQuitting = true;
+  if (mTrayIcon) {
+    mTrayIcon->hide();
+  }
+  QApplication::quit();
+}
+
+void Application::checkUpcomingEventNotifications() {
+  const auto now = QDateTime::currentDateTime();
+  const auto nowMs = now.toMSecsSinceEpoch();
+
+  if (!pcm::app_settings::notificationsEnabled()) {
+    return;
+  }
+
+  if (!mTrayIcon || !QSystemTrayIcon::supportsMessages()) {
+    return;
+  }
+
+  const auto leadMinutes = std::max(1, pcm::app_settings::notificationLeadMinutes());
+  const auto windowEndMs = now.addSecs(leadMinutes * 60).toMSecsSinceEpoch();
+  const auto events = mDb->get_upcoming_events(nowMs, windowEndMs);
+  for (const auto &event : events) {
+    mTrayIcon->showMessage(notificationTitleForEvent(event),
+                           notificationBodyForEvent(event),
+                           QSystemTrayIcon::Information, 15'000);
+    mDb->mark_event_reminder_notified(event.id, nowMs);
+  }
 }
 
 void Application::connectSignals() {

@@ -39,8 +39,8 @@ public slots:
 private slots:
   void onCalendarClicked(const QDate &date);
   void onCreateEventClicked();
-  void onTimelineEventSelected(QEventItem *event);
-  void onTimelineEventEditRequested(QEventItem *event);
+  void onTimelineEventSelected(int64_t eventId);
+  void onTimelineEventEditRequested(int64_t eventId);
   void onTimelineEventDeleteRequested(int64_t eventId);
   void onEventSaved(QEventItem *event);
   void onEditingCanceled();
@@ -49,10 +49,10 @@ private:
   void connectSignals();
   void initDefaultStates();
   void updateCalendarHighlights() const;
-  void openEventDialog(QEventItem *event,
+  void openEventDialog(const std::optional<DuckEvent> &event = std::nullopt,
                        std::optional<int64_t> clientId = std::nullopt);
   void openQuickEventDialog(const QTime &startTime, int durationMinutes);
-  void editEventWithDialog(QEventItem *event);
+  void editEventWithDialog(int64_t eventId);
   void refreshQuickSlots() const;
   [[nodiscard]] QVector<QPair<QDateTime, QDateTime>> currentBusyIntervals() const;
 

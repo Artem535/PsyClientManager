@@ -8,6 +8,8 @@ namespace {
 constexpr auto kConfirmEventDeletionKey = "event/confirmDeletion";
 constexpr auto kPreventEventOverlapsKey = "event/preventOverlaps";
 constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
+constexpr auto kNotificationsEnabledKey = "notification/enabled";
+constexpr auto kNotificationLeadMinutesKey = "notification/leadMinutes";
 constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
 constexpr auto kPersonalEventColorKey = "timeline/personalEventColor";
@@ -38,6 +40,10 @@ QTime defaultWorkDayEndValue() {
 
 int defaultSessionDurationMinutesValue() {
   return 60;
+}
+
+int defaultNotificationLeadMinutesValue() {
+  return 30;
 }
 } // namespace
 
@@ -71,6 +77,28 @@ bool showStatusBarMessages() {
 void setShowStatusBarMessages(const bool enabled) {
   QSettings settings;
   settings.setValue(kShowStatusBarMessagesKey, enabled);
+}
+
+bool notificationsEnabled() {
+  QSettings settings;
+  return settings.value(kNotificationsEnabledKey, true).toBool();
+}
+
+void setNotificationsEnabled(const bool enabled) {
+  QSettings settings;
+  settings.setValue(kNotificationsEnabledKey, enabled);
+}
+
+int notificationLeadMinutes() {
+  QSettings settings;
+  return settings.value(kNotificationLeadMinutesKey,
+                        defaultNotificationLeadMinutesValue())
+      .toInt();
+}
+
+void setNotificationLeadMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kNotificationLeadMinutesKey, minutes);
 }
 
 QString languageCode() {

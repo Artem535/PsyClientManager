@@ -21,8 +21,8 @@ public:
   void setModel(QTimelineModel *model);
 
 signals:
-  void eventSelected(QEventItem *item);
-  void eventEditRequested(QEventItem *item);
+  void eventSelected(int64_t eventId);
+  void eventEditRequested(int64_t eventId);
   void eventDeleteRequested(int64_t eventId);
 
 public slots:

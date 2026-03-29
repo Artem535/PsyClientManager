@@ -2,8 +2,10 @@
 #include "../widgets/constants.hpp"
 
 #include <QPainterPath>
+#include <QPointer>
 #include <QRegion>
 #include <QSet>
+#include <QTimer>
 
 #include "qtimeline_model.h"
 #include "schema.hpp"
@@ -250,17 +252,23 @@ void QEventView::updateSceneSize() {
 
 void QEventView::onEventSelected() {
   auto *item = qobject_cast<QEventItem *>(sender());
-  qCInfo(logEventView) << "EventDataManager::onEventSelected| "
-                       << item->getId();
   if (item != nullptr) {
-    emit eventSelected(item);
+    const auto eventId = static_cast<int64_t>(item->getId());
+    qCInfo(logEventView) << "EventDataManager::onEventSelected| "
+                         << eventId;
+    QTimer::singleShot(0, this, [this, eventId]() {
+      emit eventSelected(eventId);
+    });
   }
 }
 
 void QEventView::onEventEditRequested() {
   auto *item = qobject_cast<QEventItem *>(sender());
   if (item != nullptr) {
-    emit eventEditRequested(item);
+    const auto eventId = static_cast<int64_t>(item->getId());
+    QTimer::singleShot(0, this, [this, eventId]() {
+      emit eventEditRequested(eventId);
+    });
   }
 }
 

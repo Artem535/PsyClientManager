@@ -76,3 +76,21 @@ const QVector<DuckEvent> &QTimelineWidget::events() const {
   static const QVector<DuckEvent> emptyEvents;
   return mModel ? mModel->events() : emptyEvents;
 }
+
+std::optional<DuckEvent> QTimelineWidget::eventById(const int64_t eventId) const {
+  if (!mModel) {
+    return std::nullopt;
+  }
+
+  const auto index = mModel->indexForEventId(eventId);
+  if (!index.isValid()) {
+    return std::nullopt;
+  }
+
+  const auto data = index.data(QTimelineModel::EventDataRole);
+  if (!data.canConvert<DuckEvent>()) {
+    return std::nullopt;
+  }
+
+  return data.value<DuckEvent>();
+}
