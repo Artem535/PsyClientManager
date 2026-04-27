@@ -323,6 +323,19 @@ jobs:
           mkdir -p build-release/packages
           APP_BUNDLE="${{ github.workspace }}/build-release/install/PsyClientManager.app"
           macdeployqt "$APP_BUNDLE" -always-overwrite
+
+          test -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework"
+          test -d "$APP_BUNDLE/Contents/Frameworks/QtGui.framework"
+          test -d "$APP_BUNDLE/Contents/Frameworks/QtWidgets.framework"
+          test -d "$APP_BUNDLE/Contents/PlugIns/platforms"
+          test -f "$APP_BUNDLE/Contents/PlugIns/platforms/libqcocoa.dylib"
+
+          du -sh "$APP_BUNDLE"
+          du -sh "$APP_BUNDLE/Contents/Frameworks"
+          find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -mindepth 1 | sort
+          find "$APP_BUNDLE/Contents/PlugIns" -maxdepth 2 -type f | sort
+          otool -L "$APP_BUNDLE/Contents/MacOS/PsyClientManager"
+
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
           hdiutil create \
