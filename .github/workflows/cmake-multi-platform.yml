@@ -321,8 +321,16 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p build-release/packages
-          macdeployqt build-release/PsyClientManager.app -dmg
-          mv build-release/*.dmg build-release/packages/
+          APP_BUNDLE="${{ github.workspace }}/build-release/install/PsyClientManager.app"
+          macdeployqt "$APP_BUNDLE" -always-overwrite
+          codesign --force --deep --sign - "$APP_BUNDLE"
+          codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+          hdiutil create \
+            -volname "PsyClientManager" \
+            -srcfolder "$APP_BUNDLE" \
+            -ov \
+            -format UDZO \
+            build-release/packages/PsyClientManager-macos.dmg
 
       - name: Upload macOS package
         if: runner.os == 'macOS'
