@@ -5,7 +5,6 @@
 #include <QContextMenuEvent>
 #include <QMenu>
 #include <QPainterPath>
-#include <QPointer>
 #include <QRegion>
 #include <QSet>
 #include <QTimer>
@@ -286,13 +285,17 @@ void QEventView::contextMenuEvent(QContextMenuEvent *event) {
   if (!event) {
     return;
   }
-
   if (itemAt(event->pos()) != nullptr) {
     QGraphicsView::contextMenuEvent(event);
     return;
   }
 
-  const auto scenePos = mapToScene(event->pos());
+  showCreateEventMenu(event->pos(), event->globalPos());
+  event->accept();
+}
+
+void QEventView::showCreateEventMenu(const QPoint &viewportPos, const QPoint &globalPos) {
+  const auto scenePos = mapToScene(viewportPos);
   constexpr int kSnapMinutes = 5;
   const auto rawMinutes =
       static_cast<int>(std::round(scenePos.y() / std::max<qreal>(mPixelPerMin, 0.1)));
@@ -302,14 +305,13 @@ void QEventView::contextMenuEvent(QContextMenuEvent *event) {
   const QTime startTime(snappedMinutes / 60, snappedMinutes % 60);
   const auto durationMinutes = pcm::app_settings::defaultSessionDurationMinutes();
 
-  QMenu menu(this);
+  QMenu menu;
   auto *createAction =
       menu.addAction(tr("Create event at %1").arg(startTime.toString("HH:mm")));
   connect(createAction, &QAction::triggered, this, [this, startTime, durationMinutes]() {
     emit createEventRequested(startTime, durationMinutes);
   });
-  menu.exec(event->globalPos());
-  event->accept();
+  menu.exec(globalPos);
 }
 
 void QEventView::updateItemsSize() const {

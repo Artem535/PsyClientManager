@@ -5,6 +5,7 @@
 
 #include <oclero/qlementine/widgets/Switch.hpp>
 #include <oclero/qlementine/widgets/LineEdit.hpp>
+#include <oclero/qlementine/widgets/SegmentedControl.hpp>
 
 #include <QHBoxLayout>
 #include <QIcon>
@@ -13,6 +14,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSize>
+#include <QSpinBox>
 #include <QTimeZone>
 
 Q_LOGGING_CATEGORY(logEventDetails, "pcm.EventDetails")
@@ -23,6 +25,68 @@ constexpr int64_t kPaymentPaidId = 2;
 constexpr int64_t kPaymentCanceledId = 3;
 constexpr int64_t kPaymentRefundedId = 4;
 constexpr int64_t kPaymentSkippedId = 5;
+
+QString weekdayToken(const int dayOfWeek) {
+  switch (dayOfWeek) {
+  case 1:
+    return QStringLiteral("MO");
+  case 2:
+    return QStringLiteral("TU");
+  case 3:
+    return QStringLiteral("WE");
+  case 4:
+    return QStringLiteral("TH");
+  case 5:
+    return QStringLiteral("FR");
+  case 6:
+    return QStringLiteral("SA");
+  case 7:
+  default:
+    return QStringLiteral("SU");
+  }
+}
+
+QString weekdayToken(const QDate &date) {
+  return weekdayToken(date.dayOfWeek());
+}
+
+QString rruleDateTimeUtc(const QDate &date) {
+  return QDateTime(date, QTime(23, 59, 59), QTimeZone::systemTimeZone())
+      .toUTC()
+      .toString(QStringLiteral("yyyyMMdd'T'HHmmss'Z'"));
+}
+
+QString recurrenceFrequency(const QString &type) {
+  if (type == QLatin1String("daily")) {
+    return QStringLiteral("DAILY");
+  }
+  if (type == QLatin1String("weekly")) {
+    return QStringLiteral("WEEKLY");
+  }
+  if (type == QLatin1String("monthly")) {
+    return QStringLiteral("MONTHLY");
+  }
+  if (type == QLatin1String("yearly")) {
+    return QStringLiteral("YEARLY");
+  }
+  return {};
+}
+
+QString intervalSuffix(const QString &type) {
+  if (type == QLatin1String("daily")) {
+    return QEventDetailsWidget::tr(" day(s)");
+  }
+  if (type == QLatin1String("weekly")) {
+    return QEventDetailsWidget::tr(" week(s)");
+  }
+  if (type == QLatin1String("monthly")) {
+    return QEventDetailsWidget::tr(" month(s)");
+  }
+  if (type == QLatin1String("yearly")) {
+    return QEventDetailsWidget::tr(" year(s)");
+  }
+  return {};
+}
 }
 
 QEventDetailsWidget::QEventDetailsWidget(QWidget *parent)
@@ -69,15 +133,84 @@ void QEventDetailsWidget::initUi() {
 
   mOnlineSessionSwitch = new oclero::qlementine::Switch(this);
   mOnlineSessionSwitch->setText(tr("Online session"));
+  mRepeatTypeControl = new oclero::qlementine::SegmentedControl(this);
+  mRepeatTypeControl->addItem(tr("None"), {}, {}, QStringLiteral("none"));
+  mRepeatTypeControl->addItem(tr("Day"), {}, {}, QStringLiteral("daily"));
+  mRepeatTypeControl->addItem(tr("Week"), {}, {}, QStringLiteral("weekly"));
+  mRepeatTypeControl->addItem(tr("Month"), {}, {}, QStringLiteral("monthly"));
+  mRepeatTypeControl->addItem(tr("Year"), {}, {}, QStringLiteral("yearly"));
+  mRepeatTypeControl->setItemsShouldExpand(true);
   constexpr int onlineSectionRow = 7;
-  mUI->formLayout->insertRow(onlineSectionRow, tr("Session format"),
+  mUI->formLayout->insertRow(onlineSectionRow, tr("Repeat"), mRepeatTypeControl);
+  mRecurringOptionsWidget = new QWidget(this);
+  auto *recurringOptionsLayout = new QHBoxLayout(mRecurringOptionsWidget);
+  recurringOptionsLayout->setContentsMargins(0, 0, 0, 0);
+  recurringOptionsLayout->setSpacing(6);
+  recurringOptionsLayout->addWidget(new QLabel(tr("Every"), mRecurringOptionsWidget));
+  mRepeatIntervalSpinBox = new QSpinBox(mRecurringOptionsWidget);
+  mRepeatIntervalSpinBox->setRange(1, 52);
+  mRepeatIntervalSpinBox->setValue(1);
+  mRepeatIntervalSpinBox->setSuffix(tr(" week(s)"));
+  mRepeatIntervalSpinBox->setMinimumWidth(112);
+  recurringOptionsLayout->addWidget(mRepeatIntervalSpinBox);
+  mRepeatUntilSwitch = new oclero::qlementine::Switch(mRecurringOptionsWidget);
+  mRepeatUntilSwitch->setText(tr("Until"));
+  mRepeatUntilSwitch->setMinimumWidth(88);
+  recurringOptionsLayout->addWidget(mRepeatUntilSwitch);
+  mRepeatUntilDateEdit = new QDateEdit(mRecurringOptionsWidget);
+  mRepeatUntilDateEdit->setCalendarPopup(true);
+  mRepeatUntilDateEdit->setDate(QDate::currentDate().addMonths(3));
+  mRepeatUntilDateEdit->setEnabled(false);
+  mRepeatUntilDateEdit->setMinimumWidth(122);
+  recurringOptionsLayout->addWidget(mRepeatUntilDateEdit);
+  recurringOptionsLayout->addStretch();
+  mUI->formLayout->insertRow(onlineSectionRow + 1, QString(), mRecurringOptionsWidget);
+  mWeekdayOptionsWidget = new QWidget(this);
+  auto *weekdayLayout = new QHBoxLayout(mWeekdayOptionsWidget);
+  weekdayLayout->setContentsMargins(0, 0, 0, 0);
+  weekdayLayout->setSpacing(6);
+  const QVector<QPair<QString, int>> weekdays = {
+      {tr("Mon"), 1}, {tr("Tue"), 2}, {tr("Wed"), 3}, {tr("Thu"), 4},
+      {tr("Fri"), 5}, {tr("Sat"), 6}, {tr("Sun"), 7}};
+  for (const auto &[label, day] : weekdays) {
+    auto *button = new QPushButton(mWeekdayOptionsWidget);
+    button->setText(label);
+    button->setCheckable(true);
+    button->setProperty("dayOfWeek", day);
+    button->setMinimumSize(52, 30);
+    button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    button->setStyleSheet(QStringLiteral(
+        "QPushButton {"
+        " color: #ffffff;"
+        " background-color: #363b46;"
+        " border: 1px solid #566070;"
+        " border-radius: 6px;"
+        " font-weight: 600;"
+        " padding: 0;"
+        "}"
+        "QPushButton:hover {"
+        " background-color: #404756;"
+        "}"
+        "QPushButton:checked {"
+        " color: #ffffff;"
+        " background-color: #4f83ff;"
+        " border-color: #4f83ff;"
+        "}"));
+    weekdayLayout->addWidget(button);
+    mWeekdayButtons.append(button);
+    connect(button, &QPushButton::toggled, this, [this]() { updateButtonState(); });
+  }
+  weekdayLayout->addStretch();
+  mUI->formLayout->insertRow(onlineSectionRow + 2, tr("Days"),
+                             mWeekdayOptionsWidget);
+  mUI->formLayout->insertRow(onlineSectionRow + 3, tr("Session format"),
                              mOnlineSessionSwitch);
 
   mMeetingUrlLabel = new QLabel(tr("Meeting link"), this);
   mMeetingUrlEdit = new oclero::qlementine::LineEdit(this);
   mMeetingUrlEdit->setPlaceholderText(tr("https://..."));
   mMeetingUrlEdit->setIcon(QIcon(":/icons/calendar-solid-full.svg"));
-  mUI->formLayout->insertRow(onlineSectionRow + 1, mMeetingUrlLabel,
+  mUI->formLayout->insertRow(onlineSectionRow + 4, mMeetingUrlLabel,
                              mMeetingUrlEdit);
 
   mMeetingActionsWidget = new QWidget(this);
@@ -91,7 +224,7 @@ void QEventDetailsWidget::initUi() {
   meetingActionsLayout->addWidget(mCopyMeetingUrlButton);
   meetingActionsLayout->addWidget(mCopyMeetingInviteButton);
   meetingActionsLayout->addStretch();
-  mUI->formLayout->insertRow(onlineSectionRow + 2, QString(),
+  mUI->formLayout->insertRow(onlineSectionRow + 5, QString(),
                              mMeetingActionsWidget);
 
   mUI->mAddButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
@@ -116,6 +249,10 @@ void QEventDetailsWidget::initConnections() {
           &QEventDetailsWidget::onEventTypeToggled);
   connect(mOnlineSessionSwitch, &QAbstractButton::toggled, this,
           &QEventDetailsWidget::onOnlineSessionToggled);
+  connect(mRepeatTypeControl, &oclero::qlementine::SegmentedControl::currentIndexChanged, this,
+          &QEventDetailsWidget::onRecurrenceTypeChanged);
+  connect(mRepeatUntilSwitch, &QAbstractButton::toggled, mRepeatUntilDateEdit,
+          &QWidget::setEnabled);
   connect(mMeetingUrlEdit, &QLineEdit::textChanged, this,
           &QEventDetailsWidget::onMeetingUrlChanged);
   connect(mOpenMeetingButton, &QPushButton::clicked, this,
@@ -128,6 +265,12 @@ void QEventDetailsWidget::initConnections() {
           &QEventDetailsWidget::onTimeFromChanged);
   connect(mUI->mTimeTo, &QTimeEdit::timeChanged, this,
           &QEventDetailsWidget::onTimeToChanged);
+  connect(mUI->mEventDate, &QDateEdit::dateChanged, this, [this](const QDate &date) {
+    if (mRepeatTypeControl->currentData().toString() == QLatin1String("weekly") &&
+        selectedWeekdayRule().isEmpty()) {
+      selectWeekday(date.dayOfWeek(), true);
+    }
+  });
 }
 
 void QEventDetailsWidget::initDefaultStyle() {
@@ -144,6 +287,7 @@ void QEventDetailsWidget::initDefaultStyle() {
   mUI->mPaymentStatusLabel->setVisible(isVisible);
   mUI->mPaymentStatusComboBox->setVisible(isVisible);
   mEventTypeSwitch->setEnabled(false);
+  updateRecurringControls();
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
   mUI->mAddButton->setVisible(true);
@@ -156,6 +300,7 @@ void QEventDetailsWidget::initEditStyle() {
   mUI->mChangeButton->setVisible(false);
   mUI->mAddButton->setVisible(false);
   mEventTypeSwitch->setEnabled(true);
+  updateRecurringControls();
   onEventTypeToggled(mEventTypeSwitch->isChecked());
   onOnlineSessionToggled(mOnlineSessionSwitch->isChecked());
   emit provideFillClientComboBox(mUI->mClientComboBox);
@@ -255,6 +400,9 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date,
                      crtDateTime.addSecs(3600));
   loadEvent(mCurrentEvent.data());
   mUI->mEventDate->setDate(date);
+  mRepeatUntilDateEdit->setMinimumDate(date);
+  mRepeatUntilDateEdit->setDate(date.addMonths(3));
+  selectWeekday(date.dayOfWeek(), true);
   if (startTime.has_value()) {
     const auto duration = durationMinutes.value_or(
         pcm::app_settings::defaultSessionDurationMinutes());
@@ -292,6 +440,46 @@ QString QEventDetailsWidget::selectedClientName() const {
   }
 
   return mUI->mClientComboBox->currentText();
+}
+
+bool QEventDetailsWidget::isRecurring() const {
+  return mRepeatTypeControl &&
+         mRepeatTypeControl->currentData().toString() != QLatin1String("none");
+}
+
+QString QEventDetailsWidget::recurrenceRule() const {
+  if (!isRecurring()) {
+    return {};
+  }
+
+  const auto date = mUI->mEventDate->date();
+  const auto frequency = recurrenceFrequency(mRepeatTypeControl->currentData().toString());
+  auto rule = QStringLiteral("FREQ=%1;INTERVAL=%2")
+                  .arg(frequency)
+                  .arg(mRepeatIntervalSpinBox ? mRepeatIntervalSpinBox->value() : 1);
+  if (frequency == QLatin1String("WEEKLY")) {
+    const auto weekdays = selectedWeekdayRule();
+    rule += QStringLiteral(";BYDAY=%1").arg(weekdays.isEmpty() ? weekdayToken(date) : weekdays);
+  } else if (frequency == QLatin1String("MONTHLY")) {
+    rule += QStringLiteral(";BYMONTHDAY=%1").arg(date.day());
+  } else if (frequency == QLatin1String("YEARLY")) {
+    rule += QStringLiteral(";BYMONTH=%1;BYMONTHDAY=%2").arg(date.month()).arg(date.day());
+  }
+  if (mRepeatUntilSwitch && mRepeatUntilSwitch->isChecked()) {
+    rule += QStringLiteral(";UNTIL=%1").arg(rruleDateTimeUtc(mRepeatUntilDateEdit->date()));
+  }
+  return rule;
+}
+
+std::optional<int64_t> QEventDetailsWidget::recurrenceUntilMs() const {
+  if (!isRecurring() || !mRepeatUntilSwitch || !mRepeatUntilSwitch->isChecked()) {
+    return std::nullopt;
+  }
+
+  return QDateTime(mRepeatUntilDateEdit->date(), QTime(23, 59, 59),
+                   QTimeZone::systemTimeZone())
+      .toUTC()
+      .toMSecsSinceEpoch();
 }
 
 void QEventDetailsWidget::setConflictChecker(
@@ -432,6 +620,17 @@ void QEventDetailsWidget::onOnlineSessionToggled(const bool checked) {
   updateButtonState();
 }
 
+void QEventDetailsWidget::onRecurrenceTypeChanged() {
+  mRepeatIntervalSpinBox->setSuffix(
+      intervalSuffix(mRepeatTypeControl->currentData().toString()));
+  if (mRepeatTypeControl->currentData().toString() == QLatin1String("weekly") &&
+      selectedWeekdayRule().isEmpty()) {
+    selectWeekday(mUI->mEventDate->date().dayOfWeek(), true);
+  }
+  updateRecurringControls();
+  updateButtonState();
+}
+
 void QEventDetailsWidget::onMeetingUrlChanged(const QString &url) {
   Q_UNUSED(url)
   updateButtonState();
@@ -490,6 +689,43 @@ void QEventDetailsWidget::updateButtonState() const {
   mCopyMeetingInviteButton->setEnabled(hasValidMeetingUrl);
 }
 
+void QEventDetailsWidget::updateRecurringControls() const {
+  const bool canConfigureRecurrence = mInEditMode;
+  mRepeatTypeControl->setVisible(canConfigureRecurrence);
+  if (auto *label = mUI->formLayout->labelForField(mRepeatTypeControl)) {
+    label->setVisible(canConfigureRecurrence);
+  }
+  mRecurringOptionsWidget->setVisible(canConfigureRecurrence &&
+                                      isRecurring());
+  mWeekdayOptionsWidget->setVisible(canConfigureRecurrence &&
+                                    mRepeatTypeControl->currentData().toString() ==
+                                        QLatin1String("weekly"));
+  if (auto *label = mUI->formLayout->labelForField(mWeekdayOptionsWidget)) {
+    label->setVisible(mWeekdayOptionsWidget->isVisible());
+  }
+  mRepeatUntilDateEdit->setEnabled(mRepeatUntilSwitch->isChecked());
+}
+
+void QEventDetailsWidget::selectWeekday(const int dayOfWeek, const bool checked) {
+  for (auto *button : mWeekdayButtons) {
+    if (!button) {
+      continue;
+    }
+    button->setChecked(button->property("dayOfWeek").toInt() == dayOfWeek && checked);
+  }
+}
+
+QString QEventDetailsWidget::selectedWeekdayRule() const {
+  QStringList days;
+  for (const auto *button : mWeekdayButtons) {
+    if (!button || !button->isChecked()) {
+      continue;
+    }
+    days.append(weekdayToken(button->property("dayOfWeek").toInt()));
+  }
+  return days.join(',');
+}
+
 bool QEventDetailsWidget::validateInput() {
   const bool isTitleEmpty = mUI->mTitle->text().trimmed().isEmpty();
   const bool isZeroDuration = mUI->mTimeTo->time() <= mUI->mTimeFrom->time();
@@ -519,6 +755,12 @@ bool QEventDetailsWidget::validateInput() {
                            tr("Enter a valid http or https meeting link."));
       return false;
     }
+  }
+  if (isRecurring() && mRepeatUntilSwitch->isChecked() &&
+      mRepeatUntilDateEdit->date() < mUI->mEventDate->date()) {
+    QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                         tr("Repeat end date must not be earlier than the event date."));
+    return false;
   }
   return true;
 }

@@ -3,6 +3,7 @@
   "version": "1",
   "dependencies": [
     "gtest",
+    "libical",
     {
       "name": "icu",
       "platform": "windows"

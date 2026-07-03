@@ -52,6 +52,7 @@ private:
   QMap<int64_t, QEventItem *> mSceneItems;
 
   void drawBackground(QPainter *painter, const QRectF &rect) override;
+  void showCreateEventMenu(const QPoint &viewportPos, const QPoint &globalPos);
   void updateSceneSize();
   void updateItemsSize() const;
   void updateItemsCords() const;

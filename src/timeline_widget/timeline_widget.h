@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QDate>
 #include <QPointer>
+#include <QString>
+#include <optional>
 
 #include "event_item.h"
 #include "database.h"
@@ -25,6 +27,9 @@ public slots:
     void onSelectedDayChanged(const QDate &date) const;
 
     [[nodiscard]] int64_t addEvent(const DuckEvent &event, bool allowOverlap = true) const;
+    [[nodiscard]] int64_t addEventSeries(const DuckEvent &event, int64_t clientId,
+                                         const QString &recurrenceRule,
+                                         std::optional<int64_t> recurrenceUntilMs) const;
 
     void updateScene();
 

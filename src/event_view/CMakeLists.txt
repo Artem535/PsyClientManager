@@ -7,12 +7,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(TARGET_NAME ${PROJECT_NAME}_event_view)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(LibIcal CONFIG REQUIRED)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
         event_view.cpp
         event_item.cpp
         qtimeline_model.cpp
+        recurrence_utils.cpp
+        recurrence_utils.h
 )
 
 add_dependencies(${TARGET_NAME}
@@ -26,6 +29,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
         ${PROJECT_NAME}_widgets
+        ical
         Qt6::Widgets
         Qt6::Gui
 )

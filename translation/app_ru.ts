@@ -686,6 +686,90 @@
         <translation>Формат сессии</translation>
     </message>
     <message>
+        <source>Repeat</source>
+        <translation>Повтор</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source>Day</source>
+        <translation>День</translation>
+    </message>
+    <message>
+        <source>Week</source>
+        <translation>Неделя</translation>
+    </message>
+    <message>
+        <source>Month</source>
+        <translation>Месяц</translation>
+    </message>
+    <message>
+        <source>Year</source>
+        <translation>Год</translation>
+    </message>
+    <message>
+        <source>Every</source>
+        <translation>Каждые</translation>
+    </message>
+    <message>
+        <source> week(s)</source>
+        <translation> нед.</translation>
+    </message>
+    <message>
+        <source> day(s)</source>
+        <translation> дн.</translation>
+    </message>
+    <message>
+        <source> month(s)</source>
+        <translation> мес.</translation>
+    </message>
+    <message>
+        <source> year(s)</source>
+        <translation> г.</translation>
+    </message>
+    <message>
+        <source>Until</source>
+        <translation>До</translation>
+    </message>
+    <message>
+        <source>Days</source>
+        <translation>Дни</translation>
+    </message>
+    <message>
+        <source>Mon</source>
+        <translation>Пн</translation>
+    </message>
+    <message>
+        <source>Tue</source>
+        <translation>Вт</translation>
+    </message>
+    <message>
+        <source>Wed</source>
+        <translation>Ср</translation>
+    </message>
+    <message>
+        <source>Thu</source>
+        <translation>Чт</translation>
+    </message>
+    <message>
+        <source>Fri</source>
+        <translation>Пт</translation>
+    </message>
+    <message>
+        <source>Sat</source>
+        <translation>Сб</translation>
+    </message>
+    <message>
+        <source>Sun</source>
+        <translation>Вс</translation>
+    </message>
+    <message>
+        <source>Repeat end date must not be earlier than the event date.</source>
+        <translation>Дата окончания повтора не может быть раньше даты события.</translation>
+    </message>
+    <message>
         <source>Meeting link</source>
         <translation>Ссылка на встречу</translation>
     </message>

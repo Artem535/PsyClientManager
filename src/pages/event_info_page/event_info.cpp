@@ -136,7 +136,7 @@ void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
 
   detailsWidget->startCreatingNewEvent(mSelectedDate, startTime, durationMinutes);
 
-  dialog.resize(460, 620);
+  dialog.resize(560, 700);
   dialog.exec();
 
   mActiveEventDetailsWidget.clear();
@@ -183,7 +183,7 @@ void QEventInfoPage::openEventDialog(const std::optional<DuckEvent> &event,
     detailsWidget->startCreatingNewEvent(mSelectedDate);
   }
 
-  dialog.resize(460, 620);
+  dialog.resize(560, 700);
   dialog.exec();
 
   mActiveEventDetailsWidget.clear();
@@ -242,11 +242,31 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
   const auto selectedClientName =
       mActiveEventDetailsWidget ? mActiveEventDetailsWidget->selectedClientName() : QString{};
 
-  if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
+  if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent() &&
+      mActiveEventDetailsWidget->isRecurring()) {
+    const auto seriesId = mTimelineWidget->addEventSeries(
+        eventDetails, selectedClientId, mActiveEventDetailsWidget->recurrenceRule(),
+        mActiveEventDetailsWidget->recurrenceUntilMs());
+    if (seriesId <= 0) {
+      qCWarning(logEventInfo) << "Failed to persist event series in DB";
+      return;
+    }
+    event->setId(0);
+  } else if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
     const auto id = mTimelineWidget->addEvent(
         eventDetails, !pcm::app_settings::preventEventOverlaps());
     if (id <= 0) {
       qCWarning(logEventInfo) << "Failed to persist event in DB";
+      return;
+    }
+    eventDetails.id = id;
+    event->setId(id);
+  } else if (eventDetails.is_virtual_occurrence) {
+    eventDetails.id = -1;
+    const auto id = mTimelineWidget->addEvent(
+        eventDetails, !pcm::app_settings::preventEventOverlaps());
+    if (id <= 0) {
+      qCWarning(logEventInfo) << "Failed to materialize recurring event occurrence";
       return;
     }
     eventDetails.id = id;

@@ -2,6 +2,8 @@
 #include "timeline_widget.h"
 #include "qtimeline_model.h"
 
+#include <QTimer>
+
 Q_LOGGING_CATEGORY(logTimelineWidget, "pcm.timeline")
 
 QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
@@ -25,7 +27,11 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
   connect(mEventView, &QEventView::eventDeleteRequested, this,
           &QTimelineWidget::eventDeleteRequested);
   connect(mEventView, &QEventView::createEventRequested, this,
-          &QTimelineWidget::createEventRequested);
+          [this](const QTime &startTime, const int durationMinutes) {
+            QTimer::singleShot(0, this, [this, startTime, durationMinutes]() {
+              emit createEventRequested(startTime, durationMinutes);
+            });
+          });
   // Defaults
   mModel->loadEventsForDay(QDate::currentDate());
 
@@ -53,6 +59,18 @@ int64_t QTimelineWidget::addEvent(const DuckEvent &event,
                              << QString::fromStdString(event.name.value_or(""));
 
   return mModel->addEvent(event, allowOverlap);
+}
+
+int64_t QTimelineWidget::addEventSeries(const DuckEvent &event,
+                                        const int64_t clientId,
+                                        const QString &recurrenceRule,
+                                        const std::optional<int64_t> recurrenceUntilMs) const {
+  if (!mModel) {
+    qCWarning(logTimelineWidget) << "QTimelineWidget::addEventSeries | Model is null";
+    return 0;
+  }
+
+  return mModel->addEventSeries(event, clientId, recurrenceRule, recurrenceUntilMs);
 }
 
 void QTimelineWidget::updateScene() { emit needSceneUpdate(); }

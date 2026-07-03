@@ -4,6 +4,8 @@
 #define PLOG_NO_LOG_MACROS
 
 #include <memory>
+#include <set>
+#include <string>
 #include <vector>
 
 #include "config.h"
@@ -52,6 +54,15 @@ public:
   bool update_event(const DuckEvent &event, bool allowOverlap = true);
   std::unique_ptr<DuckEvent> get_event(const int64_t &id);
   bool remove_event(const int64_t &id);
+  int64_t add_event_series(const DuckEventSeries &series);
+  std::vector<DuckEventSeries> get_event_series_for_range(const int64_t &start_ms,
+                                                          const int64_t &end_ms);
+  std::set<std::pair<int64_t, int64_t>>
+  get_event_series_exceptions_for_range(const int64_t &start_ms,
+                                        const int64_t &end_ms);
+  bool add_event_series_exception(int64_t series_id,
+                                  int64_t occurrence_start_ms,
+                                  const std::string &reason = {});
 
   int64_t add_client(const DuckClient &client);
   bool update_client(const DuckClient &client);

@@ -47,7 +47,38 @@ CREATE TABLE IF NOT EXISTS Event (
     cost DOUBLE,
     reminder_notified_at TIMESTAMP,
     is_online BOOLEAN DEFAULT FALSE,
-    meeting_url TEXT
+    meeting_url TEXT,
+    series_id INTEGER,
+    original_occurrence_start TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS EventSeries (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    client_id INTEGER REFERENCES Client(id),
+    is_work_event BOOLEAN,
+    event_stat_id INTEGER REFERENCES EventStatus(id),
+    payment_stat_id INTEGER REFERENCES PaymentStatus(id),
+    start_date TIMESTAMP,
+    end_date TIMESTAMP,
+    duration INTEGER,
+    cost DOUBLE,
+    is_online BOOLEAN DEFAULT FALSE,
+    meeting_url TEXT,
+    recurrence_rule TEXT NOT NULL,
+    recurrence_until TIMESTAMP,
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS EventSeriesException (
+    id INTEGER PRIMARY KEY,
+    series_id INTEGER NOT NULL REFERENCES EventSeries(id),
+    occurrence_start TIMESTAMP NOT NULL,
+    reason TEXT,
+    UNIQUE (series_id, occurrence_start)
 );
 
 -- Many-to-many relationship between clients and events
@@ -82,6 +113,8 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS cost DOUBLE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS reminder_notified_at TIMESTAMP;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_url TEXT;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS series_id INTEGER;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS original_occurrence_start TIMESTAMP;
 )duckdb";
 
 constexpr auto kInsertEventQuery = R"duckdb(
@@ -90,11 +123,11 @@ INSERT INTO Event (
     name, description, is_work_event,
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
-    is_online, meeting_url
+    is_online, meeting_url, series_id, original_occurrence_start
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 FROM Event
 RETURNING id
 )duckdb";
@@ -112,11 +145,53 @@ SET name = $1,
     cost = $9,
     is_online = $10,
     meeting_url = $11,
+    series_id = $12,
+    original_occurrence_start = $13,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
     END
-WHERE id = $12
+WHERE id = $14
+)duckdb";
+
+constexpr auto kInsertEventSeriesQuery = R"duckdb(
+INSERT INTO EventSeries (
+    id,
+    name, description, client_id, is_work_event,
+    event_stat_id, payment_stat_id,
+    start_date, end_date, duration, cost,
+    is_online, meeting_url, recurrence_rule, recurrence_until,
+    active, created_at, updated_at
+)
+SELECT
+    COALESCE(MAX(id), 0) + 1,
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, TRUE, $15, $15
+FROM EventSeries
+RETURNING id
+)duckdb";
+
+constexpr auto kSelectEventSeriesForRangeQuery = R"duckdb(
+SELECT * FROM EventSeries
+WHERE active = TRUE
+  AND start_date <= $1
+  AND (recurrence_until IS NULL OR recurrence_until >= $2)
+)duckdb";
+
+constexpr auto kSelectEventSeriesExceptionsForRangeQuery = R"duckdb(
+SELECT series_id, occurrence_start
+FROM EventSeriesException
+WHERE occurrence_start >= $1 AND occurrence_start <= $2
+)duckdb";
+
+constexpr auto kInsertEventSeriesExceptionQuery = R"duckdb(
+INSERT INTO EventSeriesException (id, series_id, occurrence_start, reason)
+SELECT COALESCE((SELECT MAX(id) FROM EventSeriesException), 0) + 1, $1, $2, $3
+WHERE NOT EXISTS (
+    SELECT 1 FROM EventSeriesException
+    WHERE series_id = $1 AND occurrence_start = $2
+)
+RETURNING id
 )duckdb";
 
 constexpr auto kDeleteEventClientByEventIdQuery =
