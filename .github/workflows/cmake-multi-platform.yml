@@ -35,7 +35,7 @@ jobs:
             artifact_name: PsyClientManager-macos-dmg
             qt_host: mac
             qt_target: desktop
-          - os: windows-latest
+          - os: windows-2022
             qt_version: 6.10.2
             qt_arch: win64_msvc2022_64
             artifact_name: PsyClientManager-windows-installer
