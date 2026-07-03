@@ -9,6 +9,10 @@
 
 class QCustomPlot;
 
+namespace oclero::qlementine {
+class SegmentedControl;
+}
+
 class AnalyticsPage final : public QWidget {
   Q_OBJECT
 
@@ -19,6 +23,12 @@ public:
   void refresh();
 
 private:
+  enum class AnalyticsPeriod {
+    Last6Months,
+    Last12Months,
+    All
+  };
+
   struct SummaryCard {
     QLabel *value = nullptr;
     QLabel *caption = nullptr;
@@ -26,6 +36,7 @@ private:
 
   void buildUi();
   void initPlot(QCustomPlot *plot, const QString &placeholderText) const;
+  [[nodiscard]] int selectedMonthsBack() const;
   void updateSummaryCards(const pcm::database::DashboardSummary &summary) const;
   void updateIncomePlot(const std::vector<pcm::database::DashboardMonthlyStats> &stats) const;
   void updateMixPlot(const std::vector<pcm::database::DashboardMonthlyStats> &stats) const;
@@ -35,6 +46,7 @@ private:
   SummaryCard mActiveClientsCard;
   SummaryCard mSessionsCard;
   SummaryCard mIncomeCard;
+  oclero::qlementine::SegmentedControl *mPeriodControl = nullptr;
   QCustomPlot *mIncomePlot = nullptr;
   QCustomPlot *mMixPlot = nullptr;
 };

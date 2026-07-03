@@ -3,6 +3,7 @@
 #include "../widgets/app_settings.h"
 
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
+#include <oclero/qlementine/widgets/SegmentedControl.hpp>
 #include <oclero/qlementine/widgets/Switch.hpp>
 
 #include <QComboBox>
@@ -14,6 +15,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QStackedWidget>
+#include <QTextEdit>
 #include <QTimeEdit>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -60,7 +63,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 void SettingsDialog::setupUi() {
   setWindowTitle(tr("Settings"));
   setModal(true);
-  resize(460, 260);
+  resize(560, 760);
 
   auto *rootLayout = new QVBoxLayout(this);
   rootLayout->setContentsMargins(20, 20, 20, 20);
@@ -73,7 +76,36 @@ void SettingsDialog::setupUi() {
   caption->setFont(captionFont);
   rootLayout->addWidget(caption);
 
-  auto *languageBox = new QGroupBox(tr("Language"), this);
+  mSettingsSections = new oclero::qlementine::SegmentedControl(this);
+  mSettingsSections->addItem(tr("General"), {}, {}, QStringLiteral("general"));
+  mSettingsSections->addItem(tr("Events"), {}, {}, QStringLiteral("events"));
+  mSettingsSections->addItem(tr("Online"), {}, {}, QStringLiteral("online"));
+  mSettingsSections->setItemsShouldExpand(true);
+  rootLayout->addWidget(mSettingsSections);
+
+  mSettingsStack = new QStackedWidget(this);
+  rootLayout->addWidget(mSettingsStack, 1);
+
+  auto *generalPage = new QWidget(mSettingsStack);
+  auto *generalSettingsLayout = new QVBoxLayout(generalPage);
+  generalSettingsLayout->setContentsMargins(0, 0, 0, 0);
+  generalSettingsLayout->setSpacing(16);
+
+  auto *eventsPage = new QWidget(mSettingsStack);
+  auto *eventSettingsLayout = new QVBoxLayout(eventsPage);
+  eventSettingsLayout->setContentsMargins(0, 0, 0, 0);
+  eventSettingsLayout->setSpacing(16);
+
+  auto *onlinePage = new QWidget(mSettingsStack);
+  auto *onlineSettingsLayout = new QVBoxLayout(onlinePage);
+  onlineSettingsLayout->setContentsMargins(0, 0, 0, 0);
+  onlineSettingsLayout->setSpacing(16);
+
+  mSettingsStack->addWidget(generalPage);
+  mSettingsStack->addWidget(eventsPage);
+  mSettingsStack->addWidget(onlinePage);
+
+  auto *languageBox = new QGroupBox(tr("Language"), generalPage);
   auto *languageLayout = new QVBoxLayout(languageBox);
   languageLayout->setContentsMargins(16, 16, 16, 16);
   languageLayout->setSpacing(14);
@@ -85,9 +117,9 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Interface language"),
                      tr("The selected language will be applied after restarting the application."),
                      mLanguageCombo, languageBox));
-  rootLayout->addWidget(languageBox);
+  generalSettingsLayout->addWidget(languageBox);
 
-  auto *databaseBox = new QGroupBox(tr("Database"), this);
+  auto *databaseBox = new QGroupBox(tr("Database"), generalPage);
   auto *databaseLayout = new QVBoxLayout(databaseBox);
   databaseLayout->setContentsMargins(16, 16, 16, 16);
   databaseLayout->setSpacing(10);
@@ -103,9 +135,9 @@ void SettingsDialog::setupUi() {
   databaseLayout->addWidget(dbPathTitle);
   databaseLayout->addWidget(mDatabasePathLabel);
   databaseLayout->addWidget(mOpenDatabaseFolderButton, 0, Qt::AlignLeft);
-  rootLayout->addWidget(databaseBox);
+  generalSettingsLayout->addWidget(databaseBox);
 
-  auto *notificationsBox = new QGroupBox(tr("Notifications"), this);
+  auto *notificationsBox = new QGroupBox(tr("Notifications"), generalPage);
   auto *notificationsLayout = new QVBoxLayout(notificationsBox);
   notificationsLayout->setContentsMargins(16, 16, 16, 16);
   notificationsLayout->setSpacing(14);
@@ -123,9 +155,10 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Notify before start"),
                      tr("How many minutes before the session the reminder should appear."),
                      mNotificationLeadMinutesSpinBox, notificationsBox));
-  rootLayout->addWidget(notificationsBox);
+  generalSettingsLayout->addWidget(notificationsBox);
+  generalSettingsLayout->addStretch();
 
-  auto *eventsBox = new QGroupBox(tr("Timeline colors"), this);
+  auto *eventsBox = new QGroupBox(tr("Timeline colors"), eventsPage);
   auto *eventsLayout = new QVBoxLayout(eventsBox);
   eventsLayout->setContentsMargins(16, 16, 16, 16);
   eventsLayout->setSpacing(14);
@@ -175,8 +208,30 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Personal events"),
                      tr("Accent color for personal events in the timeline."),
                      mPersonalEventColorEditor, eventsBox));
-  rootLayout->addWidget(eventsBox);
-  rootLayout->addStretch();
+  eventSettingsLayout->addWidget(eventsBox);
+  eventSettingsLayout->addStretch();
+
+  auto *onlineBox = new QGroupBox(tr("Online sessions"), onlinePage);
+  auto *onlineLayout = new QVBoxLayout(onlineBox);
+  onlineLayout->setContentsMargins(16, 16, 16, 16);
+  onlineLayout->setSpacing(10);
+  auto *templateTitle = new QLabel(tr("Invite template"), onlineBox);
+  QFont templateTitleFont = templateTitle->font();
+  templateTitleFont.setBold(true);
+  templateTitle->setFont(templateTitleFont);
+  auto *templateDescription = new QLabel(
+      tr("Available variables: {client_name}, {date}, {time}, {meeting_url}"),
+      onlineBox);
+  templateDescription->setWordWrap(true);
+  templateDescription->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
+  mMeetingInviteTemplateEdit = new QTextEdit(onlineBox);
+  mMeetingInviteTemplateEdit->setAcceptRichText(false);
+  mMeetingInviteTemplateEdit->setMinimumHeight(120);
+  onlineLayout->addWidget(templateTitle);
+  onlineLayout->addWidget(templateDescription);
+  onlineLayout->addWidget(mMeetingInviteTemplateEdit);
+  onlineSettingsLayout->addWidget(onlineBox);
+  onlineSettingsLayout->addStretch();
 
   mButtonBox = new QDialogButtonBox(QDialogButtonBox::Close, this);
   rootLayout->addWidget(mButtonBox);
@@ -201,10 +256,16 @@ void SettingsDialog::loadSettings() const {
   mDefaultWorkCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
+  mMeetingInviteTemplateEdit->setPlainText(
+      pcm::app_settings::meetingInviteTemplate());
 }
 
 void SettingsDialog::connectSignals() const {
   connect(mButtonBox, &QDialogButtonBox::rejected, this, &QDialog::accept);
+  connect(mSettingsSections, &oclero::qlementine::SegmentedControl::currentIndexChanged,
+          this, [this]() {
+            mSettingsStack->setCurrentIndex(mSettingsSections->currentIndex());
+          });
   connect(mLanguageCombo, &QComboBox::currentIndexChanged, this, [this](const int index) {
     pcm::app_settings::setLanguageCode(mLanguageCombo->itemData(index).toString());
   });
@@ -247,6 +308,10 @@ void SettingsDialog::connectSignals() const {
           this, [this]() {
             pcm::app_settings::setPersonalEventColor(mPersonalEventColorEditor->color());
           });
+  connect(mMeetingInviteTemplateEdit, &QTextEdit::textChanged, this, [this]() {
+    pcm::app_settings::setMeetingInviteTemplate(
+        mMeetingInviteTemplateEdit->toPlainText());
+  });
 }
 
 void SettingsDialog::openDatabaseFolder() const {

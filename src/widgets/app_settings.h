@@ -39,4 +39,7 @@ void setWorkDayEnd(const QTime &time);
 int defaultSessionDurationMinutes();
 void setDefaultSessionDurationMinutes(int minutes);
 
+QString meetingInviteTemplate();
+void setMeetingInviteTemplate(const QString &templateText);
+
 } // namespace pcm::app_settings

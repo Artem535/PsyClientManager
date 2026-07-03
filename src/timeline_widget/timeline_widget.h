@@ -38,6 +38,7 @@ signals:
     void eventSelected(int64_t eventId);
     void eventEditRequested(int64_t eventId);
     void eventDeleteRequested(int64_t eventId);
+    void createEventRequested(const QTime &startTime, int durationMinutes);
 
     void needSceneUpdate();
 

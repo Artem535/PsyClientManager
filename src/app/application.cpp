@@ -2,6 +2,7 @@
 #include "../widgets/app_settings.h"
 
 #include <QLocale>
+#include <QLibraryInfo>
 #include <QMenu>
 #include <QStringList>
 #include <QTimeZone>
@@ -27,7 +28,7 @@ int Application::run(int argc, char *argv[]) {
   app.setOrganizationName("PsyClientManager");
   app.setApplicationName("PsyClientManager");
   app.setApplicationDisplayName("PsyClientManager");
-  app.setApplicationVersion("0.1.3");
+  app.setApplicationVersion("0.1.4");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);
@@ -38,11 +39,22 @@ int Application::run(int argc, char *argv[]) {
   qCInfo(logApplication) << "Qlementine themes loaded:" << themeManager->themeCount()
                          << "current:" << themeManager->currentTheme();
 
-  QTranslator translator;
+  QTranslator appTranslator;
+  QTranslator qtTranslator;
   const QString localeName = QLocale::system().name().toLower();
   const QString preferredLanguage = pcm::app_settings::languageCode();
   const bool preferRu = preferredLanguage == "ru" ||
                         (preferredLanguage == "system" && localeName.startsWith("ru"));
+  const auto qtLocale = preferRu ? QLocale(QLocale::Russian) : QLocale(QLocale::English);
+  if (qtTranslator.load(qtLocale, QStringLiteral("qtbase"), QStringLiteral("_"),
+                        QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+    app.installTranslator(&qtTranslator);
+    qCInfo(logApplication) << "Loaded Qt translation for locale:" << qtLocale.name();
+  } else if (preferRu) {
+    qCWarning(logApplication) << "Failed to load Qt base translation for locale:"
+                              << qtLocale.name();
+  }
+
   const QStringList translationOrder =
       preferRu ? QStringList{"app_ru", "app_en"}
                : QStringList{"app_en", "app_ru"};
@@ -53,8 +65,8 @@ int Application::run(int argc, char *argv[]) {
         QString(":/i18n/i18n/%1.qm").arg(baseName),
     };
     for (const auto &resourcePath : resourceCandidates) {
-      if (translator.load(resourcePath)) {
-        app.installTranslator(&translator);
+      if (appTranslator.load(resourcePath)) {
+        app.installTranslator(&appTranslator);
         qCInfo(logApplication) << "Loaded translation:" << resourcePath;
         return true;
       }

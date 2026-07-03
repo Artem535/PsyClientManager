@@ -79,7 +79,9 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
        db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
        db_utils::toDuckValue(event.duration),
-       db_utils::toDuckValue(event.cost)});
+       db_utils::toDuckValue(event.cost),
+       duckdb::Value::BOOLEAN(event.is_online),
+       duckdb::Value(event.meeting_url)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -148,6 +150,8 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
        db_utils::toDuckValue(event.duration),
        db_utils::toDuckValue(event.cost),
+       duckdb::Value::BOOLEAN(event.is_online),
+       duckdb::Value(event.meeting_url),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
@@ -748,10 +752,6 @@ DashboardSummary Database::get_dashboard_summary() {
 
 std::vector<DashboardMonthlyStats>
 Database::get_dashboard_monthly_stats(const int months_back) {
-  if (months_back <= 0) {
-    return {};
-  }
-
   duckdb::Connection conn(*mDb);
   auto result = executePrepared(
       conn, constance::kSelectDashboardMonthlyStatsQuery,

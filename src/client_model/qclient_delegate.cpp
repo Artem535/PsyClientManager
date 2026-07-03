@@ -254,22 +254,12 @@ void QClientDelegate::drawActions(QPainter *painter,
   painter->drawEllipse(btn2Rect);
   painter->drawEllipse(btn3Rect);
 
-  const auto displayPixmap =
-      displayClientIcon().pixmap(QSize(btn1Rect.width() - 10, btn1Rect.height() - 10));
-  const auto notesPixmap =
-      notesClientIcon().pixmap(QSize(btn2Rect.width() - 10, btn2Rect.height() - 10));
-  const auto removePixmap =
-      removeClientIcon().pixmap(QSize(btn3Rect.width() - 10, btn3Rect.height() - 10));
-
-  painter->drawPixmap(btn1Rect.center().x() - displayPixmap.width() / 2,
-                      btn1Rect.center().y() - displayPixmap.height() / 2,
-                      displayPixmap);
-  painter->drawPixmap(btn2Rect.center().x() - notesPixmap.width() / 2,
-                      btn2Rect.center().y() - notesPixmap.height() / 2,
-                      notesPixmap);
-  painter->drawPixmap(btn3Rect.center().x() - removePixmap.width() / 2,
-                      btn3Rect.center().y() - removePixmap.height() / 2,
-                      removePixmap);
+  const auto iconRect = [](const QRect &buttonRect) {
+    return buttonRect.adjusted(6, 6, -6, -6);
+  };
+  displayClientIcon().paint(painter, iconRect(btn1Rect), Qt::AlignCenter);
+  notesClientIcon().paint(painter, iconRect(btn2Rect), Qt::AlignCenter);
+  removeClientIcon().paint(painter, iconRect(btn3Rect), Qt::AlignCenter);
 }
 
 QClientDelegate::ActionButtonRects

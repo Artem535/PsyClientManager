@@ -1,6 +1,7 @@
 #include "app_settings.h"
 
 #include <QColor>
+#include <QObject>
 #include <QSettings>
 #include <QTime>
 
@@ -17,12 +18,21 @@ constexpr auto kDefaultWorkEventCostKey = "event/defaultWorkEventCost";
 constexpr auto kWorkDayStartKey = "event/workDayStart";
 constexpr auto kWorkDayEndKey = "event/workDayEnd";
 constexpr auto kDefaultSessionDurationMinutesKey = "event/defaultSessionDurationMinutes";
+constexpr auto kMeetingInviteTemplateKey = "online/meetingInviteTemplate";
 
 QColor defaultWorkEventColor() {
-  return QColor(173, 216, 230);
+  return QColor(37, 99, 235);
 }
 
 QColor defaultPersonalEventColor() {
+  return QColor(126, 34, 206);
+}
+
+QColor legacyDefaultWorkEventColor() {
+  return QColor(173, 216, 230);
+}
+
+QColor legacyDefaultPersonalEventColor() {
   return QColor(255, 182, 193);
 }
 
@@ -44,6 +54,14 @@ int defaultSessionDurationMinutesValue() {
 
 int defaultNotificationLeadMinutesValue() {
   return 30;
+}
+
+QString defaultMeetingInviteTemplateValue() {
+  return QObject::tr("Hello, {client_name}!\n\n"
+                     "We meet on {date} at {time}.\n\n"
+                     "Connection link:\n"
+                     "{meeting_url}\n\n"
+                     "See you!");
 }
 } // namespace
 
@@ -113,7 +131,8 @@ void setLanguageCode(const QString &languageCode) {
 
 QColor workEventColor() {
   QSettings settings;
-  return settings.value(kWorkEventColorKey, defaultWorkEventColor()).value<QColor>();
+  const auto color = settings.value(kWorkEventColorKey, defaultWorkEventColor()).value<QColor>();
+  return color == legacyDefaultWorkEventColor() ? defaultWorkEventColor() : color;
 }
 
 void setWorkEventColor(const QColor &color) {
@@ -123,7 +142,9 @@ void setWorkEventColor(const QColor &color) {
 
 QColor personalEventColor() {
   QSettings settings;
-  return settings.value(kPersonalEventColorKey, defaultPersonalEventColor()).value<QColor>();
+  const auto color =
+      settings.value(kPersonalEventColorKey, defaultPersonalEventColor()).value<QColor>();
+  return color == legacyDefaultPersonalEventColor() ? defaultPersonalEventColor() : color;
 }
 
 void setPersonalEventColor(const QColor &color) {
@@ -172,6 +193,18 @@ int defaultSessionDurationMinutes() {
 void setDefaultSessionDurationMinutes(const int minutes) {
   QSettings settings;
   settings.setValue(kDefaultSessionDurationMinutesKey, minutes);
+}
+
+QString meetingInviteTemplate() {
+  QSettings settings;
+  return settings.value(kMeetingInviteTemplateKey,
+                        defaultMeetingInviteTemplateValue())
+      .toString();
+}
+
+void setMeetingInviteTemplate(const QString &templateText) {
+  QSettings settings;
+  settings.setValue(kMeetingInviteTemplateKey, templateText);
 }
 
 } // namespace pcm::app_settings

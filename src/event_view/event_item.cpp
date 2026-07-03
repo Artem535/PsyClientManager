@@ -1,5 +1,6 @@
 #include "event_item.h"
 #include "../widgets/app_settings.h"
+#include "../widgets/meeting_utils.h"
 #include <QIcon>
 #include <QLocale>
 #include <QMenu>
@@ -65,6 +66,8 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
+  mIsOnline = event.is_online;
+  mMeetingUrl = QString::fromStdString(event.meeting_url);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -93,6 +96,8 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
+  mIsOnline = event.is_online;
+  mMeetingUrl = QString::fromStdString(event.meeting_url);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -123,6 +128,8 @@ DuckEvent QEventItem::toEvent() const {
   event.duration = mDuration;
   event.cost = mCost;
   event.payment_stat_id = mIsWorkItem ? mPaymentStatusId : kPaymentSkippedId;
+  event.is_online = mIsOnline;
+  event.meeting_url = mMeetingUrl.trimmed().toStdString();
   return event;
 }
 
@@ -156,6 +163,8 @@ QString QEventItem::getTitle() const { return mTitle; }
 QString QEventItem::getClientName() const { return mClientName; }
 std::optional<double> QEventItem::cost() const { return mCost; }
 int64_t QEventItem::paymentStatusId() const { return mPaymentStatusId; }
+bool QEventItem::isOnline() const { return mIsOnline; }
+QString QEventItem::meetingUrl() const { return mMeetingUrl; }
 unsigned long QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
@@ -186,6 +195,21 @@ void QEventItem::setPaymentStatusId(const int64_t paymentStatusId) {
     return;
   }
   mPaymentStatusId = normalizedId;
+  update();
+}
+
+void QEventItem::setOnline(const bool online) {
+  if (mIsOnline == online)
+    return;
+  mIsOnline = online;
+  update();
+}
+
+void QEventItem::setMeetingUrl(const QString &meetingUrl) {
+  const auto normalizedUrl = meetingUrl.trimmed();
+  if (mMeetingUrl == normalizedUrl)
+    return;
+  mMeetingUrl = normalizedUrl;
   update();
 }
 
@@ -295,6 +319,24 @@ void QEventItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
   }
 
   QMenu menu;
+  const bool hasValidMeetingUrl = pcm::meeting::isValidMeetingUrl(mMeetingUrl);
+  if (mIsOnline) {
+    auto *openMeetingAction = menu.addAction(tr("Open meeting"));
+    auto *copyMeetingUrlAction = menu.addAction(tr("Copy meeting link"));
+    auto *copyMeetingInviteAction = menu.addAction(tr("Copy meeting invite"));
+    openMeetingAction->setEnabled(hasValidMeetingUrl);
+    copyMeetingUrlAction->setEnabled(hasValidMeetingUrl);
+    copyMeetingInviteAction->setEnabled(hasValidMeetingUrl);
+    connect(openMeetingAction, &QAction::triggered, this,
+            [this]() { pcm::meeting::openMeetingUrl(mMeetingUrl); });
+    connect(copyMeetingUrlAction, &QAction::triggered, this,
+            [this]() { pcm::meeting::copyMeetingUrl(mMeetingUrl); });
+    connect(copyMeetingInviteAction, &QAction::triggered, this, [this]() {
+      pcm::meeting::copyMeetingInvite(mMeetingUrl, mClientName,
+                                      mStartTime.toUTC().toMSecsSinceEpoch());
+    });
+    menu.addSeparator();
+  }
   auto *editAction = menu.addAction(tr(": EVENT_CONTEXT_EDIT"));
   auto *deleteAction = menu.addAction(tr(": EVENT_CONTEXT_DELETE"));
   connect(editAction, &QAction::triggered, this,
@@ -345,12 +387,14 @@ void QEventItem::paint(QPainter *painter,
   if (mIsWorkItem) {
     constexpr int iconSize = 12;
     constexpr int iconTextSpacing = 6;
-    const auto briefcasePixmap = QIcon(":/icons/briefcase-solid-full.svg")
-                                     .pixmap(iconSize, iconSize);
-    const auto userPixmap =
-        QIcon(":/icons/user-solid-full.svg").pixmap(iconSize, iconSize);
-    const auto coinsPixmap =
-        QIcon(":/icons/coins-solid-full.svg").pixmap(iconSize, iconSize);
+    const QIcon briefcaseIcon(":/icons/briefcase-solid-full.svg");
+    const QIcon userIcon(":/icons/user-solid-full.svg");
+    const QIcon coinsIcon(":/icons/coins-solid-full.svg");
+    const QIcon onlineIcon(":/icons/calendar-solid-full.svg");
+    const auto drawIcon = [&](const QIcon &icon, const qreal x, const qreal y) {
+      icon.paint(painter, QRectF(x, y, iconSize, iconSize).toAlignedRect(),
+                 Qt::AlignCenter);
+    };
     const auto costText = formatEventCost(mCost);
     const qreal left = x + margin_x;
     const qreal right = x + mSize.width() - margin_x;
@@ -369,11 +413,10 @@ void QEventItem::paint(QPainter *painter,
       const qreal textLeft = contentRect.left() + iconSize + iconTextSpacing + 4.0;
       const qreal availableWidth =
           std::max<qreal>(0.0, contentRect.right() - textLeft - 4.0);
-      const auto elidedTitle = metrics.elidedText(mTitle, Qt::ElideRight, availableWidth);
-      painter->drawPixmap(
-          QPointF(contentRect.left() + 4.0,
-                  contentRect.top() + (contentRect.height() - iconSize) / 2.0),
-          briefcasePixmap);
+      const auto elidedTitle =
+          metrics.elidedText(mTitle, Qt::ElideRight, availableWidth);
+      drawIcon(briefcaseIcon, contentRect.left() + 4.0,
+               contentRect.top() + (contentRect.height() - iconSize) / 2.0);
       const QRectF textRect(textLeft, contentRect.top(),
                             availableWidth, contentRect.height());
       painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedTitle);
@@ -387,35 +430,35 @@ void QEventItem::paint(QPainter *painter,
     secondaryFont.setPointSizeF(secondaryFont.pointSizeF() - 0.5);
 
     struct FlowEntry {
-      QPixmap icon;
+      QIcon icon;
       QString text;
       QFont font;
       qreal naturalWidth = 0.0;
     };
 
     std::vector<FlowEntry> entries;
-    auto appendEntry = [&](const QPixmap& icon, const QString& text, const QFont& font) {
+    auto appendEntry = [&](const QIcon& icon, const QString& text, const QFont& font) {
       if (text.isEmpty()) {
         return;
       }
       const QFontMetricsF metrics(font);
       entries.push_back({icon, text, font,
-                         icon.width() + iconTextSpacing + metrics.horizontalAdvance(text)});
+                         iconSize + iconTextSpacing + metrics.horizontalAdvance(text)});
     };
 
-    appendEntry(briefcasePixmap, mTitle, titleFont);
+    appendEntry(briefcaseIcon, mTitle, titleFont);
 
     if (mSize.height() < 44) {
       if (!entries.empty()) {
         const auto& entry = entries.front();
         painter->setFont(entry.font);
-        painter->drawPixmap(QPointF(left, contentRect.top() + (contentRect.height() - iconSize) / 2.0),
-                            entry.icon);
+        drawIcon(entry.icon, left,
+                 contentRect.top() + (contentRect.height() - iconSize) / 2.0);
         const QFontMetricsF metrics(entry.font);
         const qreal textWidth =
-            std::max<qreal>(0.0, contentRect.width() - entry.icon.width() - iconTextSpacing - 4.0);
+            std::max<qreal>(0.0, contentRect.width() - iconSize - iconTextSpacing - 4.0);
         const auto elidedText = metrics.elidedText(entry.text, Qt::ElideRight, textWidth);
-        const QRectF textRect(left + entry.icon.width() + iconTextSpacing, contentRect.top(),
+        const QRectF textRect(left + iconSize + iconTextSpacing, contentRect.top(),
                               textWidth, contentRect.height());
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
       }
@@ -423,9 +466,12 @@ void QEventItem::paint(QPainter *painter,
       return;
     }
 
-    appendEntry(userPixmap, mClientName, secondaryFont);
-    appendEntry(coinsPixmap, costText, secondaryFont);
-    appendEntry(coinsPixmap, paymentStatusLabel(mPaymentStatusId), secondaryFont);
+    appendEntry(userIcon, mClientName, secondaryFont);
+    appendEntry(coinsIcon, costText, secondaryFont);
+    appendEntry(coinsIcon, paymentStatusLabel(mPaymentStatusId), secondaryFont);
+    if (mIsOnline) {
+      appendEntry(onlineIcon, tr("Online"), secondaryFont);
+    }
 
     const qreal maxWidth = right - left;
     std::vector<int> rowStarts{0};
@@ -456,16 +502,15 @@ void QEventItem::paint(QPainter *painter,
         const QFontMetricsF metrics(entry.font);
         const qreal remainingWidth = right - rowX;
         const qreal textWidth =
-            std::max<qreal>(0.0, remainingWidth - entry.icon.width() - iconTextSpacing);
+            std::max<qreal>(0.0, remainingWidth - iconSize - iconTextSpacing);
         if (textWidth <= 6.0 || rowY + rowHeight > bottom) {
           continue;
         }
 
         painter->setFont(entry.font);
-        painter->drawPixmap(QPointF(rowX, rowY + (rowHeight - entry.icon.height()) / 2.0),
-                            entry.icon);
+        drawIcon(entry.icon, rowX, rowY + (rowHeight - iconSize) / 2.0);
         const auto elidedText = metrics.elidedText(entry.text, Qt::ElideRight, textWidth);
-        const QRectF textRect(rowX + entry.icon.width() + iconTextSpacing, rowY,
+        const QRectF textRect(rowX + iconSize + iconTextSpacing, rowY,
                               textWidth, rowHeight);
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
         rowX += std::min(maxWidth, entry.naturalWidth) + itemGap;
@@ -474,7 +519,9 @@ void QEventItem::paint(QPainter *painter,
   } else {
     const QRectF textRect(x + margin_x, margin_y,
                           mSize.width() - 2.0 * margin_x, mSize.height() * 0.8);
-    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
+    const auto text = mIsOnline ? QStringLiteral("%1 · %2").arg(mTitle, tr("Online"))
+                                : mTitle;
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
   }
 
   painter->restore();

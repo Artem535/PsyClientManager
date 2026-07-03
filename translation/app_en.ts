@@ -35,6 +35,26 @@
         <translation>Combined view for the last six months</translation>
     </message>
     <message>
+        <source>Use the period switch to change chart range</source>
+        <translation>Use the period switch to change chart range</translation>
+    </message>
+    <message>
+        <source>Period</source>
+        <translation>Period</translation>
+    </message>
+    <message>
+        <source>6 months</source>
+        <translation>6 months</translation>
+    </message>
+    <message>
+        <source>12 months</source>
+        <translation>12 months</translation>
+    </message>
+    <message>
+        <source>All time</source>
+        <translation>All time</translation>
+    </message>
+    <message>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="128"/>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="148"/>
         <source>No events yet</source>
@@ -664,6 +684,42 @@
         <translation>Skipped</translation>
     </message>
     <message>
+        <source>Online session</source>
+        <translation>Online session</translation>
+    </message>
+    <message>
+        <source>Session format</source>
+        <translation>Session format</translation>
+    </message>
+    <message>
+        <source>Meeting link</source>
+        <translation>Meeting link</translation>
+    </message>
+    <message>
+        <source>https://...</source>
+        <translation>https://...</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Open</translation>
+    </message>
+    <message>
+        <source>Copy link</source>
+        <translation>Copy link</translation>
+    </message>
+    <message>
+        <source>Copy invite</source>
+        <translation>Copy invite</translation>
+    </message>
+    <message>
+        <source>Enter a valid http or https meeting link.</source>
+        <translation>Enter a valid http or https meeting link.</translation>
+    </message>
+    <message>
+        <source>Online session is enabled, but the meeting link is empty. Save without a link?</source>
+        <translation>Online session is enabled, but the meeting link is empty. Save without a link?</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
         <source>The selected time range overlaps an existing event.</source>
         <translation>The selected time range overlaps an existing event.</translation>
@@ -736,6 +792,22 @@
         <translation>Pending</translation>
     </message>
     <message>
+        <source>Open meeting</source>
+        <translation>Open meeting</translation>
+    </message>
+    <message>
+        <source>Copy meeting link</source>
+        <translation>Copy meeting link</translation>
+    </message>
+    <message>
+        <source>Copy meeting invite</source>
+        <translation>Copy meeting invite</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>Online</translation>
+    </message>
+    <message>
         <location filename="../src/event_view/event_item.cpp" line="259"/>
         <source>: EVENT_CONTEXT_EDIT</source>
         <translation>Edit</translation>
@@ -747,11 +819,60 @@
     </message>
 </context>
 <context>
+    <name>QEventView</name>
+    <message>
+        <source>Create event at %1</source>
+        <translation>Create event at %1</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="39"/>
         <source> ₽</source>
         <translation> ₽</translation>
+    </message>
+    <message>
+        <source>Enter a valid http or https meeting link.</source>
+        <translation>Enter a valid http or https meeting link.</translation>
+    </message>
+    <message>
+        <source>Hello!</source>
+        <translation>Hello!</translation>
+    </message>
+    <message>
+        <source>Hello, %1!</source>
+        <translation>Hello, %1!</translation>
+    </message>
+    <message>
+        <source>We meet on %1 at %2.</source>
+        <translation>We meet on %1 at %2.</translation>
+    </message>
+    <message>
+        <source>Connection link:</source>
+        <translation>Connection link:</translation>
+    </message>
+    <message>
+        <source>See you!</source>
+        <translation>See you!</translation>
+    </message>
+    <message>
+        <source>Hello, {client_name}!
+
+We meet on {date} at {time}.
+
+Connection link:
+{meeting_url}
+
+See you!</source>
+        <translation>Hello, {client_name}!
+
+We meet on {date} at {time}.
+
+Connection link:
+{meeting_url}
+
+See you!</translation>
     </message>
 </context>
 <context>
@@ -765,6 +886,30 @@
         <location filename="../src/app/settings_dialog.cpp" line="67"/>
         <source>Application settings</source>
         <translation>Application settings</translation>
+    </message>
+    <message>
+        <source>Online sessions</source>
+        <translation>Online sessions</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>General</translation>
+    </message>
+    <message>
+        <source>Events</source>
+        <translation>Events</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>Online</translation>
+    </message>
+    <message>
+        <source>Invite template</source>
+        <translation>Invite template</translation>
+    </message>
+    <message>
+        <source>Available variables: {client_name}, {date}, {time}, {meeting_url}</source>
+        <translation>Available variables: {client_name}, {date}, {time}, {meeting_url}</translation>
     </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="74"/>

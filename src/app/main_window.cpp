@@ -4,6 +4,7 @@
 
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
 #include <oclero/qlementine/widgets/Switch.hpp>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include <QApplication>
 #include <QIcon>
@@ -85,9 +86,10 @@ void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
   actionsLayout->setContentsMargins(0, 0, 0, 0);
   actionsLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
-  mClientSearchInput = new QLineEdit(mClientPageActions);
+  mClientSearchInput = new oclero::qlementine::LineEdit(mClientPageActions);
   mClientSearchInput->setPlaceholderText(tr("Search clients"));
   mClientSearchInput->setClearButtonEnabled(true);
+  mClientSearchInput->setIcon(QIcon(":/icons/user-solid-full.svg"));
   mClientSearchInput->setMinimumWidth(260);
 
   mShowInactiveClientsSwitch =

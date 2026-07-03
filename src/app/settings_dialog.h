@@ -10,10 +10,13 @@ class QDoubleSpinBox;
 class QLabel;
 class QPushButton;
 class QSpinBox;
+class QStackedWidget;
+class QTextEdit;
 class QTimeEdit;
 
 namespace oclero::qlementine {
 class ColorEditor;
+class SegmentedControl;
 class Switch;
 }
 
@@ -30,6 +33,8 @@ private:
   void connectSignals() const;
   void openDatabaseFolder() const;
 
+  oclero::qlementine::SegmentedControl *mSettingsSections{nullptr};
+  QStackedWidget *mSettingsStack{nullptr};
   QComboBox *mLanguageCombo{nullptr};
   QLabel *mDatabasePathLabel{nullptr};
   QPushButton *mOpenDatabaseFolderButton{nullptr};
@@ -42,6 +47,7 @@ private:
   QTimeEdit *mWorkDayStartEdit{nullptr};
   QTimeEdit *mWorkDayEndEdit{nullptr};
   QSpinBox *mDefaultSessionDurationSpinBox{nullptr};
+  QTextEdit *mMeetingInviteTemplateEdit{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
 };

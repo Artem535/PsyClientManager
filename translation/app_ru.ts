@@ -35,6 +35,26 @@
         <translation>Сводный график за последние шесть месяцев</translation>
     </message>
     <message>
+        <source>Use the period switch to change chart range</source>
+        <translation>Используйте переключатель периода, чтобы изменить диапазон графиков</translation>
+    </message>
+    <message>
+        <source>Period</source>
+        <translation>Период</translation>
+    </message>
+    <message>
+        <source>6 months</source>
+        <translation>6 месяцев</translation>
+    </message>
+    <message>
+        <source>12 months</source>
+        <translation>12 месяцев</translation>
+    </message>
+    <message>
+        <source>All time</source>
+        <translation>Весь период</translation>
+    </message>
+    <message>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="128"/>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="148"/>
         <source>No events yet</source>
@@ -658,6 +678,42 @@
         <translation>Без оплаты</translation>
     </message>
     <message>
+        <source>Online session</source>
+        <translation>Онлайн-сессия</translation>
+    </message>
+    <message>
+        <source>Session format</source>
+        <translation>Формат сессии</translation>
+    </message>
+    <message>
+        <source>Meeting link</source>
+        <translation>Ссылка на встречу</translation>
+    </message>
+    <message>
+        <source>https://...</source>
+        <translation>https://...</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Открыть</translation>
+    </message>
+    <message>
+        <source>Copy link</source>
+        <translation>Скопировать ссылку</translation>
+    </message>
+    <message>
+        <source>Copy invite</source>
+        <translation>Скопировать приглашение</translation>
+    </message>
+    <message>
+        <source>Enter a valid http or https meeting link.</source>
+        <translation>Введите корректную ссылку на встречу с http или https.</translation>
+    </message>
+    <message>
+        <source>Online session is enabled, but the meeting link is empty. Save without a link?</source>
+        <translation>Онлайн-сессия включена, но ссылка на встречу не указана. Сохранить без ссылки?</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
         <source>The selected time range overlaps an existing event.</source>
         <translation>Выбранный интервал времени пересекается с существующим событием.</translation>
@@ -730,6 +786,22 @@
         <translation>Не оплачено</translation>
     </message>
     <message>
+        <source>Open meeting</source>
+        <translation>Открыть встречу</translation>
+    </message>
+    <message>
+        <source>Copy meeting link</source>
+        <translation>Скопировать ссылку на встречу</translation>
+    </message>
+    <message>
+        <source>Copy meeting invite</source>
+        <translation>Скопировать приглашение на встречу</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>Онлайн</translation>
+    </message>
+    <message>
         <location filename="../src/event_view/event_item.cpp" line="259"/>
         <source>: EVENT_CONTEXT_EDIT</source>
         <translation>Изменить</translation>
@@ -741,11 +813,60 @@
     </message>
 </context>
 <context>
+    <name>QEventView</name>
+    <message>
+        <source>Create event at %1</source>
+        <translation>Создать событие в %1</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/pages/analytics_page/analytics_page.cpp" line="39"/>
         <source> ₽</source>
         <translation> ₽</translation>
+    </message>
+    <message>
+        <source>Enter a valid http or https meeting link.</source>
+        <translation>Введите корректную ссылку на встречу с http или https.</translation>
+    </message>
+    <message>
+        <source>Hello!</source>
+        <translation>Здравствуйте!</translation>
+    </message>
+    <message>
+        <source>Hello, %1!</source>
+        <translation>Здравствуйте, %1!</translation>
+    </message>
+    <message>
+        <source>We meet on %1 at %2.</source>
+        <translation>Встречаемся %1 в %2.</translation>
+    </message>
+    <message>
+        <source>Connection link:</source>
+        <translation>Ссылка для подключения:</translation>
+    </message>
+    <message>
+        <source>See you!</source>
+        <translation>До встречи!</translation>
+    </message>
+    <message>
+        <source>Hello, {client_name}!
+
+We meet on {date} at {time}.
+
+Connection link:
+{meeting_url}
+
+See you!</source>
+        <translation>Здравствуйте, {client_name}!
+
+Встречаемся {date} в {time}.
+
+Ссылка для подключения:
+{meeting_url}
+
+До встречи!</translation>
     </message>
 </context>
 <context>
@@ -759,6 +880,30 @@
         <location filename="../src/app/settings_dialog.cpp" line="67"/>
         <source>Application settings</source>
         <translation>Настройки приложения</translation>
+    </message>
+    <message>
+        <source>Online sessions</source>
+        <translation>Онлайн-сессии</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>Основные</translation>
+    </message>
+    <message>
+        <source>Events</source>
+        <translation>События</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>Онлайн</translation>
+    </message>
+    <message>
+        <source>Invite template</source>
+        <translation>Шаблон приглашения</translation>
+    </message>
+    <message>
+        <source>Available variables: {client_name}, {date}, {time}, {meeting_url}</source>
+        <translation>Доступные переменные: {client_name}, {date}, {time}, {meeting_url}</translation>
     </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="74"/>

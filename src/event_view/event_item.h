@@ -94,6 +94,8 @@ public:
   [[nodiscard]] QString getClientName() const;
   [[nodiscard]] std::optional<double> cost() const;
   [[nodiscard]] int64_t paymentStatusId() const;
+  [[nodiscard]] bool isOnline() const;
+  [[nodiscard]] QString meetingUrl() const;
 
   /**
    * @brief Returns the unique identifier of the event.
@@ -111,6 +113,8 @@ public:
   void setClientName(const QString &clientName);
   void setCost(std::optional<double> cost);
   void setPaymentStatusId(int64_t paymentStatusId);
+  void setOnline(bool online);
+  void setMeetingUrl(const QString &meetingUrl);
 
   /**
    * @brief Sets the start time of the event.
@@ -169,6 +173,8 @@ private:
   QString mClientName;        ///< Linked client name for work items.
   std::optional<double> mCost;///< Optional work event cost.
   int64_t mPaymentStatusId = 1; ///< Payment status for work items.
+  bool mIsOnline = false;
+  QString mMeetingUrl;
   QDateTime mStartTime;       ///< The start time of the event.
   QDateTime mEndTime;         ///< The end time of the event.
   unsigned long mId;          ///< Unique identifier of the event.

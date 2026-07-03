@@ -18,15 +18,16 @@ qt_add_library(${TARGET_NAME} STATIC
 add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_widgets
 )
 
 # Link Slint to the module
 target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_widgets
         Qt6::Widgets
         Qt6::Gui
 )
 
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-

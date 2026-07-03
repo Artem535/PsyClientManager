@@ -11,6 +11,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
         app_settings.cpp
+        meeting_utils.cpp
+        meeting_utils.h
         tab_button.cpp
         rounded_calendar_widget.cpp
         quick_slots_widget.cpp

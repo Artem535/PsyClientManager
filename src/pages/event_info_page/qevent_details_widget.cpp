@@ -1,11 +1,17 @@
 #include "qevent_details_widget.h"
 #include "../../widgets/app_settings.h"
+#include "../../widgets/meeting_utils.h"
 #include "ui/pages/ui_eventdetails.h"
 
 #include <oclero/qlementine/widgets/Switch.hpp>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
+#include <QHBoxLayout>
 #include <QIcon>
+#include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSize>
 #include <QTimeZone>
 
@@ -61,6 +67,33 @@ void QEventDetailsWidget::initUi() {
   mUI->mEventType->hide();
   mUI->mEventType->deleteLater();
 
+  mOnlineSessionSwitch = new oclero::qlementine::Switch(this);
+  mOnlineSessionSwitch->setText(tr("Online session"));
+  constexpr int onlineSectionRow = 7;
+  mUI->formLayout->insertRow(onlineSectionRow, tr("Session format"),
+                             mOnlineSessionSwitch);
+
+  mMeetingUrlLabel = new QLabel(tr("Meeting link"), this);
+  mMeetingUrlEdit = new oclero::qlementine::LineEdit(this);
+  mMeetingUrlEdit->setPlaceholderText(tr("https://..."));
+  mMeetingUrlEdit->setIcon(QIcon(":/icons/calendar-solid-full.svg"));
+  mUI->formLayout->insertRow(onlineSectionRow + 1, mMeetingUrlLabel,
+                             mMeetingUrlEdit);
+
+  mMeetingActionsWidget = new QWidget(this);
+  auto *meetingActionsLayout = new QHBoxLayout(mMeetingActionsWidget);
+  meetingActionsLayout->setContentsMargins(0, 0, 0, 0);
+  meetingActionsLayout->setSpacing(8);
+  mOpenMeetingButton = new QPushButton(tr("Open"), mMeetingActionsWidget);
+  mCopyMeetingUrlButton = new QPushButton(tr("Copy link"), mMeetingActionsWidget);
+  mCopyMeetingInviteButton = new QPushButton(tr("Copy invite"), mMeetingActionsWidget);
+  meetingActionsLayout->addWidget(mOpenMeetingButton);
+  meetingActionsLayout->addWidget(mCopyMeetingUrlButton);
+  meetingActionsLayout->addWidget(mCopyMeetingInviteButton);
+  meetingActionsLayout->addStretch();
+  mUI->formLayout->insertRow(onlineSectionRow + 2, QString(),
+                             mMeetingActionsWidget);
+
   mUI->mAddButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
   mUI->mAddButton->setIconSize(QSize(16, 16));
   mUI->mChangeButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
@@ -81,6 +114,16 @@ void QEventDetailsWidget::initConnections() {
   // --- Input Change Connections ---
   connect(mEventTypeSwitch, &QAbstractButton::toggled, this,
           &QEventDetailsWidget::onEventTypeToggled);
+  connect(mOnlineSessionSwitch, &QAbstractButton::toggled, this,
+          &QEventDetailsWidget::onOnlineSessionToggled);
+  connect(mMeetingUrlEdit, &QLineEdit::textChanged, this,
+          &QEventDetailsWidget::onMeetingUrlChanged);
+  connect(mOpenMeetingButton, &QPushButton::clicked, this,
+          &QEventDetailsWidget::onOpenMeetingClicked);
+  connect(mCopyMeetingUrlButton, &QPushButton::clicked, this,
+          &QEventDetailsWidget::onCopyMeetingUrlClicked);
+  connect(mCopyMeetingInviteButton, &QPushButton::clicked, this,
+          &QEventDetailsWidget::onCopyMeetingInviteClicked);
   connect(mUI->mTimeFrom, &QTimeEdit::timeChanged, this,
           &QEventDetailsWidget::onTimeFromChanged);
   connect(mUI->mTimeTo, &QTimeEdit::timeChanged, this,
@@ -104,6 +147,7 @@ void QEventDetailsWidget::initDefaultStyle() {
   mUI->mButtonBox->setVisible(false);
   mUI->mChangeButton->setVisible(true);
   mUI->mAddButton->setVisible(true);
+  onOnlineSessionToggled(mOnlineSessionSwitch->isChecked());
   emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
@@ -113,6 +157,7 @@ void QEventDetailsWidget::initEditStyle() {
   mUI->mAddButton->setVisible(false);
   mEventTypeSwitch->setEnabled(true);
   onEventTypeToggled(mEventTypeSwitch->isChecked());
+  onOnlineSessionToggled(mOnlineSessionSwitch->isChecked());
   emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
@@ -153,6 +198,8 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   mUI->mTimeTo->setTime(event->getEndTime().time());
   const bool isWorkItem = event->isWorkItem();
   mEventTypeSwitch->setChecked(isWorkItem);
+  mOnlineSessionSwitch->setChecked(event->isOnline());
+  mMeetingUrlEdit->setText(event->meetingUrl());
   mUI->mCostSpinBox->setValue(
       event->cost().value_or(pcm::app_settings::defaultWorkEventCost()));
   const auto paymentStatusData = QVariant::fromValue(event->paymentStatusId());
@@ -177,6 +224,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
 
   updateButtonState();
   onEventTypeToggled(isWorkItem);
+  onOnlineSessionToggled(event->isOnline());
 }
 
 void QEventDetailsWidget::startEditingEvent(
@@ -288,6 +336,10 @@ void QEventDetailsWidget::onApplyClicked() {
         mEventTypeSwitch->isChecked()
             ? mUI->mPaymentStatusComboBox->currentData().toLongLong()
             : kPaymentSkippedId);
+    mCurrentEvent->setOnline(mOnlineSessionSwitch->isChecked());
+    mCurrentEvent->setMeetingUrl(mOnlineSessionSwitch->isChecked()
+                                     ? mMeetingUrlEdit->text()
+                                     : QString{});
   }
 
   if (mCurrentEvent) {
@@ -373,6 +425,45 @@ void QEventDetailsWidget::onEventTypeToggled(bool checked) {
   }
 }
 
+void QEventDetailsWidget::onOnlineSessionToggled(const bool checked) {
+  mMeetingUrlLabel->setVisible(checked);
+  mMeetingUrlEdit->setVisible(checked);
+  mMeetingActionsWidget->setVisible(checked);
+  updateButtonState();
+}
+
+void QEventDetailsWidget::onMeetingUrlChanged(const QString &url) {
+  Q_UNUSED(url)
+  updateButtonState();
+}
+
+void QEventDetailsWidget::onOpenMeetingClicked() {
+  pcm::meeting::openMeetingUrl(mMeetingUrlEdit->text(), this);
+}
+
+void QEventDetailsWidget::onCopyMeetingUrlClicked() {
+  if (!pcm::meeting::isValidMeetingUrl(mMeetingUrlEdit->text())) {
+    QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                         tr("Enter a valid http or https meeting link."));
+    return;
+  }
+
+  pcm::meeting::copyMeetingUrl(mMeetingUrlEdit->text());
+}
+
+void QEventDetailsWidget::onCopyMeetingInviteClicked() {
+  if (!pcm::meeting::isValidMeetingUrl(mMeetingUrlEdit->text())) {
+    QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                         tr("Enter a valid http or https meeting link."));
+    return;
+  }
+
+  const auto event = collectEventData();
+  pcm::meeting::copyMeetingInvite(QString::fromStdString(event.meeting_url),
+                                  selectedClientName(),
+                                  event.start_date.value_or(0));
+}
+
 void QEventDetailsWidget::onTimeFromChanged(const QTime &timeFrom) {
   if (mUI->mTimeTo->time() < timeFrom) {
     mUI->mTimeTo->setTime(timeFrom.addSecs(60)); // At least 1 minute
@@ -393,6 +484,10 @@ void QEventDetailsWidget::updateButtonState() const {
   if (auto *applyButton = mUI->mButtonBox->button(QDialogButtonBox::Apply)) {
     applyButton->setEnabled(isValid);
   }
+  const bool hasValidMeetingUrl = pcm::meeting::isValidMeetingUrl(mMeetingUrlEdit->text());
+  mOpenMeetingButton->setEnabled(hasValidMeetingUrl);
+  mCopyMeetingUrlButton->setEnabled(hasValidMeetingUrl);
+  mCopyMeetingInviteButton->setEnabled(hasValidMeetingUrl);
 }
 
 bool QEventDetailsWidget::validateInput() {
@@ -408,6 +503,22 @@ bool QEventDetailsWidget::validateInput() {
     QMessageBox::warning(this, tr(": ERROR_TITLE"),
                          tr(": EVENT_DURATION_INVALID_ERROR"));
     return false;
+  }
+  if (mOnlineSessionSwitch->isChecked()) {
+    const auto meetingUrl = mMeetingUrlEdit->text().trimmed();
+    if (meetingUrl.isEmpty()) {
+      const auto answer = QMessageBox::question(
+          this, tr("Online session"),
+          tr("Online session is enabled, but the meeting link is empty. Save without a link?"),
+          QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+      if (answer != QMessageBox::Yes) {
+        return false;
+      }
+    } else if (!pcm::meeting::isValidMeetingUrl(meetingUrl)) {
+      QMessageBox::warning(this, tr(": ERROR_TITLE"),
+                           tr("Enter a valid http or https meeting link."));
+      return false;
+    }
   }
   return true;
 }
@@ -430,5 +541,8 @@ DuckEvent QEventDetailsWidget::collectEventData() const {
   event.payment_stat_id =
       event.is_work_event ? mUI->mPaymentStatusComboBox->currentData().toLongLong()
                           : kPaymentSkippedId;
+  event.is_online = mOnlineSessionSwitch->isChecked();
+  event.meeting_url =
+      event.is_online ? mMeetingUrlEdit->text().trimmed().toStdString() : std::string{};
   return event;
 }

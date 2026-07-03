@@ -64,6 +64,8 @@ void QEventInfoPage::connectSignals() {
           &QEventInfoPage::onTimelineEventEditRequested);
   connect(mTimelineWidget, &QTimelineWidget::eventDeleteRequested, this,
           &QEventInfoPage::onTimelineEventDeleteRequested);
+  connect(mTimelineWidget, &QTimelineWidget::createEventRequested, this,
+          &QEventInfoPage::openQuickEventDialog);
   connect(mTimelineWidget, &QTimelineWidget::needSceneUpdate, this,
           &QEventInfoPage::refreshQuickSlots);
   connect(mQuickSlotsWidget, &QuickSlotsWidget::quickSlotSelected, this,

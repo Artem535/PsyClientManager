@@ -4,14 +4,18 @@
 
 #include <QComboBox>
 #include <QDate>
-#include <QTime>
 #include <QHash>
+#include <QLabel>
+#include <QLineEdit>
 #include <QPointer>
+#include <QPushButton>
+#include <QTime>
 #include <QWidget>
 #include <functional>
 #include <memory>
 
 namespace oclero::qlementine {
+class LineEdit;
 class Switch;
 }
 
@@ -115,6 +119,11 @@ private slots:
 
   // --- Input Change Slots ---
   void onEventTypeToggled(bool checked);
+  void onOnlineSessionToggled(bool checked);
+  void onMeetingUrlChanged(const QString &url);
+  void onOpenMeetingClicked();
+  void onCopyMeetingUrlClicked();
+  void onCopyMeetingInviteClicked();
   void onTimeFromChanged(const QTime &timeFrom);
   void onTimeToChanged(const QTime &timeTo);
 
@@ -135,6 +144,13 @@ private:
   // --- UI ---
   std::unique_ptr<Ui::EventDetails> mUI;
   oclero::qlementine::Switch *mEventTypeSwitch = nullptr;
+  oclero::qlementine::Switch *mOnlineSessionSwitch = nullptr;
+  QLabel *mMeetingUrlLabel = nullptr;
+  oclero::qlementine::LineEdit *mMeetingUrlEdit = nullptr;
+  QWidget *mMeetingActionsWidget = nullptr;
+  QPushButton *mOpenMeetingButton = nullptr;
+  QPushButton *mCopyMeetingUrlButton = nullptr;
+  QPushButton *mCopyMeetingInviteButton = nullptr;
 
   // --- Data ---
   QPointer<QEventItem> mCurrentEvent;

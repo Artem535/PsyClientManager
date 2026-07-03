@@ -4,6 +4,7 @@
 #include <QGraphicsView>
 #include <QLoggingCategory>
 #include <QPainter>
+#include <QTime>
 #include <QVector>
 #include <QWidget>
 
@@ -24,6 +25,7 @@ signals:
   void eventSelected(int64_t eventId);
   void eventEditRequested(int64_t eventId);
   void eventDeleteRequested(int64_t eventId);
+  void createEventRequested(const QTime &startTime, int durationMinutes);
 
 public slots:
   void updateScene();
@@ -34,6 +36,7 @@ public slots:
   void onModelReset();
 
 protected:
+  void contextMenuEvent(QContextMenuEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
 
 private slots:

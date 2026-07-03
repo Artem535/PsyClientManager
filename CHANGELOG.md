@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-07-03
+
+### Added
+
+- online sessions through externally managed meeting links
+- meeting URL storage, opening, link copying, and invite copying from event forms
+- online-session indicators and context-menu actions on timeline event cards
+- configurable online-session invite template in settings
+
+### Changed
+
+- application and release metadata were synchronized to version `0.1.4`
+
 ## [0.1.3] - 2026-04-27
 
 ### Changed

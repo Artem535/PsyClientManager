@@ -24,6 +24,8 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
           &QTimelineWidget::eventEditRequested);
   connect(mEventView, &QEventView::eventDeleteRequested, this,
           &QTimelineWidget::eventDeleteRequested);
+  connect(mEventView, &QEventView::createEventRequested, this,
+          &QTimelineWidget::createEventRequested);
   // Defaults
   mModel->loadEventsForDay(QDate::currentDate());
 

@@ -45,7 +45,9 @@ CREATE TABLE IF NOT EXISTS Event (
     end_date TIMESTAMP,
     duration INTEGER,
     cost DOUBLE,
-    reminder_notified_at TIMESTAMP
+    reminder_notified_at TIMESTAMP,
+    is_online BOOLEAN DEFAULT FALSE,
+    meeting_url TEXT
 );
 
 -- Many-to-many relationship between clients and events
@@ -78,6 +80,8 @@ CREATE TABLE IF NOT EXISTS ClientNoteAttachment (
 constexpr auto kSchemaMigrations = R"duckdb(
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS cost DOUBLE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS reminder_notified_at TIMESTAMP;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_url TEXT;
 )duckdb";
 
 constexpr auto kInsertEventQuery = R"duckdb(
@@ -85,11 +89,12 @@ INSERT INTO Event (
     id,
     name, description, is_work_event,
     event_stat_id, payment_stat_id,
-    start_date, end_date, duration, cost
+    start_date, end_date, duration, cost,
+    is_online, meeting_url
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 FROM Event
 RETURNING id
 )duckdb";
@@ -105,11 +110,13 @@ SET name = $1,
     end_date = $7,
     duration = $8,
     cost = $9,
+    is_online = $10,
+    meeting_url = $11,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
     END
-WHERE id = $10
+WHERE id = $12
 )duckdb";
 
 constexpr auto kDeleteEventClientByEventIdQuery =
@@ -286,7 +293,7 @@ SELECT
     END), 0) AS income
 FROM Event e
 WHERE e.start_date IS NOT NULL
-  AND e.start_date >= date_trunc('month', current_timestamp) - (($1 - 1) * INTERVAL '1 month')
+  AND ($1 <= 0 OR e.start_date >= date_trunc('month', current_timestamp) - (($1 - 1) * INTERVAL '1 month'))
 GROUP BY 1, 2
 ORDER BY 1, 2
 )duckdb";

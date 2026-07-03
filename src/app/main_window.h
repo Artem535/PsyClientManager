@@ -20,6 +20,7 @@
 #include <optional>
 
 namespace oclero::qlementine {
+class LineEdit;
 class Switch;
 }
 
@@ -124,7 +125,7 @@ private:
   TabButton *mBtnProfile{nullptr};
   TabButton *mBtnNotes{nullptr};
   QWidget *mClientPageActions{nullptr};
-  QLineEdit *mClientSearchInput{nullptr};
+  oclero::qlementine::LineEdit *mClientSearchInput{nullptr};
   oclero::qlementine::Switch *mShowInactiveClientsSwitch{nullptr};
   QPushButton *mAddClientButton{nullptr};
   QPushButton *mBtnSettings{nullptr};

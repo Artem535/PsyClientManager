@@ -119,6 +119,8 @@ struct DuckEvent {
   std::optional<std::int64_t> duration = std::nullopt;
   std::optional<double> cost = std::nullopt;
   std::optional<std::int64_t> reminder_notified_at = std::nullopt;
+  bool is_online = false;
+  std::string meeting_url;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -134,6 +136,13 @@ struct DuckEvent {
     if (chunk.ColumnCount() > 10) {
       reminder_notified_at =
           db_utils::toOptionalTimestampMs(chunk.GetValue(10, index));
+    }
+    if (chunk.ColumnCount() > 11) {
+      const auto onlineValue = chunk.GetValue(11, index);
+      is_online = !onlineValue.IsNull() && db_utils::toBool(onlineValue);
+    }
+    if (chunk.ColumnCount() > 12) {
+      meeting_url = db_utils::toOptionalString(chunk.GetValue(12, index)).value_or("");
     }
   }
 };
@@ -155,7 +164,10 @@ inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
                                  << "cost=";
   print_optional(os, e.cost) << ", "
                              << "reminder_notified_at=";
-  print_optional(os, e.reminder_notified_at) << "}";
+  print_optional(os, e.reminder_notified_at)
+      << ", "
+      << "is_online=" << (e.is_online ? "true" : "false") << ", "
+      << "meeting_url=\"" << e.meeting_url << "\"}";
   return os;
 }
 // --- DuckEventClient ---

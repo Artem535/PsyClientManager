@@ -12,6 +12,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Client list with search and detail pages
 - Work and personal event separation
 - Session cost tracking
+- Online sessions through external meeting links
 - Analytics dashboard with charts
 - Dark UI powered by Qlementine
 - Cross-platform packaging through GitHub Actions
@@ -23,6 +24,8 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Creation and editing of work and personal events
 - Linked client selection for work events
 - Default pricing for work sessions
+- Online-session links with open, copy link, and copy invite actions
+- Configurable invite template for online sessions
 - Optional prevention of overlapping events
 - Client list with search and quick actions
 - Client detail page with charts

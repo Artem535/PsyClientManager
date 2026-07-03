@@ -3,16 +3,18 @@
 #include "qcustomplot.h"
 #include "../../widgets/constants.hpp"
 
+#include <oclero/qlementine/widgets/SegmentedControl.hpp>
+
 #include <algorithm>
 #include <QDate>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLocale>
+#include <QScrollArea>
 #include <QVBoxLayout>
 
 namespace {
-constexpr auto kMonthsVisible = 6;
 const QColor kAxisColor(255, 255, 255, 110);
 const QColor kTextColor(255, 255, 255, 215);
 const QColor kMutedTextColor(255, 255, 255, 140);
@@ -38,6 +40,27 @@ QString formatCurrency(const double value) {
   const auto rounded = qRound64(value);
   return QLocale().toString(rounded) + QObject::tr(" ₽");
 }
+
+int monthsBetweenInclusive(const QDate &startMonth, const QDate &endMonth) {
+  return (endMonth.year() - startMonth.year()) * 12 +
+         (endMonth.month() - startMonth.month()) + 1;
+}
+
+QDate firstMonthForStats(
+    const std::vector<pcm::database::DashboardMonthlyStats> &stats,
+    const int monthsBack) {
+  const auto currentDate = QDate::currentDate();
+  const auto currentMonth = QDate(currentDate.year(), currentDate.month(), 1);
+  if (monthsBack > 0 || stats.empty()) {
+    return currentMonth.addMonths(-(std::max(1, monthsBack) - 1));
+  }
+
+  const auto firstStats =
+      std::min_element(stats.begin(), stats.end(), [](const auto &left, const auto &right) {
+        return std::tie(left.year, left.month) < std::tie(right.year, right.month);
+      });
+  return QDate(firstStats->year, firstStats->month, 1);
+}
 } // namespace
 
 AnalyticsPage::AnalyticsPage(std::shared_ptr<pcm::database::Database> db,
@@ -53,7 +76,7 @@ void AnalyticsPage::refresh() {
   }
 
   const auto summary = mDb->get_dashboard_summary();
-  const auto stats = mDb->get_dashboard_monthly_stats(kMonthsVisible);
+  const auto stats = mDb->get_dashboard_monthly_stats(selectedMonthsBack());
 
   updateSummaryCards(summary);
   updateIncomePlot(stats);
@@ -61,7 +84,17 @@ void AnalyticsPage::refresh() {
 }
 
 void AnalyticsPage::buildUi() {
-  auto *rootLayout = new QVBoxLayout(this);
+  auto *outerLayout = new QVBoxLayout(this);
+  outerLayout->setContentsMargins(0, 0, 0, 0);
+  outerLayout->setSpacing(0);
+
+  auto *scrollArea = new QScrollArea(this);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+  auto *content = new QWidget(scrollArea);
+  auto *rootLayout = new QVBoxLayout(content);
   rootLayout->setContentsMargins(pcm::widgets::constants::kPanelPadding,
                                  pcm::widgets::constants::kPanelPadding,
                                  pcm::widgets::constants::kPanelPadding,
@@ -109,6 +142,27 @@ void AnalyticsPage::buildUi() {
 
   rootLayout->addLayout(summaryGrid);
 
+  auto *periodSurface = makeSurface(this);
+  auto *periodLayout = new QHBoxLayout(periodSurface);
+  periodLayout->setContentsMargins(16, 12, 16, 12);
+  periodLayout->setSpacing(12);
+  auto *periodLabel = new QLabel(tr("Period"), periodSurface);
+  periodLabel->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
+  mPeriodControl = new oclero::qlementine::SegmentedControl(periodSurface);
+  mPeriodControl->addItem(tr("6 months"), {}, {},
+                          static_cast<int>(AnalyticsPeriod::Last6Months));
+  mPeriodControl->addItem(tr("12 months"), {}, {},
+                          static_cast<int>(AnalyticsPeriod::Last12Months));
+  mPeriodControl->addItem(tr("All time"), {}, {},
+                          static_cast<int>(AnalyticsPeriod::All));
+  mPeriodControl->setItemsShouldExpand(true);
+  mPeriodControl->setCurrentData(static_cast<int>(AnalyticsPeriod::Last6Months));
+  connect(mPeriodControl, &oclero::qlementine::SegmentedControl::currentIndexChanged,
+          this, &AnalyticsPage::refresh);
+  periodLayout->addWidget(periodLabel, 0);
+  periodLayout->addWidget(mPeriodControl, 1);
+  rootLayout->addWidget(periodSurface);
+
   auto *incomeSurface = makeSurface(this);
   auto *incomeLayout = new QVBoxLayout(incomeSurface);
   incomeLayout->setContentsMargins(16, 14, 16, 16);
@@ -121,7 +175,7 @@ void AnalyticsPage::buildUi() {
   incomeTitle->setFont(titleFont);
   incomeTitle->setStyleSheet("color: rgba(255, 255, 255, 0.88);");
 
-  auto *incomeSubtitle = new QLabel(tr("Combined view for the last six months"), incomeSurface);
+  auto *incomeSubtitle = new QLabel(tr("Use the period switch to change chart range"), incomeSurface);
   incomeSubtitle->setStyleSheet("color: rgba(255, 255, 255, 0.55);");
 
   mIncomePlot = new QCustomPlot(incomeSurface);
@@ -151,10 +205,35 @@ void AnalyticsPage::buildUi() {
   mixLayout->addWidget(mixSubtitle);
   mixLayout->addWidget(mMixPlot, 1);
   rootLayout->addWidget(mixSurface, 1);
+
+  scrollArea->setWidget(content);
+  outerLayout->addWidget(scrollArea);
+}
+
+int AnalyticsPage::selectedMonthsBack() const {
+  if (!mPeriodControl) {
+    return 6;
+  }
+
+  const auto period =
+      static_cast<AnalyticsPeriod>(mPeriodControl->currentData().toInt());
+  switch (period) {
+  case AnalyticsPeriod::Last12Months:
+    return 12;
+  case AnalyticsPeriod::All:
+    return 0;
+  case AnalyticsPeriod::Last6Months:
+  default:
+    return 6;
+  }
 }
 
 void AnalyticsPage::initPlot(QCustomPlot *plot, const QString &placeholderText) const {
-  plot->setMinimumHeight(260);
+  plot->setMinimumHeight(180);
+  plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+  plot->axisRect()->setRangeDrag(Qt::Horizontal | Qt::Vertical);
+  plot->axisRect()->setRangeZoom(Qt::Horizontal | Qt::Vertical);
+  plot->axisRect()->setMinimumMargins(QMargins(48, 16, 48, 48));
   plot->setBackground(Qt::NoBrush);
   plot->axisRect()->setBackground(Qt::transparent);
   plot->legend->setVisible(true);
@@ -219,14 +298,17 @@ void AnalyticsPage::updateIncomePlot(
 
   const auto currentDate = QDate::currentDate();
   const auto currentMonth = QDate(currentDate.year(), currentDate.month(), 1);
-  ticks.reserve(kMonthsVisible);
-  sessions.reserve(kMonthsVisible);
-  income.reserve(kMonthsVisible);
-  labels.reserve(kMonthsVisible);
+  const auto firstMonth = firstMonthForStats(stats, selectedMonthsBack());
+  const int monthsVisible =
+      std::max(1, monthsBetweenInclusive(firstMonth, currentMonth));
+  ticks.reserve(monthsVisible);
+  sessions.reserve(monthsVisible);
+  income.reserve(monthsVisible);
+  labels.reserve(monthsVisible);
 
-  for (int offset = kMonthsVisible - 1; offset >= 0; --offset) {
-    const auto monthDate = currentMonth.addMonths(-offset);
-    const auto tick = static_cast<double>(kMonthsVisible - 1 - offset);
+  for (int offset = 0; offset < monthsVisible; ++offset) {
+    const auto monthDate = firstMonth.addMonths(offset);
+    const auto tick = static_cast<double>(offset);
     ticks.push_back(tick);
     labels.push_back(QLocale().standaloneMonthName(monthDate.month(), QLocale::ShortFormat));
 
@@ -265,7 +347,7 @@ void AnalyticsPage::updateIncomePlot(
   }
 
   mIncomePlot->xAxis->setTicker(ticker);
-  mIncomePlot->xAxis->setRange(-0.5, kMonthsVisible - 0.5);
+  mIncomePlot->xAxis->setRange(-0.5, monthsVisible - 0.5);
   mIncomePlot->yAxis->setLabel(tr("Sessions"));
   mIncomePlot->yAxis2->setLabel(tr("Income"));
 
@@ -300,14 +382,17 @@ void AnalyticsPage::updateMixPlot(
 
   const auto currentDate = QDate::currentDate();
   const auto currentMonth = QDate(currentDate.year(), currentDate.month(), 1);
-  ticks.reserve(kMonthsVisible);
-  workValues.reserve(kMonthsVisible);
-  personalValues.reserve(kMonthsVisible);
-  labels.reserve(kMonthsVisible);
+  const auto firstMonth = firstMonthForStats(stats, selectedMonthsBack());
+  const int monthsVisible =
+      std::max(1, monthsBetweenInclusive(firstMonth, currentMonth));
+  ticks.reserve(monthsVisible);
+  workValues.reserve(monthsVisible);
+  personalValues.reserve(monthsVisible);
+  labels.reserve(monthsVisible);
 
-  for (int offset = kMonthsVisible - 1; offset >= 0; --offset) {
-    const auto monthDate = currentMonth.addMonths(-offset);
-    const auto tick = static_cast<double>(kMonthsVisible - 1 - offset);
+  for (int offset = 0; offset < monthsVisible; ++offset) {
+    const auto monthDate = firstMonth.addMonths(offset);
+    const auto tick = static_cast<double>(offset);
     ticks.push_back(tick);
     labels.push_back(QLocale().standaloneMonthName(monthDate.month(), QLocale::ShortFormat));
 
@@ -351,7 +436,7 @@ void AnalyticsPage::updateMixPlot(
   }
 
   mMixPlot->xAxis->setTicker(ticker);
-  mMixPlot->xAxis->setRange(-0.5, kMonthsVisible - 0.5);
+  mMixPlot->xAxis->setRange(-0.5, monthsVisible - 0.5);
   mMixPlot->yAxis->setLabel(tr("Sessions"));
   mMixPlot->yAxis2->setLabel(QString());
 

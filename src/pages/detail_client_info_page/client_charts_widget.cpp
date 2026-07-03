@@ -100,8 +100,11 @@ void ClientChartsWidget::clear() {
 }
 
 void ClientChartsWidget::initPlot() {
-  mPlot->setMinimumHeight(280);
+  mPlot->setMinimumHeight(180);
   mPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+  mPlot->axisRect()->setRangeDrag(Qt::Horizontal | Qt::Vertical);
+  mPlot->axisRect()->setRangeZoom(Qt::Horizontal | Qt::Vertical);
+  mPlot->axisRect()->setMinimumMargins(QMargins(48, 16, 48, 48));
   mPlot->setBackground(Qt::NoBrush);
   mPlot->axisRect()->setBackground(Qt::transparent);
   mPlot->legend->setVisible(true);
