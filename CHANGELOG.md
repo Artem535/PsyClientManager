@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-04-27
+
+### Changed
+
+- macOS release packaging now builds the DMG from the installed `.app` bundle
+- CI now validates the packaged macOS bundle contents before publishing artifacts
+- application and release metadata were synchronized to version `0.1.3`
+
 ## [0.1.2] - 2026-03-29
 
 ### Added
