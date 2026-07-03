@@ -4,11 +4,13 @@
 
 #include <QComboBox>
 #include <QDate>
+#include <QDateEdit>
 #include <QHash>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPointer>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QTime>
 #include <QWidget>
 #include <functional>
@@ -16,6 +18,7 @@
 
 namespace oclero::qlementine {
 class LineEdit;
+class SegmentedControl;
 class Switch;
 }
 
@@ -75,6 +78,9 @@ public:
   [[nodiscard]] bool isCreatingNewEvent() const;
   [[nodiscard]] int64_t selectedClientId() const;
   [[nodiscard]] QString selectedClientName() const;
+  [[nodiscard]] bool isRecurring() const;
+  [[nodiscard]] QString recurrenceRule() const;
+  [[nodiscard]] std::optional<int64_t> recurrenceUntilMs() const;
 
   /**
    * @brief Returns a pointer to the current event (may be nullptr if creating a
@@ -120,6 +126,7 @@ private slots:
   // --- Input Change Slots ---
   void onEventTypeToggled(bool checked);
   void onOnlineSessionToggled(bool checked);
+  void onRecurrenceTypeChanged();
   void onMeetingUrlChanged(const QString &url);
   void onOpenMeetingClicked();
   void onCopyMeetingUrlClicked();
@@ -136,6 +143,9 @@ private:
   void initDefaultStates() const;
   void initDefaultTimes() const;
   void updateButtonState() const;
+  void updateRecurringControls() const;
+  void selectWeekday(int dayOfWeek, bool checked);
+  [[nodiscard]] QString selectedWeekdayRule() const;
 
   // --- Validation & Data Collection ---
   bool validateInput();
@@ -145,6 +155,13 @@ private:
   std::unique_ptr<Ui::EventDetails> mUI;
   oclero::qlementine::Switch *mEventTypeSwitch = nullptr;
   oclero::qlementine::Switch *mOnlineSessionSwitch = nullptr;
+  oclero::qlementine::SegmentedControl *mRepeatTypeControl = nullptr;
+  QWidget *mRecurringOptionsWidget = nullptr;
+  QSpinBox *mRepeatIntervalSpinBox = nullptr;
+  QWidget *mWeekdayOptionsWidget = nullptr;
+  QVector<QPushButton *> mWeekdayButtons;
+  oclero::qlementine::Switch *mRepeatUntilSwitch = nullptr;
+  QDateEdit *mRepeatUntilDateEdit = nullptr;
   QLabel *mMeetingUrlLabel = nullptr;
   oclero::qlementine::LineEdit *mMeetingUrlEdit = nullptr;
   QWidget *mMeetingActionsWidget = nullptr;

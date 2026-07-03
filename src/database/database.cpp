@@ -81,7 +81,9 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.duration),
        db_utils::toDuckValue(event.cost),
        duckdb::Value::BOOLEAN(event.is_online),
-       duckdb::Value(event.meeting_url)});
+       duckdb::Value(event.meeting_url),
+       db_utils::toDuckValue(event.series_id),
+       timestampMsOrNull(event.original_occurrence_start)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -152,6 +154,8 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.cost),
        duckdb::Value::BOOLEAN(event.is_online),
        duckdb::Value(event.meeting_url),
+       db_utils::toDuckValue(event.series_id),
+       timestampMsOrNull(event.original_occurrence_start),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
@@ -222,6 +226,118 @@ std::unique_ptr<DuckEvent> Database::get_event(const int64_t &id) {
   }
 
   return std::make_unique<DuckEvent>(*chunk, 0);
+}
+
+int64_t Database::add_event_series(const DuckEventSeries &series) {
+  if (!series.start_date.has_value() || !series.end_date.has_value() ||
+      series.recurrence_rule.empty()) {
+    PLOG_WARNING << "Attempt to add invalid event series";
+    return 0;
+  }
+
+  duckdb::Connection conn(*mDb);
+  const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
+  auto result = executePrepared(
+      conn, constance::kInsertEventSeriesQuery,
+      {db_utils::toDuckValue(series.name),
+       db_utils::toDuckValue(series.description),
+       db_utils::toDuckValue(series.client_id),
+       duckdb::Value::BOOLEAN(series.is_work_event),
+       duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
+       duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
+       timestampMsOrNull(series.start_date),
+       timestampMsOrNull(series.end_date),
+       db_utils::toDuckValue(series.duration),
+       db_utils::toDuckValue(series.cost),
+       duckdb::Value::BOOLEAN(series.is_online),
+       duckdb::Value(series.meeting_url),
+       duckdb::Value(series.recurrence_rule),
+       timestampMsOrNull(series.recurrence_until),
+       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to insert event series: " << result->GetError();
+    return 0;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    PLOG_ERROR << "Empty result from RETURNING id in add_event_series";
+    return 0;
+  }
+
+  return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+std::vector<DuckEventSeries>
+Database::get_event_series_for_range(const int64_t &start_ms,
+                                     const int64_t &end_ms) {
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventSeriesForRangeQuery,
+      {db_utils::toDuckTimestamp(std::make_optional(end_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(start_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get event series: " << result->GetError();
+    return {};
+  }
+
+  std::vector<DuckEventSeries> series;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      series.emplace_back(*chunk, i);
+    }
+  }
+  return series;
+}
+
+std::set<std::pair<int64_t, int64_t>>
+Database::get_event_series_exceptions_for_range(const int64_t &start_ms,
+                                                const int64_t &end_ms) {
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventSeriesExceptionsForRangeQuery,
+      {db_utils::toDuckTimestamp(std::make_optional(start_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(end_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get event series exceptions: " << result->GetError();
+    return {};
+  }
+
+  std::set<std::pair<int64_t, int64_t>> exceptions;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      const auto seriesId =
+          static_cast<int64_t>(chunk->GetValue(0, i).GetValue<int32_t>());
+      const auto occurrenceStart =
+          db_utils::toOptionalTimestampMs(chunk->GetValue(1, i)).value_or(0);
+      exceptions.insert({seriesId, occurrenceStart});
+    }
+  }
+  return exceptions;
+}
+
+bool Database::add_event_series_exception(const int64_t series_id,
+                                          const int64_t occurrence_start_ms,
+                                          const std::string &reason) {
+  if (series_id <= 0 || occurrence_start_ms <= 0) {
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kInsertEventSeriesExceptionQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000)),
+       reason.empty() ? duckdb::Value() : duckdb::Value(reason)});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to add event series exception: " << result->GetError();
+    return false;
+  }
+  return true;
 }
 
 // --- Client ---

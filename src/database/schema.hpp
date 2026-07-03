@@ -121,6 +121,9 @@ struct DuckEvent {
   std::optional<std::int64_t> reminder_notified_at = std::nullopt;
   bool is_online = false;
   std::string meeting_url;
+  std::optional<std::int64_t> series_id = std::nullopt;
+  std::optional<std::int64_t> original_occurrence_start = std::nullopt;
+  bool is_virtual_occurrence = false;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -143,6 +146,13 @@ struct DuckEvent {
     }
     if (chunk.ColumnCount() > 12) {
       meeting_url = db_utils::toOptionalString(chunk.GetValue(12, index)).value_or("");
+    }
+    if (chunk.ColumnCount() > 13) {
+      series_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(13, index));
+    }
+    if (chunk.ColumnCount() > 14) {
+      original_occurrence_start =
+          db_utils::toOptionalTimestampMs(chunk.GetValue(14, index));
     }
   }
 };
@@ -167,9 +177,57 @@ inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
   print_optional(os, e.reminder_notified_at)
       << ", "
       << "is_online=" << (e.is_online ? "true" : "false") << ", "
-      << "meeting_url=\"" << e.meeting_url << "\"}";
+      << "meeting_url=\"" << e.meeting_url << "\", "
+      << "series_id=";
+  print_optional(os, e.series_id) << ", "
+                                  << "original_occurrence_start=";
+  print_optional(os, e.original_occurrence_start)
+      << ", "
+      << "is_virtual_occurrence=" << (e.is_virtual_occurrence ? "true" : "false")
+      << "}";
   return os;
 }
+
+// --- DuckEventSeries ---
+struct DuckEventSeries {
+  std::int64_t id = -1;
+  std::optional<std::string> name = std::nullopt;
+  std::optional<std::string> description = std::nullopt;
+  std::optional<std::string> client_name = std::nullopt;
+  std::optional<std::int64_t> client_id = std::nullopt;
+  bool is_work_event = false;
+  std::int64_t event_stat_id = -1;
+  std::int64_t payment_stat_id = -1;
+  std::optional<std::int64_t> start_date = std::nullopt;
+  std::optional<std::int64_t> end_date = std::nullopt;
+  std::optional<std::int64_t> duration = std::nullopt;
+  std::optional<double> cost = std::nullopt;
+  bool is_online = false;
+  std::string meeting_url;
+  std::string recurrence_rule;
+  std::optional<std::int64_t> recurrence_until = std::nullopt;
+  bool active = true;
+
+  DuckEventSeries() = default;
+  DuckEventSeries(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+    id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
+    name = db_utils::toOptionalString(chunk.GetValue(1, index));
+    description = db_utils::toOptionalString(chunk.GetValue(2, index));
+    client_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(3, index));
+    is_work_event = db_utils::toBool(chunk.GetValue(4, index));
+    event_stat_id = db_utils::toInt32AsInt64(chunk.GetValue(5, index));
+    payment_stat_id = db_utils::toInt32AsInt64(chunk.GetValue(6, index));
+    start_date = db_utils::toOptionalTimestampMs(chunk.GetValue(7, index));
+    end_date = db_utils::toOptionalTimestampMs(chunk.GetValue(8, index));
+    duration = db_utils::toOptionalInt32AsInt64(chunk.GetValue(9, index));
+    cost = db_utils::toOptionalDouble(chunk.GetValue(10, index));
+    is_online = db_utils::toBool(chunk.GetValue(11, index));
+    meeting_url = db_utils::toOptionalString(chunk.GetValue(12, index)).value_or("");
+    recurrence_rule = chunk.GetValue(13, index).ToString();
+    recurrence_until = db_utils::toOptionalTimestampMs(chunk.GetValue(14, index));
+    active = db_utils::toBool(chunk.GetValue(15, index));
+  }
+};
 // --- DuckEventClient ---
 struct DuckEventClient {
   std::int64_t id = -1;

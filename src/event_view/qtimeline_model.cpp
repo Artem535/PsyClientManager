@@ -1,7 +1,10 @@
 // src/timeline_widget/timeline_model.cpp
 #include "qtimeline_model.h"
+#include "recurrence_utils.h"
 #include <QDateTime>
 #include <QTimeZone>
+#include <algorithm>
+#include <set>
 
 namespace {
 QString fullClientName(const DuckClient &client) {
@@ -92,7 +95,11 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
 
   const auto events = mDb->get_day_events(dayStartMs, dayEndMs);
   mEvents = std::move(QVector<DuckEvent>(events.begin(), events.end()));
+  std::set<std::pair<int64_t, int64_t>> materializedOccurrences;
   for (auto &event : mEvents) {
+    if (event.series_id.has_value() && event.original_occurrence_start.has_value()) {
+      materializedOccurrences.insert({*event.series_id, *event.original_occurrence_start});
+    }
     if (!event.is_work_event) {
       continue;
     }
@@ -107,6 +114,42 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
       event.client_name = std::nullopt;
     }
   }
+
+  const auto rangeStart = QDateTime(date, QTime(0, 0), localTz);
+  const auto rangeEnd = QDateTime(date.addDays(1), QTime(0, 0), localTz).addMSecs(-1);
+  const auto exceptions = mDb->get_event_series_exceptions_for_range(dayStartMs, dayEndMs);
+  auto seriesList = mDb->get_event_series_for_range(dayStartMs, dayEndMs);
+  for (auto &series : seriesList) {
+    if (series.is_work_event && series.client_id.has_value()) {
+      try {
+        const auto client = mDb->get_client(*series.client_id);
+        if (client) {
+          const auto displayName = fullClientName(*client);
+          if (!displayName.isEmpty()) {
+            series.client_name = displayName.toStdString();
+          }
+        }
+      } catch (const std::exception &) {
+        series.client_name = std::nullopt;
+      }
+    }
+
+    const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
+    for (const auto &occurrence : occurrences) {
+      const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
+      if (exceptions.contains({series.id, occurrenceStartMs}) ||
+          materializedOccurrences.contains({series.id, occurrenceStartMs})) {
+        continue;
+      }
+      const auto virtualId =
+          -(series.id * 1'000'000LL + static_cast<int64_t>(occurrence.date().toJulianDay()));
+      mEvents.append(pcm::recurrence::buildVirtualOccurrence(series, occurrence, virtualId));
+    }
+  }
+
+  std::sort(mEvents.begin(), mEvents.end(), [](const DuckEvent &left, const DuckEvent &right) {
+    return left.start_date.value_or(0) < right.start_date.value_or(0);
+  });
   qDebug() << "QTimelineModel::loadEventsForDay date=" << date
            << "loaded events=" << mEvents.size();
 
@@ -128,9 +171,45 @@ int64_t QTimelineModel::addEvent(const DuckEvent &event, const bool allowOverlap
   return newEvent.id;
 }
 
+int64_t QTimelineModel::addEventSeries(const DuckEvent &event, const int64_t clientId,
+                                       const QString &recurrenceRule,
+                                       const std::optional<int64_t> recurrenceUntilMs) {
+  DuckEventSeries series;
+  series.name = event.name;
+  series.description = event.description;
+  series.client_id = clientId > 0 ? std::make_optional(clientId) : std::nullopt;
+  series.is_work_event = event.is_work_event;
+  series.event_stat_id = event.event_stat_id;
+  series.payment_stat_id = event.payment_stat_id;
+  series.start_date = event.start_date;
+  series.end_date = event.end_date;
+  series.duration = event.duration;
+  series.cost = event.cost;
+  series.is_online = event.is_online;
+  series.meeting_url = event.meeting_url;
+  series.recurrence_rule = recurrenceRule.trimmed().toStdString();
+  series.recurrence_until = recurrenceUntilMs;
+
+  return mDb ? mDb->add_event_series(series) : 0;
+}
+
 void QTimelineModel::removeEvent(int64_t id) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
+      if (mEvents[i].is_virtual_occurrence && mEvents[i].series_id.has_value() &&
+          mEvents[i].original_occurrence_start.has_value()) {
+        if (!mDb->add_event_series_exception(*mEvents[i].series_id,
+                                             *mEvents[i].original_occurrence_start,
+                                             "deleted")) {
+          qWarning() << "QTimelineModel::removeEvent failed to add series exception for id="
+                     << id;
+          return;
+        }
+        beginRemoveRows({}, i, i);
+        mEvents.removeAt(i);
+        endRemoveRows();
+        break;
+      }
       if (!mDb->remove_event(id)) {
         qWarning() << "QTimelineModel::removeEvent failed for id=" << id;
         return;

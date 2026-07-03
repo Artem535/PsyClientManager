@@ -5,6 +5,7 @@
 #include <QDate>
 #include <QVector>
 #include <memory>
+#include <optional>
 
 #include "database.h"
 #include "event_item.h" // for DuckEvent
@@ -40,6 +41,9 @@ public:
   // API
   void loadEventsForDay(const QDate &date);
   int64_t addEvent(const DuckEvent &event, bool allowOverlap = true);
+  int64_t addEventSeries(const DuckEvent &event, int64_t clientId,
+                         const QString &recurrenceRule,
+                         std::optional<int64_t> recurrenceUntilMs);
   void removeEvent(int64_t id);
   void updateEvent(const DuckEvent &event, bool allowOverlap = true);
   bool hasConflict(const DuckEvent &event) const;

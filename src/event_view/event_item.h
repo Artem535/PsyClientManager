@@ -37,7 +37,7 @@ public:
    * @param endTime The end time of the event.
    * @param isWorkItem True if the event is a work-related item.
    */
-  QEventItem(unsigned long id, const QString &title, const QDateTime &startTime,
+  QEventItem(int64_t id, const QString &title, const QDateTime &startTime,
              const QDateTime &endTime, bool isWorkItem = false);
 
   void updateFromEvent(const DuckEvent &data);
@@ -101,7 +101,7 @@ public:
    * @brief Returns the unique identifier of the event.
    * @return The event ID.
    */
-  [[nodiscard]] unsigned long getId() const;
+  [[nodiscard]] int64_t getId() const;
 
   [[nodiscard]] bool isWorkItem() const;
 
@@ -175,9 +175,12 @@ private:
   int64_t mPaymentStatusId = 1; ///< Payment status for work items.
   bool mIsOnline = false;
   QString mMeetingUrl;
+  std::optional<int64_t> mSeriesId;
+  std::optional<int64_t> mOriginalOccurrenceStart;
+  bool mIsVirtualOccurrence = false;
   QDateTime mStartTime;       ///< The start time of the event.
   QDateTime mEndTime;         ///< The end time of the event.
-  unsigned long mId;          ///< Unique identifier of the event.
+  int64_t mId = -1;           ///< Unique identifier of the event.
   unsigned int mDuration = 0; ///< Duration of the event in minutes.
 
   void updateDuration();

@@ -41,7 +41,7 @@ QString paymentStatusLabel(const int64_t paymentStatusId) {
 }
 } // namespace
 
-QEventItem::QEventItem(const unsigned long id, const QString &title,
+QEventItem::QEventItem(const int64_t id, const QString &title,
                        const QDateTime &startTime, const QDateTime &endTime,
                        const bool isWorkItem)
     : mIsWorkItem(isWorkItem), mSize(100, 100), mTitle(title),
@@ -68,6 +68,9 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
+  mSeriesId = event.series_id;
+  mOriginalOccurrenceStart = event.original_occurrence_start;
+  mIsVirtualOccurrence = event.is_virtual_occurrence;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -98,6 +101,9 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
+  mSeriesId = event.series_id;
+  mOriginalOccurrenceStart = event.original_occurrence_start;
+  mIsVirtualOccurrence = event.is_virtual_occurrence;
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -130,6 +136,9 @@ DuckEvent QEventItem::toEvent() const {
   event.payment_stat_id = mIsWorkItem ? mPaymentStatusId : kPaymentSkippedId;
   event.is_online = mIsOnline;
   event.meeting_url = mMeetingUrl.trimmed().toStdString();
+  event.series_id = mSeriesId;
+  event.original_occurrence_start = mOriginalOccurrenceStart;
+  event.is_virtual_occurrence = mIsVirtualOccurrence;
   return event;
 }
 
@@ -165,7 +174,7 @@ std::optional<double> QEventItem::cost() const { return mCost; }
 int64_t QEventItem::paymentStatusId() const { return mPaymentStatusId; }
 bool QEventItem::isOnline() const { return mIsOnline; }
 QString QEventItem::meetingUrl() const { return mMeetingUrl; }
-unsigned long QEventItem::getId() const { return mId; }
+int64_t QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
 void QEventItem::setTitle(const QString &title) {

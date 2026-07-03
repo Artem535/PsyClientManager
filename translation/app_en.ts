@@ -692,6 +692,90 @@
         <translation>Session format</translation>
     </message>
     <message>
+        <source>Repeat</source>
+        <translation>Repeat</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>None</translation>
+    </message>
+    <message>
+        <source>Day</source>
+        <translation>Day</translation>
+    </message>
+    <message>
+        <source>Week</source>
+        <translation>Week</translation>
+    </message>
+    <message>
+        <source>Month</source>
+        <translation>Month</translation>
+    </message>
+    <message>
+        <source>Year</source>
+        <translation>Year</translation>
+    </message>
+    <message>
+        <source>Every</source>
+        <translation>Every</translation>
+    </message>
+    <message>
+        <source> week(s)</source>
+        <translation> week(s)</translation>
+    </message>
+    <message>
+        <source> day(s)</source>
+        <translation> day(s)</translation>
+    </message>
+    <message>
+        <source> month(s)</source>
+        <translation> month(s)</translation>
+    </message>
+    <message>
+        <source> year(s)</source>
+        <translation> year(s)</translation>
+    </message>
+    <message>
+        <source>Until</source>
+        <translation>Until</translation>
+    </message>
+    <message>
+        <source>Days</source>
+        <translation>Days</translation>
+    </message>
+    <message>
+        <source>Mon</source>
+        <translation>Mon</translation>
+    </message>
+    <message>
+        <source>Tue</source>
+        <translation>Tue</translation>
+    </message>
+    <message>
+        <source>Wed</source>
+        <translation>Wed</translation>
+    </message>
+    <message>
+        <source>Thu</source>
+        <translation>Thu</translation>
+    </message>
+    <message>
+        <source>Fri</source>
+        <translation>Fri</translation>
+    </message>
+    <message>
+        <source>Sat</source>
+        <translation>Sat</translation>
+    </message>
+    <message>
+        <source>Sun</source>
+        <translation>Sun</translation>
+    </message>
+    <message>
+        <source>Repeat end date must not be earlier than the event date.</source>
+        <translation>Repeat end date must not be earlier than the event date.</translation>
+    </message>
+    <message>
         <source>Meeting link</source>
         <translation>Meeting link</translation>
     </message>
