@@ -115,6 +115,28 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_url TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS original_occurrence_start TIMESTAMP;
+
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS client_id INTEGER;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS is_work_event BOOLEAN;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS event_stat_id INTEGER;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS payment_stat_id INTEGER;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS start_date TIMESTAMP;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS end_date TIMESTAMP;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS duration INTEGER;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS cost DOUBLE;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS meeting_url TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS recurrence_rule TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS recurrence_until TIMESTAMP;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT TRUE;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+
+ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
+ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
+ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS reason TEXT;
 )duckdb";
 
 constexpr auto kInsertEventQuery = R"duckdb(
@@ -164,10 +186,9 @@ INSERT INTO EventSeries (
     active, created_at, updated_at
 )
 SELECT
-    COALESCE(MAX(id), 0) + 1,
+    COALESCE((SELECT MAX(id) FROM EventSeries), 0) + 1,
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
     $11, $12, $13, $14, TRUE, $15, $15
-FROM EventSeries
 RETURNING id
 )duckdb";
 
@@ -176,6 +197,45 @@ SELECT * FROM EventSeries
 WHERE active = TRUE
   AND start_date <= $1
   AND (recurrence_until IS NULL OR recurrence_until >= $2)
+)duckdb";
+
+constexpr auto kSelectEventSeriesByIdQuery = R"duckdb(
+SELECT * FROM EventSeries
+WHERE id = $1
+LIMIT 1
+)duckdb";
+
+constexpr auto kUpdateEventSeriesQuery = R"duckdb(
+UPDATE EventSeries
+SET name = $1,
+    description = $2,
+    client_id = $3,
+    is_work_event = $4,
+    event_stat_id = $5,
+    payment_stat_id = $6,
+    start_date = $7,
+    end_date = $8,
+    duration = $9,
+    cost = $10,
+    is_online = $11,
+    meeting_url = $12,
+    recurrence_rule = $13,
+    recurrence_until = $14,
+    updated_at = $15
+WHERE id = $16
+)duckdb";
+
+constexpr auto kDeactivateEventSeriesQuery = R"duckdb(
+UPDATE EventSeries
+SET active = FALSE,
+    updated_at = $2
+WHERE id = $1
+)duckdb";
+
+constexpr auto kDeleteEventSeriesOverridesFromQuery = R"duckdb(
+DELETE FROM Event
+WHERE series_id = $1
+  AND original_occurrence_start >= $2
 )duckdb";
 
 constexpr auto kSelectEventSeriesExceptionsForRangeQuery = R"duckdb(
@@ -290,6 +350,14 @@ LIMIT 1
 constexpr auto kSelectDayEventsQuery = R"duckdb(
 SELECT * FROM Event
 WHERE start_date <= $1 AND end_date >= $2
+  AND (
+    series_id IS NULL
+    OR EXISTS (
+      SELECT 1 FROM EventSeries
+      WHERE EventSeries.id = Event.series_id
+        AND EventSeries.active = TRUE
+    )
+  )
 )duckdb";
 
 constexpr auto kSelectUpcomingEventsQuery = R"duckdb(
@@ -299,6 +367,14 @@ WHERE start_date IS NOT NULL
   AND start_date <= $2
   AND event_stat_id != 3
   AND reminder_notified_at IS NULL
+  AND (
+    series_id IS NULL
+    OR EXISTS (
+      SELECT 1 FROM EventSeries
+      WHERE EventSeries.id = Event.series_id
+        AND EventSeries.active = TRUE
+    )
+  )
 ORDER BY start_date ASC
 )duckdb";
 

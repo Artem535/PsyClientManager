@@ -56,3 +56,55 @@ index 5a2cab2..fa0473b 100644
        removeWidget(widget);
      });
    }
+diff --git a/lib/src/style/eventFilters/ComboboxItemViewFilter.hpp b/lib/src/style/eventFilters/ComboboxItemViewFilter.hpp
+index 77eed32..40920a6 100644
+--- a/lib/src/style/eventFilters/ComboboxItemViewFilter.hpp
++++ b/lib/src/style/eventFilters/ComboboxItemViewFilter.hpp
+@@ -88,16 +88,17 @@ private:
+           const auto hMargin = qlementineStyle->pixelMetric(QStyle::PM_MenuHMargin);
+           const auto shadowWidth = qlementineStyle->theme().spacing;
+           const auto borderWidth = qlementineStyle->theme().borderWidth;
++          const auto popupMargin = shadowWidth + borderWidth;
+ 
+           // Width.
+           const auto absoluteMinWidth = qlementineStyle->theme().controlHeightLarge * (isTreeView ? 2 : 1);
+           const auto absoluteMaxWidth = qlementineStyle->theme().controlHeightLarge * 24;
+-          const auto width = std::min(absoluteMaxWidth, std::max({
+-                                                          _comboBox->width(),
+-                                                          view->sizeHintForColumn(0),
+-                                                          absoluteMinWidth,
+-                                                        }))
+-                             + shadowWidth * 2 + hMargin * 2 + borderWidth * 2;
++          const auto outerWidth = std::min(absoluteMaxWidth, std::max({
++                                                               _comboBox->width(),
++                                                               view->sizeHintForColumn(0) + hMargin * 2,
++                                                               absoluteMinWidth,
++                                                             }));
++          const auto width = std::max(absoluteMinWidth, outerWidth - popupMargin * 2);
+ 
+           // Height.
+           const auto absoluteMinHeight = qlementineStyle->theme().controlHeightLarge * (isTreeView ? 5 : 1);
+@@ -106,10 +107,12 @@ private:
+           const auto absoluteMaxHeight = screen != nullptr ?
+                                              screen->geometry().height() - 128 - viewGlobalY :
+                                              qlementineStyle->theme().controlHeightLarge * 10;
+-          const auto height = std::min(absoluteMaxHeight, std::max(absoluteMinHeight, viewMinimumSizeHint().height()));
+ 
+           view->setFixedWidth(width);
+-          view->setFixedHeight(height);
++          if (absoluteMaxHeight > 0) {
++            const auto height = std::min(absoluteMaxHeight, std::max(absoluteMinHeight, viewMinimumSizeHint().height()));
++            view->setFixedHeight(height);
++          }
+           view->parentWidget()->adjustSize();
+         }
+       }
+@@ -132,7 +135,7 @@ private:
+       const auto rowCount = _view->model()->rowCount();
+       for (auto i = 0; i < rowCount && height <= _initialMaxHeight; ++i) {
+         const auto rowSizeHint = _view->sizeHintForRow(i);
+-        height = std::min(_initialMaxHeight, height + rowSizeHint);
++        height = std::min(_initialMaxHeight, height + std::max(0, rowSizeHint));
+       }
+     }
+     // It looks like it is OK for the width, though.

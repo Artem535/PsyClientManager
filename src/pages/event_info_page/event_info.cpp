@@ -13,6 +13,69 @@
 
 Q_LOGGING_CATEGORY(logEventInfo, "pcm.EventInfo")
 
+namespace {
+enum class RecurringEditScope {
+  Cancel,
+  SingleOccurrence,
+  WholeSeries,
+};
+
+enum class RecurringDeleteScope {
+  Cancel,
+  SingleOccurrence,
+  FutureOccurrences,
+  WholeSeries,
+};
+
+RecurringEditScope askRecurringEditScope(QWidget *parent) {
+  QMessageBox messageBox(parent);
+  messageBox.setWindowTitle(QObject::tr("Recurring event"));
+  messageBox.setText(QObject::tr("What do you want to update?"));
+  const auto singleButton =
+      messageBox.addButton(QObject::tr("Only this event"), QMessageBox::AcceptRole);
+  const auto seriesButton =
+      messageBox.addButton(QObject::tr("Whole series"), QMessageBox::ActionRole);
+  messageBox.addButton(QMessageBox::Cancel);
+  messageBox.setDefaultButton(singleButton);
+  messageBox.exec();
+
+  if (messageBox.clickedButton() == singleButton) {
+    return RecurringEditScope::SingleOccurrence;
+  }
+  if (messageBox.clickedButton() == seriesButton) {
+    return RecurringEditScope::WholeSeries;
+  }
+  return RecurringEditScope::Cancel;
+}
+
+RecurringDeleteScope askRecurringDeleteScope(QWidget *parent) {
+  QMessageBox messageBox(parent);
+  messageBox.setWindowTitle(QObject::tr("Recurring event"));
+  messageBox.setText(QObject::tr("What do you want to delete?"));
+  const auto singleButton =
+      messageBox.addButton(QObject::tr("Only this event"), QMessageBox::AcceptRole);
+  const auto futureButton =
+      messageBox.addButton(QObject::tr("This and future events"), QMessageBox::ActionRole);
+  const auto seriesButton =
+      messageBox.addButton(QObject::tr("Whole series"), QMessageBox::DestructiveRole);
+  messageBox.addButton(QMessageBox::Cancel);
+  messageBox.setDefaultButton(singleButton);
+  messageBox.exec();
+
+  if (messageBox.clickedButton() == singleButton) {
+    return RecurringDeleteScope::SingleOccurrence;
+  }
+  if (messageBox.clickedButton() == futureButton) {
+    return RecurringDeleteScope::FutureOccurrences;
+  }
+  if (messageBox.clickedButton() == seriesButton) {
+    return RecurringDeleteScope::WholeSeries;
+  }
+  return RecurringDeleteScope::Cancel;
+}
+
+} // namespace
+
 QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
     : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
   mUi->setupUi(this);
@@ -179,6 +242,14 @@ void QEventInfoPage::openEventDialog(const std::optional<DuckEvent> &event,
   if (event.has_value()) {
     editingEvent = std::make_unique<QEventItem>(*event);
     detailsWidget->startEditingEvent(editingEvent.get(), clientId);
+    if (event->series_id.has_value()) {
+      const auto series = mTimelineWidget->eventSeriesById(*event->series_id);
+      if (series.has_value()) {
+        detailsWidget->setRecurrenceRule(
+            QString::fromStdString(series->recurrence_rule),
+            series->recurrence_until);
+      }
+    }
   } else {
     detailsWidget->startCreatingNewEvent(mSelectedDate);
   }
@@ -198,6 +269,38 @@ void QEventInfoPage::onTimelineEventEditRequested(const int64_t eventId) {
 }
 
 void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
+  const auto event = mTimelineWidget ? mTimelineWidget->eventById(eventId) : std::nullopt;
+  if (!event.has_value()) {
+    return;
+  }
+
+  if (event->series_id.has_value()) {
+    const auto scope = askRecurringDeleteScope(this);
+    if (scope == RecurringDeleteScope::Cancel) {
+      return;
+    }
+    if (scope == RecurringDeleteScope::WholeSeries) {
+      if (!mTimelineWidget->deactivateEventSeries(*event->series_id)) {
+        qCWarning(logEventInfo) << "Failed to deactivate recurring event series";
+        return;
+      }
+      mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+      refreshQuickSlots();
+      return;
+    }
+    if (scope == RecurringDeleteScope::FutureOccurrences) {
+      if (!event->original_occurrence_start.has_value() ||
+          !mTimelineWidget->removeFutureEventSeriesOccurrences(
+              *event->series_id, *event->original_occurrence_start)) {
+        qCWarning(logEventInfo) << "Failed to remove future recurring event occurrences";
+        return;
+      }
+      mTimelineWidget->onSelectedDayChanged(mSelectedDate);
+      refreshQuickSlots();
+      return;
+    }
+  }
+
   if (pcm::app_settings::confirmEventDeletion()) {
     const auto reply =
         QMessageBox::question(this, tr(": EVENT_DELETE_TITLE"),
@@ -224,8 +327,13 @@ void QEventInfoPage::editEventWithDialog(const int64_t eventId) {
 
   std::optional<int64_t> clientId{std::nullopt};
   if (event->is_work_event) {
-    emit provideClientByEventId(eventId);
-    clientId = mClientId;
+    if (event->series_id.has_value()) {
+      const auto series = mTimelineWidget->eventSeriesById(*event->series_id);
+      clientId = series ? series->client_id : std::nullopt;
+    } else {
+      emit provideClientByEventId(eventId);
+      clientId = mClientId;
+    }
   }
 
   openEventDialog(event, clientId);
@@ -241,6 +349,11 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
       mActiveEventDetailsWidget ? mActiveEventDetailsWidget->selectedClientId() : 0;
   const auto selectedClientName =
       mActiveEventDetailsWidget ? mActiveEventDetailsWidget->selectedClientName() : QString{};
+  const auto rejectSave = [this]() {
+    if (mActiveEventDetailsWidget) {
+      mActiveEventDetailsWidget->rejectPendingSave();
+    }
+  };
 
   if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent() &&
       mActiveEventDetailsWidget->isRecurring()) {
@@ -249,28 +362,51 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
         mActiveEventDetailsWidget->recurrenceUntilMs());
     if (seriesId <= 0) {
       qCWarning(logEventInfo) << "Failed to persist event series in DB";
+      rejectSave();
       return;
     }
-    event->setId(0);
+    event->setId(seriesId);
   } else if (mActiveEventDetailsWidget && mActiveEventDetailsWidget->isCreatingNewEvent()) {
     const auto id = mTimelineWidget->addEvent(
         eventDetails, !pcm::app_settings::preventEventOverlaps());
     if (id <= 0) {
       qCWarning(logEventInfo) << "Failed to persist event in DB";
+      rejectSave();
       return;
     }
     eventDetails.id = id;
     event->setId(id);
   } else if (eventDetails.is_virtual_occurrence) {
-    eventDetails.id = -1;
-    const auto id = mTimelineWidget->addEvent(
-        eventDetails, !pcm::app_settings::preventEventOverlaps());
-    if (id <= 0) {
-      qCWarning(logEventInfo) << "Failed to materialize recurring event occurrence";
+    const auto scope = eventDetails.series_id.has_value()
+                           ? askRecurringEditScope(this)
+                           : RecurringEditScope::SingleOccurrence;
+    if (scope == RecurringEditScope::Cancel) {
+      rejectSave();
       return;
     }
-    eventDetails.id = id;
-    event->setId(id);
+    if (scope == RecurringEditScope::WholeSeries) {
+      if (!mTimelineWidget->updateEventSeries(
+              eventDetails, *eventDetails.series_id, selectedClientId,
+              mActiveEventDetailsWidget ? mActiveEventDetailsWidget->recurrenceRule()
+                                        : QString{},
+              mActiveEventDetailsWidget ? mActiveEventDetailsWidget->recurrenceUntilMs()
+                                        : std::nullopt)) {
+        qCWarning(logEventInfo) << "Failed to update recurring event series";
+        rejectSave();
+        return;
+      }
+    } else {
+      eventDetails.id = -1;
+      const auto id = mTimelineWidget->addEvent(
+          eventDetails, !pcm::app_settings::preventEventOverlaps());
+      if (id <= 0) {
+        qCWarning(logEventInfo) << "Failed to materialize recurring event occurrence";
+        rejectSave();
+        return;
+      }
+      eventDetails.id = id;
+      event->setId(id);
+    }
   } else {
     mTimelineWidget->updateEvent(
         eventDetails, !pcm::app_settings::preventEventOverlaps());
