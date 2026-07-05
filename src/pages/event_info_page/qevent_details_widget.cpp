@@ -16,6 +16,7 @@
 #include <QSize>
 #include <QSpinBox>
 #include <QTimeZone>
+#include <algorithm>
 
 Q_LOGGING_CATEGORY(logEventDetails, "pcm.EventDetails")
 
@@ -86,6 +87,60 @@ QString intervalSuffix(const QString &type) {
     return QEventDetailsWidget::tr(" year(s)");
   }
   return {};
+}
+
+QString recurrenceTypeFromFrequency(const QString &frequency) {
+  if (frequency == QLatin1String("DAILY")) {
+    return QStringLiteral("daily");
+  }
+  if (frequency == QLatin1String("WEEKLY")) {
+    return QStringLiteral("weekly");
+  }
+  if (frequency == QLatin1String("MONTHLY")) {
+    return QStringLiteral("monthly");
+  }
+  if (frequency == QLatin1String("YEARLY")) {
+    return QStringLiteral("yearly");
+  }
+  return QStringLiteral("none");
+}
+
+int dayOfWeekFromToken(const QString &token) {
+  if (token == QLatin1String("MO")) {
+    return 1;
+  }
+  if (token == QLatin1String("TU")) {
+    return 2;
+  }
+  if (token == QLatin1String("WE")) {
+    return 3;
+  }
+  if (token == QLatin1String("TH")) {
+    return 4;
+  }
+  if (token == QLatin1String("FR")) {
+    return 5;
+  }
+  if (token == QLatin1String("SA")) {
+    return 6;
+  }
+  if (token == QLatin1String("SU")) {
+    return 7;
+  }
+  return 0;
+}
+
+QHash<QString, QString> parseRRule(const QString &rule) {
+  QHash<QString, QString> parts;
+  for (const auto &part : rule.split(';', Qt::SkipEmptyParts)) {
+    const auto separator = part.indexOf('=');
+    if (separator <= 0) {
+      continue;
+    }
+    parts.insert(part.left(separator).trimmed().toUpper(),
+                 part.mid(separator + 1).trimmed().toUpper());
+  }
+  return parts;
 }
 }
 
@@ -482,6 +537,54 @@ std::optional<int64_t> QEventDetailsWidget::recurrenceUntilMs() const {
       .toMSecsSinceEpoch();
 }
 
+void QEventDetailsWidget::setRecurrenceRule(
+    const QString &rule, const std::optional<int64_t> recurrenceUntilMs) {
+  const auto parts = parseRRule(rule);
+  const auto type = recurrenceTypeFromFrequency(parts.value(QStringLiteral("FREQ")));
+  mRepeatTypeControl->setCurrentData(type);
+  mRepeatIntervalSpinBox->setValue(
+      std::max(1, parts.value(QStringLiteral("INTERVAL"), QStringLiteral("1")).toInt()));
+
+  for (auto *button : mWeekdayButtons) {
+    if (button) {
+      button->setChecked(false);
+    }
+  }
+
+  if (type == QLatin1String("weekly")) {
+    const auto dayTokens = parts.value(QStringLiteral("BYDAY")).split(',', Qt::SkipEmptyParts);
+    for (const auto &token : dayTokens) {
+      const auto day = dayOfWeekFromToken(token.trimmed());
+      for (auto *button : mWeekdayButtons) {
+        if (button && button->property("dayOfWeek").toInt() == day) {
+          button->setChecked(true);
+        }
+      }
+    }
+    if (selectedWeekdayRule().isEmpty()) {
+      selectWeekday(mUI->mEventDate->date().dayOfWeek(), true);
+    }
+  }
+
+  if (recurrenceUntilMs.has_value()) {
+    const auto until = QDateTime::fromMSecsSinceEpoch(*recurrenceUntilMs,
+                                                      QTimeZone::UTC)
+                           .toLocalTime()
+                           .date();
+    mRepeatUntilSwitch->setChecked(true);
+    mRepeatUntilDateEdit->setDate(until);
+  } else {
+    mRepeatUntilSwitch->setChecked(false);
+  }
+
+  onRecurrenceTypeChanged();
+  updateRecurringControls();
+}
+
+void QEventDetailsWidget::rejectPendingSave() {
+  mSaveAccepted = false;
+}
+
 void QEventDetailsWidget::setConflictChecker(
     std::function<bool(const DuckEvent &)> checker) {
   mConflictChecker = std::move(checker);
@@ -543,7 +646,11 @@ void QEventDetailsWidget::onApplyClicked() {
   const bool isCreatingNewEvent = mCreatingNewEvent;
 
   // Emit signal to save the event
+  mSaveAccepted = true;
   emit provideEventSave(mCurrentEvent.data());
+  if (!mSaveAccepted) {
+    return;
+  }
 
   if (isCreatingNewEvent && (!mCurrentEvent || mCurrentEvent->getId() <= 0)) {
     QMessageBox::warning(this, tr(": ERROR_TITLE"),

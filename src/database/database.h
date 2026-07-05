@@ -55,6 +55,11 @@ public:
   std::unique_ptr<DuckEvent> get_event(const int64_t &id);
   bool remove_event(const int64_t &id);
   int64_t add_event_series(const DuckEventSeries &series);
+  bool update_event_series(const DuckEventSeries &series);
+  bool deactivate_event_series(int64_t series_id);
+  bool delete_event_series_overrides_from(int64_t series_id,
+                                          int64_t occurrence_start_ms);
+  std::unique_ptr<DuckEventSeries> get_event_series(int64_t series_id);
   std::vector<DuckEventSeries> get_event_series_for_range(const int64_t &start_ms,
                                                           const int64_t &end_ms);
   std::set<std::pair<int64_t, int64_t>>

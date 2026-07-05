@@ -73,6 +73,24 @@ int64_t QTimelineWidget::addEventSeries(const DuckEvent &event,
   return mModel->addEventSeries(event, clientId, recurrenceRule, recurrenceUntilMs);
 }
 
+bool QTimelineWidget::updateEventSeries(
+    const DuckEvent &event, const int64_t seriesId, const int64_t clientId,
+    const QString &recurrenceRule,
+    const std::optional<int64_t> recurrenceUntilMs) const {
+  return mModel && mModel->updateEventSeries(event, seriesId, clientId,
+                                             recurrenceRule, recurrenceUntilMs);
+}
+
+bool QTimelineWidget::deactivateEventSeries(const int64_t seriesId) const {
+  return mModel && mModel->deactivateEventSeries(seriesId);
+}
+
+bool QTimelineWidget::removeFutureEventSeriesOccurrences(
+    const int64_t seriesId, const int64_t occurrenceStartMs) const {
+  return mModel && mModel->removeFutureEventSeriesOccurrences(seriesId,
+                                                              occurrenceStartMs);
+}
+
 void QTimelineWidget::updateScene() { emit needSceneUpdate(); }
 
 void QTimelineWidget::updateEvent(const DuckEvent &event,
@@ -113,4 +131,9 @@ std::optional<DuckEvent> QTimelineWidget::eventById(const int64_t eventId) const
   }
 
   return data.value<DuckEvent>();
+}
+
+std::optional<DuckEventSeries> QTimelineWidget::eventSeriesById(
+    const int64_t seriesId) const {
+  return mModel ? mModel->eventSeriesById(seriesId) : std::nullopt;
 }

@@ -96,6 +96,10 @@ QVector<QDateTime> occurrences(const DuckEventSeries &series,
     if (!occurrence.isValid()) {
       continue;
     }
+    if (series.recurrence_until.has_value() &&
+        occurrence.toUTC().toMSecsSinceEpoch() > *series.recurrence_until) {
+      break;
+    }
     if (occurrence > rangeEnd) {
       break;
     }

@@ -131,7 +131,7 @@ DuckEvent QEventItem::toEvent() const {
   event.is_work_event = mIsWorkItem;
   event.start_date = mStartTime.toUTC().toMSecsSinceEpoch();
   event.end_date = mEndTime.toUTC().toMSecsSinceEpoch();
-  event.duration = mDuration;
+  event.duration = static_cast<int64_t>(mDuration) * 60;
   event.cost = mCost;
   event.payment_stat_id = mIsWorkItem ? mPaymentStatusId : kPaymentSkippedId;
   event.is_online = mIsOnline;

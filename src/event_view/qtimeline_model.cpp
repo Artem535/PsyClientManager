@@ -193,15 +193,103 @@ int64_t QTimelineModel::addEventSeries(const DuckEvent &event, const int64_t cli
   return mDb ? mDb->add_event_series(series) : 0;
 }
 
+bool QTimelineModel::updateEventSeries(const DuckEvent &event, const int64_t seriesId,
+                                       const int64_t clientId,
+                                       const QString &recurrenceRule,
+                                       const std::optional<int64_t> recurrenceUntilMs) {
+  if (!mDb || seriesId <= 0) {
+    return false;
+  }
+
+  DuckEventSeries series;
+  std::optional<DuckEventSeries> existingSeriesValue;
+  if (const auto existingSeries = mDb->get_event_series(seriesId)) {
+    series = *existingSeries;
+    existingSeriesValue = *existingSeries;
+  }
+  series.id = seriesId;
+  series.name = event.name;
+  series.description = event.description;
+  series.client_id = clientId > 0 ? std::make_optional(clientId) : std::nullopt;
+  series.is_work_event = event.is_work_event;
+  series.event_stat_id = event.event_stat_id;
+  series.payment_stat_id = event.payment_stat_id;
+  series.duration = event.duration;
+  series.cost = event.cost;
+  series.is_online = event.is_online;
+  series.meeting_url = event.meeting_url;
+  series.recurrence_rule = recurrenceRule.trimmed().toStdString();
+  series.recurrence_until = recurrenceUntilMs;
+
+  if (existingSeriesValue.has_value() && existingSeriesValue->start_date.has_value() &&
+      event.start_date.has_value() && event.end_date.has_value()) {
+    const auto localTz = QTimeZone::systemTimeZone();
+    const auto originalStart =
+        QDateTime::fromMSecsSinceEpoch(*existingSeriesValue->start_date, localTz);
+    const auto editedStart = QDateTime::fromMSecsSinceEpoch(*event.start_date, localTz);
+    const auto updatedStart =
+        QDateTime(originalStart.date(), editedStart.time(), localTz).toMSecsSinceEpoch();
+    const auto durationMs = *event.end_date - *event.start_date;
+    series.start_date = updatedStart;
+    series.end_date = updatedStart + durationMs;
+  } else {
+    series.start_date = event.start_date;
+    series.end_date = event.end_date;
+  }
+
+  return mDb->update_event_series(series);
+}
+
+bool QTimelineModel::deactivateEventSeries(const int64_t seriesId) {
+  return mDb && mDb->deactivate_event_series(seriesId);
+}
+
+bool QTimelineModel::removeFutureEventSeriesOccurrences(
+    const int64_t seriesId, const int64_t occurrenceStartMs) {
+  if (!mDb || seriesId <= 0 || occurrenceStartMs <= 0) {
+    return false;
+  }
+
+  const auto series = mDb->get_event_series(seriesId);
+  if (!series) {
+    return false;
+  }
+
+  auto updatedSeries = *series;
+  updatedSeries.recurrence_until = occurrenceStartMs - 1;
+  if (!mDb->update_event_series(updatedSeries)) {
+    return false;
+  }
+
+  return mDb->delete_event_series_overrides_from(seriesId, occurrenceStartMs);
+}
+
+std::optional<DuckEventSeries> QTimelineModel::eventSeriesById(const int64_t seriesId) const {
+  if (!mDb || seriesId <= 0) {
+    return std::nullopt;
+  }
+
+  const auto series = mDb->get_event_series(seriesId);
+  if (!series) {
+    return std::nullopt;
+  }
+  return *series;
+}
+
 void QTimelineModel::removeEvent(int64_t id) {
   for (int i = 0; i < mEvents.size(); ++i) {
     if (mEvents[i].id == id) {
-      if (mEvents[i].is_virtual_occurrence && mEvents[i].series_id.has_value() &&
+      if (mEvents[i].series_id.has_value() &&
           mEvents[i].original_occurrence_start.has_value()) {
         if (!mDb->add_event_series_exception(*mEvents[i].series_id,
                                              *mEvents[i].original_occurrence_start,
                                              "deleted")) {
           qWarning() << "QTimelineModel::removeEvent failed to add series exception for id="
+                     << id;
+          return;
+        }
+        if (!mEvents[i].is_virtual_occurrence && !mDb->remove_event(id)) {
+          qWarning() << "QTimelineModel::removeEvent failed for recurring override id="
                      << id;
           return;
         }

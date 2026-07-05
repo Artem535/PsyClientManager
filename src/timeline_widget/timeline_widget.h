@@ -30,6 +30,13 @@ public slots:
     [[nodiscard]] int64_t addEventSeries(const DuckEvent &event, int64_t clientId,
                                          const QString &recurrenceRule,
                                          std::optional<int64_t> recurrenceUntilMs) const;
+    [[nodiscard]] bool updateEventSeries(const DuckEvent &event, int64_t seriesId,
+                                         int64_t clientId,
+                                         const QString &recurrenceRule,
+                                         std::optional<int64_t> recurrenceUntilMs) const;
+    [[nodiscard]] bool deactivateEventSeries(int64_t seriesId) const;
+    [[nodiscard]] bool removeFutureEventSeriesOccurrences(
+        int64_t seriesId, int64_t occurrenceStartMs) const;
 
     void updateScene();
 
@@ -38,6 +45,7 @@ public slots:
     [[nodiscard]] bool hasConflict(const DuckEvent &event) const;
     const QVector<DuckEvent> &events() const;
     std::optional<DuckEvent> eventById(int64_t eventId) const;
+    std::optional<DuckEventSeries> eventSeriesById(int64_t seriesId) const;
 
 signals:
     void eventSelected(int64_t eventId);

@@ -241,7 +241,7 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
       conn, constance::kInsertEventSeriesQuery,
       {db_utils::toDuckValue(series.name),
        db_utils::toDuckValue(series.description),
-       db_utils::toDuckValue(series.client_id),
+       series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
        duckdb::Value::BOOLEAN(series.is_work_event),
        duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
        duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
@@ -255,7 +255,12 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
        timestampMsOrNull(series.recurrence_until),
        db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000))});
 
-  if (!result || result->HasError()) {
+  if (!result) {
+    PLOG_ERROR << "Failed to prepare insert event series query";
+    return 0;
+  }
+
+  if (result->HasError()) {
     PLOG_ERROR << "Failed to insert event series: " << result->GetError();
     return 0;
   }
@@ -267,6 +272,107 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
   }
 
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+bool Database::update_event_series(const DuckEventSeries &series) {
+  if (series.id <= 0 || !series.start_date.has_value() ||
+      !series.end_date.has_value() || series.recurrence_rule.empty()) {
+    PLOG_WARNING << "Attempt to update invalid event series";
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
+  auto result = executePrepared(
+      conn, constance::kUpdateEventSeriesQuery,
+      {db_utils::toDuckValue(series.name),
+       db_utils::toDuckValue(series.description),
+       series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
+       duckdb::Value::BOOLEAN(series.is_work_event),
+       duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
+       duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
+       timestampMsOrNull(series.start_date),
+       timestampMsOrNull(series.end_date),
+       db_utils::toDuckValue(series.duration),
+       db_utils::toDuckValue(series.cost),
+       duckdb::Value::BOOLEAN(series.is_online),
+       duckdb::Value(series.meeting_url),
+       duckdb::Value(series.recurrence_rule),
+       timestampMsOrNull(series.recurrence_until),
+       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
+       duckdb::Value::BIGINT(series.id)});
+
+  if (!result) {
+    PLOG_ERROR << "Failed to prepare update event series query";
+    return false;
+  }
+
+  if (result->HasError()) {
+    PLOG_ERROR << "Failed to update event series: " << result->GetError();
+    return false;
+  }
+  return true;
+}
+
+bool Database::deactivate_event_series(const int64_t series_id) {
+  if (series_id <= 0) {
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
+  auto result = executePrepared(
+      conn, constance::kDeactivateEventSeriesQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to deactivate event series: "
+               << (result ? result->GetError() : "prepare failed");
+    return false;
+  }
+  return true;
+}
+
+bool Database::delete_event_series_overrides_from(
+    const int64_t series_id, const int64_t occurrence_start_ms) {
+  if (series_id <= 0 || occurrence_start_ms <= 0) {
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kDeleteEventSeriesOverridesFromQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to delete future event series overrides: "
+               << (result ? result->GetError() : "prepare failed");
+    return false;
+  }
+  return true;
+}
+
+std::unique_ptr<DuckEventSeries> Database::get_event_series(const int64_t series_id) {
+  if (series_id <= 0) {
+    return nullptr;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(conn, constance::kSelectEventSeriesByIdQuery,
+                                {duckdb::Value::BIGINT(series_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get event series: "
+               << (result ? result->GetError() : "prepare failed");
+    return nullptr;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    return nullptr;
+  }
+  return std::make_unique<DuckEventSeries>(*chunk, 0);
 }
 
 std::vector<DuckEventSeries>

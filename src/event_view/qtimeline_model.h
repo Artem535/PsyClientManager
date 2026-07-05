@@ -44,6 +44,13 @@ public:
   int64_t addEventSeries(const DuckEvent &event, int64_t clientId,
                          const QString &recurrenceRule,
                          std::optional<int64_t> recurrenceUntilMs);
+  bool updateEventSeries(const DuckEvent &event, int64_t seriesId, int64_t clientId,
+                         const QString &recurrenceRule,
+                         std::optional<int64_t> recurrenceUntilMs);
+  bool deactivateEventSeries(int64_t seriesId);
+  bool removeFutureEventSeriesOccurrences(int64_t seriesId,
+                                          int64_t occurrenceStartMs);
+  std::optional<DuckEventSeries> eventSeriesById(int64_t seriesId) const;
   void removeEvent(int64_t id);
   void updateEvent(const DuckEvent &event, bool allowOverlap = true);
   bool hasConflict(const DuckEvent &event) const;

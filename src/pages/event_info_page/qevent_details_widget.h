@@ -81,6 +81,9 @@ public:
   [[nodiscard]] bool isRecurring() const;
   [[nodiscard]] QString recurrenceRule() const;
   [[nodiscard]] std::optional<int64_t> recurrenceUntilMs() const;
+  void setRecurrenceRule(const QString &rule,
+                         std::optional<int64_t> recurrenceUntilMs = std::nullopt);
+  void rejectPendingSave();
 
   /**
    * @brief Returns a pointer to the current event (may be nullptr if creating a
@@ -175,5 +178,6 @@ private:
   bool mInEditMode = false;
   bool mCreatingNewEvent = false;
   bool mDialogMode = false;
+  bool mSaveAccepted = true;
   std::function<bool(const DuckEvent &)> mConflictChecker;
 };
