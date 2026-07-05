@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-07-05
+
+### Added
+
+- recurring event series with daily, weekly, monthly, and yearly repeat options
+- repeat controls in the event form, including weekday selection for weekly series
+- timeline workflows for creating events from empty slots and editing recurring sessions
+
+### Changed
+
+- event editing now supports series-aware updates and deletion of this or future sessions
+- Qlementine combobox popup sizing was patched for event dialogs
+- application and release metadata were synchronized to version `0.1.5`
+
 ## [0.1.4] - 2026-07-03
 
 ### Added
