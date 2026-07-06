@@ -177,6 +177,43 @@
       height: auto;
     }
 
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .shot {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .shot img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: top left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shot figcaption {
+      padding: 16px 18px 18px;
+    }
+
+    .shot strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 17px;
+    }
+
+    .shot span {
+      display: block;
+      color: var(--muted);
+    }
+
     .section {
       padding: 56px clamp(20px, 5vw, 72px);
       border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -294,6 +331,7 @@
     @media (max-width: 980px) {
       .hero,
       .feature-grid,
+      .gallery,
       .workflow,
       .stats {
         grid-template-columns: 1fr;
@@ -357,7 +395,7 @@
           </div>
         </div>
         <figure class="preview">
-          <img src="../preview.png" alt="PsyClientManager application preview">
+          <img src="assets/calendar.png" alt="PsyClientManager calendar timeline preview">
         </figure>
       </section>
 
@@ -383,6 +421,43 @@
             <strong data-i18n="features.online.title">Online sessions</strong>
             <p data-i18n="features.online.text">Store external meeting links for Zoom, Meet, Telegram, or any other service, then open or copy invites quickly.</p>
           </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2 data-i18n="tour.title">Product tour</h2>
+          <p data-i18n="tour.subtitle">Screenshots show the actual desktop interface: timeline planning, recurring event setup, analytics, and client notes.</p>
+        </div>
+        <div class="gallery">
+          <figure class="shot">
+            <img src="assets/calendar.png" alt="Calendar timeline with scheduled sessions">
+            <figcaption>
+              <strong data-i18n="tour.calendar.title">Timeline planning</strong>
+              <span data-i18n="tour.calendar.text">Daily view with session cards, personal events, quick slots, and calendar navigation.</span>
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/event-form.png" alt="Event form with weekly repeat and online session link">
+            <figcaption>
+              <strong data-i18n="tour.event.title">Recurring session form</strong>
+              <span data-i18n="tour.event.text">Configure client, payment, online link, repeat frequency, and weekday selection in one dialog.</span>
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/analytics.png" alt="Analytics dashboard with income and session charts">
+            <figcaption>
+              <strong data-i18n="tour.analytics.title">Analytics dashboard</strong>
+              <span data-i18n="tour.analytics.text">Track clients, active sessions, income, and chart ranges from a compact dashboard.</span>
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/notes.png" alt="Client notes workspace with attachment preview">
+            <figcaption>
+              <strong data-i18n="tour.notes.title">Client notes</strong>
+              <span data-i18n="tour.notes.text">Keep Markdown notes and attachments connected to a client workspace.</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -451,6 +526,16 @@
         "features.clients.text": "Keep client details, quick actions, notes, and session history close to the scheduling flow.",
         "features.online.title": "Online sessions",
         "features.online.text": "Store external meeting links for Zoom, Meet, Telegram, or any other service, then open or copy invites quickly.",
+        "tour.title": "Product tour",
+        "tour.subtitle": "Screenshots show the actual desktop interface: timeline planning, recurring event setup, analytics, and client notes.",
+        "tour.calendar.title": "Timeline planning",
+        "tour.calendar.text": "Daily view with session cards, personal events, quick slots, and calendar navigation.",
+        "tour.event.title": "Recurring session form",
+        "tour.event.text": "Configure client, payment, online link, repeat frequency, and weekday selection in one dialog.",
+        "tour.analytics.title": "Analytics dashboard",
+        "tour.analytics.text": "Track clients, active sessions, income, and chart ranges from a compact dashboard.",
+        "tour.notes.title": "Client notes",
+        "tour.notes.text": "Keep Markdown notes and attachments connected to a client workspace.",
         "workflow.title": "Designed around the appointment flow",
         "workflow.subtitle": "PsyClientManager keeps common actions visible and avoids forcing scheduling work through heavy dialogs.",
         "workflow.plan.title": "Plan",
@@ -480,6 +565,16 @@
         "features.clients.text": "Данные клиента, быстрые действия, заметки и история сессий находятся рядом с расписанием.",
         "features.online.title": "Онлайн-сессии",
         "features.online.text": "Сохраняйте внешние ссылки Zoom, Meet, Telegram или любого другого сервиса, быстро открывайте их и копируйте приглашения.",
+        "tour.title": "Обзор интерфейса",
+        "tour.subtitle": "Скриншоты показывают реальный desktop-интерфейс: timeline, настройку повторов, аналитику и заметки клиента.",
+        "tour.calendar.title": "Планирование на timeline",
+        "tour.calendar.text": "Дневной вид с карточками сессий, личными событиями, быстрыми слотами и навигацией по календарю.",
+        "tour.event.title": "Форма рекуррентной сессии",
+        "tour.event.text": "Клиент, оплата, онлайн-ссылка, частота повтора и выбор дней недели настраиваются в одном окне.",
+        "tour.analytics.title": "Аналитика",
+        "tour.analytics.text": "Клиенты, активные сессии, доход и диапазоны графиков собраны в компактном dashboard.",
+        "tour.notes.title": "Заметки клиента",
+        "tour.notes.text": "Markdown-заметки и вложения хранятся рядом с рабочим пространством клиента.",
         "workflow.title": "Сценарий вокруг самой встречи",
         "workflow.subtitle": "PsyClientManager держит частые действия под рукой и не заставляет проводить расписание через тяжелые формы.",
         "workflow.plan.title": "Планирование",
