@@ -11,6 +11,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Calendar-based session planning
 - Client list with search and detail pages
 - Work and personal event separation
+- Recurring sessions and personal events
 - Session cost tracking
 - Online sessions through external meeting links
 - Analytics dashboard with charts
@@ -22,6 +23,8 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Calendar page with custom month view
 - Timeline view for daily events
 - Creation and editing of work and personal events
+- Daily, weekly, monthly, and yearly recurring events
+- Series-aware editing and deletion, including "this and future" changes
 - Linked client selection for work events
 - Default pricing for work sessions
 - Online-session links with open, copy link, and copy invite actions
@@ -36,7 +39,6 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 
 ## 🛣 Roadmap
 
-- Recurring events
 - Richer analytics and business reports
 - Better calendar interactions and editing flows
 - Export and backup options
@@ -167,6 +169,14 @@ The project is under active development. The current focus is on:
 Additional documentation lives in:
 
 - `docs/asciidoc/index.adoc`
+
+## 🌐 Website
+
+A static one-page website with Russian and English language switching lives in:
+
+- `docs/site/index.html`
+
+It can be opened directly in a browser without a local server.
 
 ## 📜 License
 

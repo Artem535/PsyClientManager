@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PsyClientManager</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10131a;
+      --surface: #181d26;
+      --surface-2: #202635;
+      --text: #f4f7fb;
+      --muted: #aab3c4;
+      --line: #343c4d;
+      --accent: #4f83ff;
+      --accent-2: #22c78f;
+      --warning: #f2b84b;
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      min-height: 100vh;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px clamp(20px, 5vw, 72px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(16, 19, 26, 0.88);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lang-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .lang-switch button {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 12px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .lang-switch button.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .github-link {
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: center;
+      padding: clamp(48px, 8vw, 96px) clamp(20px, 5vw, 72px) 48px;
+    }
+
+    .hero h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(42px, 6vw, 78px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 640px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      font-weight: 700;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .button.secondary {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .preview {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+    }
+
+    .preview img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .section {
+      padding: 56px clamp(20px, 5vw, 72px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .section-header p {
+      max-width: 520px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .feature {
+      min-height: 180px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 17px;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .step {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .step span {
+      color: var(--accent-2);
+      font-weight: 800;
+    }
+
+    .step h3 {
+      margin: 14px 0 8px;
+      font-size: 20px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 22px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .stat b {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--warning);
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .stat span {
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 32px clamp(20px, 5vw, 72px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+    }
+
+    [data-i18n] {
+      transition: opacity 120ms ease;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .feature-grid,
+      .workflow,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        display: block;
+      }
+
+      .section-header p {
+        margin-top: 12px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .nav-actions,
+      .hero-actions {
+        width: 100%;
+      }
+
+      .github-link,
+      .button {
+        flex: 1;
+      }
+
+      .hero {
+        padding-top: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <a class="brand" href="#">
+        <span class="brand-mark">P</span>
+        <span>PsyClientManager</span>
+      </a>
+      <div class="nav-actions">
+        <div class="lang-switch" aria-label="Language">
+          <button type="button" class="active" data-lang="en">EN</button>
+          <button type="button" data-lang="ru">RU</button>
+        </div>
+        <a class="github-link" href="../../README.md" data-i18n="nav.readme">README</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h1 data-i18n="hero.title">Practice management for client sessions</h1>
+          <p data-i18n="hero.subtitle">A native desktop planner for scheduling sessions, managing clients, tracking payments, and keeping a clear view of recurring work.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="../../README.md" data-i18n="hero.primary">Read setup guide</a>
+            <a class="button secondary" href="../../CHANGELOG.md" data-i18n="hero.secondary">View changelog</a>
+          </div>
+        </div>
+        <figure class="preview">
+          <img src="../preview.png" alt="PsyClientManager application preview">
+        </figure>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2 data-i18n="features.title">Everything needed for daily scheduling</h2>
+          <p data-i18n="features.subtitle">The app focuses on fast calendar work, client context, online session links, and lightweight analytics without a web account.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <strong data-i18n="features.calendar.title">Calendar and timeline</strong>
+            <p data-i18n="features.calendar.text">Plan a day from the timeline, create sessions from empty slots, and keep work and regular events separated.</p>
+          </article>
+          <article class="feature">
+            <strong data-i18n="features.recurring.title">Recurring events</strong>
+            <p data-i18n="features.recurring.text">Create daily, weekly, monthly, or yearly series, choose weekdays, and edit a single session or future sessions.</p>
+          </article>
+          <article class="feature">
+            <strong data-i18n="features.clients.title">Client workspace</strong>
+            <p data-i18n="features.clients.text">Keep client details, quick actions, notes, and session history close to the scheduling flow.</p>
+          </article>
+          <article class="feature">
+            <strong data-i18n="features.online.title">Online sessions</strong>
+            <p data-i18n="features.online.text">Store external meeting links for Zoom, Meet, Telegram, or any other service, then open or copy invites quickly.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2 data-i18n="workflow.title">Designed around the appointment flow</h2>
+          <p data-i18n="workflow.subtitle">PsyClientManager keeps common actions visible and avoids forcing scheduling work through heavy dialogs.</p>
+        </div>
+        <div class="workflow">
+          <article class="step">
+            <span>01</span>
+            <h3 data-i18n="workflow.plan.title">Plan</h3>
+            <p data-i18n="workflow.plan.text">Pick a date, click the timeline, and create a session with client, payment, online link, and repeat settings.</p>
+          </article>
+          <article class="step">
+            <span>02</span>
+            <h3 data-i18n="workflow.run.title">Run</h3>
+            <p data-i18n="workflow.run.text">Open the meeting link, copy a prepared invite, and update the payment status from the event workflow.</p>
+          </article>
+          <article class="step">
+            <span>03</span>
+            <h3 data-i18n="workflow.review.title">Review</h3>
+            <p data-i18n="workflow.review.text">Use analytics and client history to see paid work, session load, and recent activity.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="stats">
+          <div class="stat">
+            <b>Qt 6</b>
+            <span data-i18n="stats.native">Native desktop UI for Linux, Windows, and macOS.</span>
+          </div>
+          <div class="stat">
+            <b>DuckDB</b>
+            <span data-i18n="stats.local">Local data storage with no hosted account requirement.</span>
+          </div>
+          <div class="stat">
+            <b>0.1.5</b>
+            <span data-i18n="stats.version">Current app version with recurring event workflows.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span data-i18n="footer.text">GPLv3 desktop application for personal practice management.</span>
+    </footer>
+  </div>
+
+  <script>
+    const messages = {
+      en: {
+        "nav.readme": "README",
+        "hero.title": "Practice management for client sessions",
+        "hero.subtitle": "A native desktop planner for scheduling sessions, managing clients, tracking payments, and keeping a clear view of recurring work.",
+        "hero.primary": "Read setup guide",
+        "hero.secondary": "View changelog",
+        "features.title": "Everything needed for daily scheduling",
+        "features.subtitle": "The app focuses on fast calendar work, client context, online session links, and lightweight analytics without a web account.",
+        "features.calendar.title": "Calendar and timeline",
+        "features.calendar.text": "Plan a day from the timeline, create sessions from empty slots, and keep work and regular events separated.",
+        "features.recurring.title": "Recurring events",
+        "features.recurring.text": "Create daily, weekly, monthly, or yearly series, choose weekdays, and edit a single session or future sessions.",
+        "features.clients.title": "Client workspace",
+        "features.clients.text": "Keep client details, quick actions, notes, and session history close to the scheduling flow.",
+        "features.online.title": "Online sessions",
+        "features.online.text": "Store external meeting links for Zoom, Meet, Telegram, or any other service, then open or copy invites quickly.",
+        "workflow.title": "Designed around the appointment flow",
+        "workflow.subtitle": "PsyClientManager keeps common actions visible and avoids forcing scheduling work through heavy dialogs.",
+        "workflow.plan.title": "Plan",
+        "workflow.plan.text": "Pick a date, click the timeline, and create a session with client, payment, online link, and repeat settings.",
+        "workflow.run.title": "Run",
+        "workflow.run.text": "Open the meeting link, copy a prepared invite, and update the payment status from the event workflow.",
+        "workflow.review.title": "Review",
+        "workflow.review.text": "Use analytics and client history to see paid work, session load, and recent activity.",
+        "stats.native": "Native desktop UI for Linux, Windows, and macOS.",
+        "stats.local": "Local data storage with no hosted account requirement.",
+        "stats.version": "Current app version with recurring event workflows.",
+        "footer.text": "GPLv3 desktop application for personal practice management."
+      },
+      ru: {
+        "nav.readme": "README",
+        "hero.title": "Управление практикой и клиентскими сессиями",
+        "hero.subtitle": "Нативный desktop-планировщик для расписания, клиентов, оплат и повторяющихся встреч.",
+        "hero.primary": "Открыть инструкцию",
+        "hero.secondary": "История изменений",
+        "features.title": "Все для ежедневного расписания",
+        "features.subtitle": "Приложение помогает быстро работать с календарем, клиентами, онлайн-ссылками и простой аналитикой без веб-аккаунта.",
+        "features.calendar.title": "Календарь и timeline",
+        "features.calendar.text": "Планируйте день на timeline, создавайте встречи из свободных слотов и разделяйте рабочие и обычные события.",
+        "features.recurring.title": "Повторяющиеся события",
+        "features.recurring.text": "Создавайте серии по дням, неделям, месяцам и годам, выбирайте дни недели и меняйте одну встречу или будущие.",
+        "features.clients.title": "Работа с клиентами",
+        "features.clients.text": "Данные клиента, быстрые действия, заметки и история сессий находятся рядом с расписанием.",
+        "features.online.title": "Онлайн-сессии",
+        "features.online.text": "Сохраняйте внешние ссылки Zoom, Meet, Telegram или любого другого сервиса, быстро открывайте их и копируйте приглашения.",
+        "workflow.title": "Сценарий вокруг самой встречи",
+        "workflow.subtitle": "PsyClientManager держит частые действия под рукой и не заставляет проводить расписание через тяжелые формы.",
+        "workflow.plan.title": "Планирование",
+        "workflow.plan.text": "Выберите дату, нажмите на timeline и создайте сессию с клиентом, оплатой, онлайн-ссылкой и повтором.",
+        "workflow.run.title": "Проведение",
+        "workflow.run.text": "Откройте ссылку встречи, скопируйте готовое приглашение и обновите статус оплаты из сценария события.",
+        "workflow.review.title": "Аналитика",
+        "workflow.review.text": "Используйте аналитику и историю клиента, чтобы видеть оплаченные сессии, нагрузку и недавнюю активность.",
+        "stats.native": "Нативный desktop UI для Linux, Windows и macOS.",
+        "stats.local": "Локальное хранение данных без обязательного облачного аккаунта.",
+        "stats.version": "Текущая версия приложения с рекуррентными событиями.",
+        "footer.text": "GPLv3 desktop-приложение для управления личной практикой."
+      }
+    };
+
+    const buttons = document.querySelectorAll("[data-lang]");
+    const nodes = document.querySelectorAll("[data-i18n]");
+
+    function setLanguage(lang) {
+      document.documentElement.lang = lang;
+      nodes.forEach((node) => {
+        const key = node.dataset.i18n;
+        node.textContent = messages[lang][key] || messages.en[key] || node.textContent;
+      });
+      buttons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.lang === lang);
+      });
+      localStorage.setItem("pcm-site-language", lang);
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.lang));
+    });
+
+    const savedLanguage = localStorage.getItem("pcm-site-language");
+    const browserLanguage = navigator.language && navigator.language.toLowerCase().startsWith("ru") ? "ru" : "en";
+    setLanguage(savedLanguage || browserLanguage);
+  </script>
+</body>
+</html>
