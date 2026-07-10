@@ -39,12 +39,25 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 
 ## 🛣 Roadmap
 
+- Local database encryption and an app-level password/PIN lock
+- Data export, import, and backup/restore for the local database
+- Client session reminders via Telegram
+- Invoicing and financial exports (PDF/CSV) for paid sessions
+- Full-text search across client notes
+- Week view for the calendar
+- In-app update checks
 - Richer analytics and business reports
 - Better calendar interactions and editing flows
-- Export and backup options
 - More detailed client history
 - Improved settings and personalization
 - Broader release automation and polish for all platforms
+
+### Exploring (no timeline yet)
+
+- Near-realtime calendar sync with Google Calendar / Yandex Calendar over CalDAV (short-interval polling via `sync-collection`), so events stay in sync without a custom backend
+- Notes and attachments synced through the user's own Google Drive or Yandex Disk folder
+- AI assistant for notes and scheduling
+- OCR for scanned documents and intake forms
 
 ## ⚙ Tech Stack
 
