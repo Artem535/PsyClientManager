@@ -3,14 +3,19 @@
 #include "qcustomplot.h"
 #include "../../widgets/constants.hpp"
 
+#include <oclero/qlementine/style/QlementineStyle.hpp>
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
 
 #include <algorithm>
+#include <QApplication>
 #include <QDate>
+#include <QEvent>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLocale>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
@@ -35,6 +40,31 @@ QFrame *makeSurface(QWidget *parent = nullptr) {
       "}");
   return frame;
 }
+
+// Event filter that paints the analyticsSurface appearance without using
+// setStyleSheet(). This avoids Qt's QStyleSheetStyle proxy cascade, which
+// breaks SegmentedControl's qobject_cast<QlementineStyle*>(style()).
+class SurfacePaintFilter : public QObject {
+public:
+  using QObject::QObject;
+
+protected:
+  bool eventFilter(QObject *obj, QEvent *event) override {
+    if (event->type() == QEvent::Paint) {
+      auto *frame = qobject_cast<QFrame *>(obj);
+      if (!frame)
+        return false;
+      QPainter p(frame);
+      p.setRenderHint(QPainter::Antialiasing);
+      p.setPen(QPen(QColor(255, 255, 255, 20), 1));
+      p.setBrush(QColor(255, 255, 255, 13));
+      const auto r = frame->rect();
+      p.drawRoundedRect(r.adjusted(0, 0, -1, -1), 14, 14);
+      return true; // fully handled
+    }
+    return QObject::eventFilter(obj, event);
+  }
+};
 
 QString formatCurrency(const double value) {
   const auto rounded = qRound64(value);
@@ -142,7 +172,13 @@ void AnalyticsPage::buildUi() {
 
   rootLayout->addLayout(summaryGrid);
 
-  auto *periodSurface = makeSurface(this);
+  // DO NOT use makeSurface() (stylesheet) here — Qt cascades it through
+  // QObject parent/child, wrapping style() in a QStyleSheetStyle proxy.
+  // SegmentedControl paints via qobject_cast<QlementineStyle*>(style()),
+  // which fails against that proxy and falls back to flat QPalette colors.
+  // Paint the background via event filter to avoid any stylesheet on the parent.
+  auto *periodSurface = new QFrame(content);
+  periodSurface->installEventFilter(new SurfacePaintFilter(periodSurface));
   auto *periodLayout = new QHBoxLayout(periodSurface);
   periodLayout->setContentsMargins(16, 12, 16, 12);
   periodLayout->setSpacing(12);

@@ -25,14 +25,14 @@ namespace {
 QFrame *makeSurface(QWidget *parent = nullptr) {
   auto *frame = new QFrame(parent);
   frame->setObjectName("notesSurface");
-  frame->setStyleSheet(
-      "#notesSurface {"
-      " background: rgba(255, 255, 255, 0.05);"
-      " border: 1px solid rgba(255, 255, 255, 0.08);"
-      " border-radius: %1px;"
-      "}");
-  frame->setStyleSheet(frame->styleSheet().arg(
-      pcm::widgets::constants::kCardCornerRadius));
+  const QString styleSheet = QStringLiteral(
+                                  "#notesSurface {"
+                                  " background: rgba(255, 255, 255, 0.05);"
+                                  " border: 1px solid rgba(255, 255, 255, 0.08);"
+                                  " border-radius: %1px;"
+                                  "}")
+                                  .arg(pcm::widgets::constants::kCardCornerRadius);
+  frame->setStyleSheet(styleSheet);
   return frame;
 }
 } // namespace
