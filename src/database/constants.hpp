@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS Event (
     is_online BOOLEAN DEFAULT FALSE,
     meeting_url TEXT,
     series_id INTEGER,
-    original_occurrence_start TIMESTAMP
+    original_occurrence_start TIMESTAMP,
+    cancellation_reason TEXT,
+    canceled_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS EventSeries (
@@ -70,7 +72,9 @@ CREATE TABLE IF NOT EXISTS EventSeries (
     recurrence_until TIMESTAMP,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    updated_at TIMESTAMP,
+    cancellation_reason TEXT,
+    canceled_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS EventSeriesException (
@@ -115,6 +119,8 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_url TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS original_occurrence_start TIMESTAMP;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS canceled_by TEXT;
 
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS description TEXT;
@@ -133,6 +139,8 @@ ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS recurrence_until TIMESTAMP;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT TRUE;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS canceled_by TEXT;
 
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
@@ -145,11 +153,12 @@ INSERT INTO Event (
     name, description, is_work_event,
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
-    is_online, meeting_url, series_id, original_occurrence_start
+    is_online, meeting_url, series_id, original_occurrence_start,
+    cancellation_reason, canceled_by
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 FROM Event
 RETURNING id
 )duckdb";
@@ -169,6 +178,8 @@ SET name = $1,
     meeting_url = $11,
     series_id = $12,
     original_occurrence_start = $13,
+    cancellation_reason = $14,
+    canceled_by = $15,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
@@ -183,12 +194,12 @@ INSERT INTO EventSeries (
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
     is_online, meeting_url, recurrence_rule, recurrence_until,
-    active, created_at, updated_at
+    active, created_at, updated_at, cancellation_reason, canceled_by
 )
 SELECT
     COALESCE((SELECT MAX(id) FROM EventSeries), 0) + 1,
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, TRUE, $15, $15
+    $11, $12, $13, $14, TRUE, $15, $15, $16, $17
 RETURNING id
 )duckdb";
 
@@ -221,7 +232,9 @@ SET name = $1,
     meeting_url = $12,
     recurrence_rule = $13,
     recurrence_until = $14,
-    updated_at = $15
+    updated_at = $15,
+    cancellation_reason = $16,
+    canceled_by = $17
 WHERE id = $16
 )duckdb";
 
@@ -365,7 +378,7 @@ SELECT * FROM Event
 WHERE start_date IS NOT NULL
   AND start_date >= $1
   AND start_date <= $2
-  AND event_stat_id != 3
+  AND event_stat_id IN (1, 2, 4)
   AND reminder_notified_at IS NULL
   AND (
     series_id IS NULL
@@ -405,6 +418,7 @@ WITH event_stats AS (
     JOIN EventClient ec ON ec.event_id = e.id
     WHERE ec.client_id = $1
       AND e.start_date IS NOT NULL
+      AND e.event_stat_id IN (1, 2, 4)
       AND e.start_date >= date_trunc('month', current_timestamp) - (($2 - 1) * INTERVAL '1 month')
     GROUP BY 1, 2
 )
@@ -420,26 +434,26 @@ WITH month_start AS (
 SELECT
     (SELECT COUNT(*) FROM Client) AS total_clients,
     (SELECT COUNT(*) FROM Client WHERE client_active = TRUE) AS active_clients,
-    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value) AS sessions_this_month,
-    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.is_work_event = TRUE) AS work_sessions_this_month,
-    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.is_work_event = FALSE) AS personal_sessions_this_month,
+    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.event_stat_id IN (1, 2, 4)) AS sessions_this_month,
+    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.event_stat_id IN (1, 2, 4) AND e.is_work_event = TRUE) AS work_sessions_this_month,
+    (SELECT COUNT(*) FROM Event e, month_start ms WHERE e.start_date >= ms.value AND e.event_stat_id IN (1, 2, 4) AND e.is_work_event = FALSE) AS personal_sessions_this_month,
     (SELECT COALESCE(SUM(CASE
-         WHEN e.is_work_event AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
+         WHEN e.is_work_event AND e.event_stat_id IN (1, 2, 4) AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
          ELSE 0
      END), 0)
      FROM Event e, month_start ms
-     WHERE e.start_date >= ms.value) AS income_this_month
+     WHERE e.start_date >= ms.value AND e.event_stat_id IN (1, 2, 4)) AS income_this_month
 )duckdb";
 
 constexpr auto kSelectDashboardMonthlyStatsQuery = R"duckdb(
 SELECT
     CAST(year(e.start_date) AS INTEGER) AS event_year,
     CAST(month(e.start_date) AS INTEGER) AS event_month,
-    COUNT(*) AS sessions,
-    COUNT(*) FILTER (WHERE e.is_work_event = TRUE) AS work_sessions,
-    COUNT(*) FILTER (WHERE e.is_work_event = FALSE) AS personal_sessions,
+    COUNT(*) FILTER (WHERE e.event_stat_id IN (1, 2, 4)) AS sessions,
+    COUNT(*) FILTER (WHERE e.event_stat_id IN (1, 2, 4) AND e.is_work_event = TRUE) AS work_sessions,
+    COUNT(*) FILTER (WHERE e.event_stat_id IN (1, 2, 4) AND e.is_work_event = FALSE) AS personal_sessions,
     COALESCE(SUM(CASE
-        WHEN e.is_work_event AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
+        WHEN e.is_work_event AND e.event_stat_id IN (1, 2, 4) AND e.payment_stat_id = 2 THEN COALESCE(e.cost, 0)
         ELSE 0
     END), 0) AS income
 FROM Event e
@@ -451,10 +465,13 @@ ORDER BY 1, 2
 
 constexpr auto kEventStatus = R"(
 INSERT INTO EventStatus (id, name) VALUES
-(1, 'pending'),
+(1, 'scheduled'),
 (2, 'completed'),
-(3, 'canceled')
-ON CONFLICT (id) DO NOTHING;
+(3, 'canceled'),
+(4, 'confirmed'),
+(5, 'no_show'),
+(6, 'rescheduled')
+ON CONFLICT (id) DO UPDATE SET name = excluded.name;
 )";
 
 constexpr auto kPaymentStatus = R"(

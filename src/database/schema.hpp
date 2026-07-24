@@ -123,6 +123,8 @@ struct DuckEvent {
   std::string meeting_url;
   std::optional<std::int64_t> series_id = std::nullopt;
   std::optional<std::int64_t> original_occurrence_start = std::nullopt;
+  std::optional<std::string> cancellation_reason = std::nullopt;
+  std::optional<std::string> canceled_by = std::nullopt;
   bool is_virtual_occurrence = false;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -153,6 +155,13 @@ struct DuckEvent {
     if (chunk.ColumnCount() > 14) {
       original_occurrence_start =
           db_utils::toOptionalTimestampMs(chunk.GetValue(14, index));
+    }
+    if (chunk.ColumnCount() > 15) {
+      cancellation_reason =
+          db_utils::toOptionalString(chunk.GetValue(15, index));
+    }
+    if (chunk.ColumnCount() > 16) {
+      canceled_by = db_utils::toOptionalString(chunk.GetValue(16, index));
     }
   }
 };
@@ -207,6 +216,8 @@ struct DuckEventSeries {
   std::string recurrence_rule;
   std::optional<std::int64_t> recurrence_until = std::nullopt;
   bool active = true;
+  std::optional<std::string> cancellation_reason = std::nullopt;
+  std::optional<std::string> canceled_by = std::nullopt;
 
   DuckEventSeries() = default;
   DuckEventSeries(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -226,6 +237,13 @@ struct DuckEventSeries {
     recurrence_rule = chunk.GetValue(13, index).ToString();
     recurrence_until = db_utils::toOptionalTimestampMs(chunk.GetValue(14, index));
     active = db_utils::toBool(chunk.GetValue(15, index));
+    if (chunk.ColumnCount() > 16) {
+      cancellation_reason =
+          db_utils::toOptionalString(chunk.GetValue(16, index));
+    }
+    if (chunk.ColumnCount() > 17) {
+      canceled_by = db_utils::toOptionalString(chunk.GetValue(17, index));
+    }
   }
 };
 // --- DuckEventClient ---

@@ -93,7 +93,10 @@ public:
   [[nodiscard]] QString getTitle() const;
   [[nodiscard]] QString getClientName() const;
   [[nodiscard]] std::optional<double> cost() const;
+  [[nodiscard]] int64_t eventStatusId() const;
   [[nodiscard]] int64_t paymentStatusId() const;
+  [[nodiscard]] QString cancellationReason() const;
+  [[nodiscard]] QString canceledBy() const;
   [[nodiscard]] bool isOnline() const;
   [[nodiscard]] QString meetingUrl() const;
 
@@ -112,7 +115,10 @@ public:
   void setTitle(const QString &title);
   void setClientName(const QString &clientName);
   void setCost(std::optional<double> cost);
+  void setEventStatusId(int64_t eventStatusId);
   void setPaymentStatusId(int64_t paymentStatusId);
+  void setCancellationReason(const QString &reason);
+  void setCanceledBy(const QString &canceledBy);
   void setOnline(bool online);
   void setMeetingUrl(const QString &meetingUrl);
 
@@ -172,7 +178,10 @@ private:
   QString mTitle;             ///< The title of the event.
   QString mClientName;        ///< Linked client name for work items.
   std::optional<double> mCost;///< Optional work event cost.
+  int64_t mEventStatusId = 1;
   int64_t mPaymentStatusId = 1; ///< Payment status for work items.
+  QString mCancellationReason;
+  QString mCanceledBy;
   bool mIsOnline = false;
   QString mMeetingUrl;
   std::optional<int64_t> mSeriesId;

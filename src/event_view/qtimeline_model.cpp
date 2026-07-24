@@ -1,6 +1,7 @@
 // src/timeline_widget/timeline_model.cpp
 #include "qtimeline_model.h"
 #include "recurrence_utils.h"
+#include "schedule_conflict_service.h"
 #include <QDateTime>
 #include <QTimeZone>
 #include <algorithm>
@@ -13,23 +14,6 @@ QString fullClientName(const DuckClient &client) {
   return QString("%1 %2").arg(firstName, lastName).trimmed();
 }
 
-bool sameRecurringOccurrence(const DuckEvent &left, const DuckEvent &right) {
-  return left.series_id.has_value() && right.series_id.has_value() &&
-         left.original_occurrence_start.has_value() &&
-         right.original_occurrence_start.has_value() &&
-         *left.series_id == *right.series_id &&
-         *left.original_occurrence_start == *right.original_occurrence_start;
-}
-
-bool rangesOverlap(const DuckEvent &left, const DuckEvent &right) {
-  if (!left.start_date.has_value() || !left.end_date.has_value() ||
-      !right.start_date.has_value() || !right.end_date.has_value()) {
-    return false;
-  }
-
-  return *left.start_date < *right.end_date &&
-         *left.end_date > *right.start_date;
-}
 } // namespace
 
 QTimelineModel::QTimelineModel(
@@ -199,6 +183,8 @@ int64_t QTimelineModel::addEventSeries(const DuckEvent &event, const int64_t cli
   series.is_work_event = event.is_work_event;
   series.event_stat_id = event.event_stat_id;
   series.payment_stat_id = event.payment_stat_id;
+  series.cancellation_reason = event.cancellation_reason;
+  series.canceled_by = event.canceled_by;
   series.start_date = event.start_date;
   series.end_date = event.end_date;
   series.duration = event.duration;
@@ -232,6 +218,8 @@ bool QTimelineModel::updateEventSeries(const DuckEvent &event, const int64_t ser
   series.is_work_event = event.is_work_event;
   series.event_stat_id = event.event_stat_id;
   series.payment_stat_id = event.payment_stat_id;
+  series.cancellation_reason = event.cancellation_reason;
+  series.canceled_by = event.canceled_by;
   series.duration = event.duration;
   series.cost = event.cost;
   series.is_online = event.is_online;
@@ -344,14 +332,8 @@ void QTimelineModel::updateEvent(const DuckEvent &event, const bool allowOverlap
 }
 
 bool QTimelineModel::hasConflict(const DuckEvent &event) const {
-  for (const auto &loadedEvent : mEvents) {
-    if (loadedEvent.id == event.id || sameRecurringOccurrence(loadedEvent, event)) {
-      continue;
-    }
-
-    if (rangesOverlap(event, loadedEvent)) {
-      return true;
-    }
+  if (pcm::schedule::hasConflict(event, mEvents)) {
+    return true;
   }
 
   return mDb && mDb->has_conflict(event);

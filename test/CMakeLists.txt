@@ -27,3 +27,14 @@ target_link_libraries(PsyClientManager_database_tests PRIVATE
     Poco::Foundation
 )
 gtest_discover_tests(PsyClientManager_database_tests)
+
+# Schedule conflict tests
+add_executable(PsyClientManager_schedule_conflict_tests
+    schedule_conflict_service_tests.cpp
+)
+target_link_libraries(PsyClientManager_schedule_conflict_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    PsyClientManager_event_view
+)
+gtest_discover_tests(PsyClientManager_schedule_conflict_tests)

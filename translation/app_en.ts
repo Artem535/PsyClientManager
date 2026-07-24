@@ -374,6 +374,18 @@
         <translation>Payment status</translation>
     </message>
     <message>
+        <source>Event status</source>
+        <translation>Event status</translation>
+    </message>
+    <message>
+        <source>Cancellation reason</source>
+        <translation>Cancellation reason</translation>
+    </message>
+    <message>
+        <source>Canceled by</source>
+        <translation>Canceled by</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/eventdetails.ui" line="184"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Add</translation>
@@ -688,6 +700,38 @@
         <translation>Online session</translation>
     </message>
     <message>
+        <source>Scheduled</source>
+        <translation>Scheduled</translation>
+    </message>
+    <message>
+        <source>Confirmed</source>
+        <translation>Confirmed</translation>
+    </message>
+    <message>
+        <source>Completed</source>
+        <translation>Completed</translation>
+    </message>
+    <message>
+        <source>No show</source>
+        <translation>No show</translation>
+    </message>
+    <message>
+        <source>Rescheduled</source>
+        <translation>Rescheduled</translation>
+    </message>
+    <message>
+        <source>Not specified</source>
+        <translation>Not specified</translation>
+    </message>
+    <message>
+        <source>Client</source>
+        <translation>Client</translation>
+    </message>
+    <message>
+        <source>Specialist</source>
+        <translation>Specialist</translation>
+    </message>
+    <message>
         <source>Session format</source>
         <translation>Session format</translation>
     </message>
@@ -875,6 +919,11 @@
         <source>Pending</source>
         <translation>Pending</translation>
     </message>
+    <message><source>Scheduled</source><translation>Scheduled</translation></message>
+    <message><source>Confirmed</source><translation>Confirmed</translation></message>
+    <message><source>Completed</source><translation>Completed</translation></message>
+    <message><source>No show</source><translation>No show</translation></message>
+    <message><source>Rescheduled</source><translation>Rescheduled</translation></message>
     <message>
         <source>Open meeting</source>
         <translation>Open meeting</translation>

@@ -374,6 +374,18 @@
         <translation>Статус оплаты</translation>
     </message>
     <message>
+        <source>Event status</source>
+        <translation>Статус встречи</translation>
+    </message>
+    <message>
+        <source>Cancellation reason</source>
+        <translation>Причина отмены</translation>
+    </message>
+    <message>
+        <source>Canceled by</source>
+        <translation>Кто отменил</translation>
+    </message>
+    <message>
         <location filename="../ui/pages/eventdetails.ui" line="184"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Добавить</translation>
@@ -682,6 +694,38 @@
         <translation>Онлайн-сессия</translation>
     </message>
     <message>
+        <source>Scheduled</source>
+        <translation>Запланирована</translation>
+    </message>
+    <message>
+        <source>Confirmed</source>
+        <translation>Подтверждена</translation>
+    </message>
+    <message>
+        <source>Completed</source>
+        <translation>Проведена</translation>
+    </message>
+    <message>
+        <source>No show</source>
+        <translation>Клиент не пришёл</translation>
+    </message>
+    <message>
+        <source>Rescheduled</source>
+        <translation>Перенесена</translation>
+    </message>
+    <message>
+        <source>Not specified</source>
+        <translation>Не указано</translation>
+    </message>
+    <message>
+        <source>Client</source>
+        <translation>Клиент</translation>
+    </message>
+    <message>
+        <source>Specialist</source>
+        <translation>Специалист</translation>
+    </message>
+    <message>
         <source>Session format</source>
         <translation>Формат сессии</translation>
     </message>
@@ -869,6 +913,11 @@
         <source>Pending</source>
         <translation>Не оплачено</translation>
     </message>
+    <message><source>Scheduled</source><translation>Запланирована</translation></message>
+    <message><source>Confirmed</source><translation>Подтверждена</translation></message>
+    <message><source>Completed</source><translation>Проведена</translation></message>
+    <message><source>No show</source><translation>Клиент не пришёл</translation></message>
+    <message><source>Rescheduled</source><translation>Перенесена</translation></message>
     <message>
         <source>Open meeting</source>
         <translation>Открыть встречу</translation>

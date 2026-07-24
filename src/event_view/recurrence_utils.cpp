@@ -124,6 +124,8 @@ DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
   event.is_work_event = series.is_work_event;
   event.event_stat_id = series.event_stat_id;
   event.payment_stat_id = series.payment_stat_id;
+  event.cancellation_reason = series.cancellation_reason;
+  event.canceled_by = series.canceled_by;
   event.start_date = occurrenceStart.toUTC().toMSecsSinceEpoch();
   const auto durationMs =
       series.duration.value_or(3600) * 1000;
