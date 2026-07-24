@@ -38,6 +38,10 @@ void setWorkDayEnd(const QTime &time);
 
 int defaultSessionDurationMinutes();
 void setDefaultSessionDurationMinutes(int minutes);
+int defaultBufferBeforeMinutes();
+void setDefaultBufferBeforeMinutes(int minutes);
+int defaultBufferAfterMinutes();
+void setDefaultBufferAfterMinutes(int minutes);
 
 QString meetingInviteTemplate();
 void setMeetingInviteTemplate(const QString &templateText);

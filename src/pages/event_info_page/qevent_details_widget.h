@@ -172,6 +172,9 @@ private:
   QPushButton *mOpenMeetingButton = nullptr;
   QPushButton *mCopyMeetingUrlButton = nullptr;
   QPushButton *mCopyMeetingInviteButton = nullptr;
+  QWidget *mBuffersWidget = nullptr;
+  QSpinBox *mBufferBeforeSpinBox = nullptr;
+  QSpinBox *mBufferAfterSpinBox = nullptr;
 
   // --- Data ---
   QPointer<QEventItem> mCurrentEvent;

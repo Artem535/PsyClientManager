@@ -161,6 +161,46 @@ TEST(DatabaseTest, DashboardExcludesCanceledNoShowAndRescheduledEvents) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, PersistsBuffersAndRejectsBufferedAdjacentEvent) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_buffers")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  constexpr int64_t startMs = 4102444800000LL;
+
+  DuckEvent event;
+  event.name = std::string{"Buffered Event"};
+  event.start_date = startMs;
+  event.end_date = startMs + 3600000;
+  event.duration = 3600;
+  event.buffer_before_minutes = 10;
+  event.buffer_after_minutes = 15;
+
+  const auto eventId = db.add_event(event, false);
+  ASSERT_GT(eventId, 0);
+  const auto storedEvent = db.get_event(eventId);
+  ASSERT_NE(storedEvent, nullptr);
+  EXPECT_EQ(storedEvent->buffer_before_minutes, 10);
+  EXPECT_EQ(storedEvent->buffer_after_minutes, 15);
+
+  DuckEvent adjacent = event;
+  adjacent.id = -1;
+  adjacent.name = std::string{"Adjacent Event"};
+  adjacent.start_date = startMs + 3600000 + 5 * 60000;
+  adjacent.end_date = *adjacent.start_date + 3600000;
+  adjacent.buffer_before_minutes = 0;
+  adjacent.buffer_after_minutes = 0;
+  EXPECT_EQ(db.add_event(adjacent, false), 0);
+
+  db_dir.remove(true);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 

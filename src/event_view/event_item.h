@@ -99,6 +99,8 @@ public:
   [[nodiscard]] QString canceledBy() const;
   [[nodiscard]] bool isOnline() const;
   [[nodiscard]] QString meetingUrl() const;
+  [[nodiscard]] int64_t bufferBeforeMinutes() const;
+  [[nodiscard]] int64_t bufferAfterMinutes() const;
 
   /**
    * @brief Returns the unique identifier of the event.
@@ -121,6 +123,8 @@ public:
   void setCanceledBy(const QString &canceledBy);
   void setOnline(bool online);
   void setMeetingUrl(const QString &meetingUrl);
+  void setBufferBeforeMinutes(int64_t minutes);
+  void setBufferAfterMinutes(int64_t minutes);
 
   /**
    * @brief Sets the start time of the event.
@@ -187,6 +191,8 @@ private:
   std::optional<int64_t> mSeriesId;
   std::optional<int64_t> mOriginalOccurrenceStart;
   bool mIsVirtualOccurrence = false;
+  int64_t mBufferBeforeMinutes = 0;
+  int64_t mBufferAfterMinutes = 0;
   QDateTime mStartTime;       ///< The start time of the event.
   QDateTime mEndTime;         ///< The end time of the event.
   int64_t mId = -1;           ///< Unique identifier of the event.

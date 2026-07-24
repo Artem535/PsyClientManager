@@ -180,6 +180,12 @@ void SettingsDialog::setupUi() {
   mDefaultSessionDurationSpinBox->setMaximum(480);
   mDefaultSessionDurationSpinBox->setSingleStep(5);
   mDefaultSessionDurationSpinBox->setSuffix(tr(" min"));
+  mDefaultBufferBeforeSpinBox = new QSpinBox(eventsBox);
+  mDefaultBufferBeforeSpinBox->setRange(0, 240);
+  mDefaultBufferBeforeSpinBox->setSuffix(tr(" min"));
+  mDefaultBufferAfterSpinBox = new QSpinBox(eventsBox);
+  mDefaultBufferAfterSpinBox->setRange(0, 240);
+  mDefaultBufferAfterSpinBox->setSuffix(tr(" min"));
   eventsLayout->addWidget(
       makeSettingRow(tr("Disallow overlapping events"),
                      tr("Reject saves when the selected time range intersects another event."),
@@ -196,6 +202,14 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Default session duration"),
                      tr("Duration used for quick session suggestions and new sessions."),
                      mDefaultSessionDurationSpinBox, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Default buffer before"),
+                     tr("Time reserved before each new session and Quick Slot."),
+                     mDefaultBufferBeforeSpinBox, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Default buffer after"),
+                     tr("Time reserved after each new session and Quick Slot."),
+                     mDefaultBufferAfterSpinBox, eventsBox));
   eventsLayout->addWidget(
       makeSettingRow(tr("Default work event cost"),
                      tr("Used to prefill new work sessions."),
@@ -253,6 +267,10 @@ void SettingsDialog::loadSettings() const {
   mWorkDayEndEdit->setTime(pcm::app_settings::workDayEnd());
   mDefaultSessionDurationSpinBox->setValue(
       pcm::app_settings::defaultSessionDurationMinutes());
+  mDefaultBufferBeforeSpinBox->setValue(
+      pcm::app_settings::defaultBufferBeforeMinutes());
+  mDefaultBufferAfterSpinBox->setValue(
+      pcm::app_settings::defaultBufferAfterMinutes());
   mDefaultWorkCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
@@ -295,6 +313,14 @@ void SettingsDialog::connectSignals() const {
   connect(mDefaultSessionDurationSpinBox, &QSpinBox::valueChanged, this,
           [](const int minutes) {
             pcm::app_settings::setDefaultSessionDurationMinutes(minutes);
+          });
+  connect(mDefaultBufferBeforeSpinBox, &QSpinBox::valueChanged, this,
+          [](const int minutes) {
+            pcm::app_settings::setDefaultBufferBeforeMinutes(minutes);
+          });
+  connect(mDefaultBufferAfterSpinBox, &QSpinBox::valueChanged, this,
+          [](const int minutes) {
+            pcm::app_settings::setDefaultBufferAfterMinutes(minutes);
           });
   connect(mDefaultWorkCostSpinBox, &QDoubleSpinBox::valueChanged, this,
           [](const double value) {

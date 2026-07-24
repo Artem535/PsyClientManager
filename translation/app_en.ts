@@ -642,6 +642,18 @@
 <context>
     <name>QEventDetailsWidget</name>
     <message>
+        <source>Buffers</source>
+        <translation>Buffers</translation>
+    </message>
+    <message>
+        <source>Before</source>
+        <translation>Before</translation>
+    </message>
+    <message>
+        <source>After</source>
+        <translation>After</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="101"/>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_REGULAR</source>
@@ -1010,6 +1022,22 @@ See you!</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
+    <message>
+        <source>Default buffer before</source>
+        <translation>Default buffer before</translation>
+    </message>
+    <message>
+        <source>Default buffer after</source>
+        <translation>Default buffer after</translation>
+    </message>
+    <message>
+        <source>Time reserved before each new session and Quick Slot.</source>
+        <translation>Time reserved before each new session and Quick Slot.</translation>
+    </message>
+    <message>
+        <source>Time reserved after each new session and Quick Slot.</source>
+        <translation>Time reserved after each new session and Quick Slot.</translation>
+    </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="59"/>
         <source>Settings</source>

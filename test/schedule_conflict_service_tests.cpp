@@ -26,6 +26,22 @@ TEST(ScheduleConflictServiceTest, TreatsAdjacentRangesAsNonOverlapping) {
   EXPECT_FALSE(pcm::schedule::hasConflict(candidate, {existing}));
 }
 
+TEST(ScheduleConflictServiceTest, CandidateBeforeBufferBlocksAdjacentEvent) {
+  auto candidate = eventWithRange(2, 2'000, 3'000);
+  const auto existing = eventWithRange(1, 1'000, 2'000);
+  candidate.buffer_before_minutes = 1;
+
+  EXPECT_TRUE(pcm::schedule::hasConflict(candidate, {existing}));
+}
+
+TEST(ScheduleConflictServiceTest, ExistingAfterBufferBlocksAdjacentEvent) {
+  const auto candidate = eventWithRange(2, 2'000, 3'000);
+  auto existing = eventWithRange(1, 1'000, 2'000);
+  existing.buffer_after_minutes = 1;
+
+  EXPECT_TRUE(pcm::schedule::hasConflict(candidate, {existing}));
+}
+
 TEST(ScheduleConflictServiceTest, IgnoresEventsWithoutCompleteTimeRange) {
   const auto candidate = eventWithRange(2, 1'500, 2'500);
   auto existing = eventWithRange(1, 1'000, 2'000);

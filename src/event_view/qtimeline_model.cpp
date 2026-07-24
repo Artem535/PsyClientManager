@@ -191,6 +191,8 @@ int64_t QTimelineModel::addEventSeries(const DuckEvent &event, const int64_t cli
   series.cost = event.cost;
   series.is_online = event.is_online;
   series.meeting_url = event.meeting_url;
+  series.buffer_before_minutes = event.buffer_before_minutes;
+  series.buffer_after_minutes = event.buffer_after_minutes;
   series.recurrence_rule = recurrenceRule.trimmed().toStdString();
   series.recurrence_until = recurrenceUntilMs;
 
@@ -224,6 +226,8 @@ bool QTimelineModel::updateEventSeries(const DuckEvent &event, const int64_t ser
   series.cost = event.cost;
   series.is_online = event.is_online;
   series.meeting_url = event.meeting_url;
+  series.buffer_before_minutes = event.buffer_before_minutes;
+  series.buffer_after_minutes = event.buffer_after_minutes;
   series.recurrence_rule = recurrenceRule.trimmed().toStdString();
   series.recurrence_until = recurrenceUntilMs;
 

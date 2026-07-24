@@ -17,8 +17,11 @@ bool rangesOverlap(const DuckEvent &left, const DuckEvent &right) {
     return false;
   }
 
-  return *left.start_date < *right.end_date &&
-         *left.end_date > *right.start_date;
+  const auto leftStart = *left.start_date - left.buffer_before_minutes * 60'000;
+  const auto leftEnd = *left.end_date + left.buffer_after_minutes * 60'000;
+  const auto rightStart = *right.start_date - right.buffer_before_minutes * 60'000;
+  const auto rightEnd = *right.end_date + right.buffer_after_minutes * 60'000;
+  return leftStart < rightEnd && leftEnd > rightStart;
 }
 
 } // namespace

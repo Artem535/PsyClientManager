@@ -125,6 +125,8 @@ struct DuckEvent {
   std::optional<std::int64_t> original_occurrence_start = std::nullopt;
   std::optional<std::string> cancellation_reason = std::nullopt;
   std::optional<std::string> canceled_by = std::nullopt;
+  std::int64_t buffer_before_minutes = 0;
+  std::int64_t buffer_after_minutes = 0;
   bool is_virtual_occurrence = false;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -162,6 +164,12 @@ struct DuckEvent {
     }
     if (chunk.ColumnCount() > 16) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(16, index));
+    }
+    if (chunk.ColumnCount() > 17) {
+      buffer_before_minutes = db_utils::toInt32AsInt64(chunk.GetValue(17, index));
+    }
+    if (chunk.ColumnCount() > 18) {
+      buffer_after_minutes = db_utils::toInt32AsInt64(chunk.GetValue(18, index));
     }
   }
 };
@@ -218,6 +226,8 @@ struct DuckEventSeries {
   bool active = true;
   std::optional<std::string> cancellation_reason = std::nullopt;
   std::optional<std::string> canceled_by = std::nullopt;
+  std::int64_t buffer_before_minutes = 0;
+  std::int64_t buffer_after_minutes = 0;
 
   DuckEventSeries() = default;
   DuckEventSeries(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -243,6 +253,12 @@ struct DuckEventSeries {
     }
     if (chunk.ColumnCount() > 17) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(17, index));
+    }
+    if (chunk.ColumnCount() > 18) {
+      buffer_before_minutes = db_utils::toInt32AsInt64(chunk.GetValue(18, index));
+    }
+    if (chunk.ColumnCount() > 19) {
+      buffer_after_minutes = db_utils::toInt32AsInt64(chunk.GetValue(19, index));
     }
   }
 };

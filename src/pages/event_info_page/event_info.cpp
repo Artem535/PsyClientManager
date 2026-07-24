@@ -460,7 +460,9 @@ QVector<QPair<QDateTime, QDateTime>> QEventInfoPage::currentBusyIntervals() cons
       continue;
     }
 
-    intervals.append(qMakePair(start, end));
+    const auto bufferedStart = start.addSecs(-event.buffer_before_minutes * 60);
+    const auto bufferedEnd = end.addSecs(event.buffer_after_minutes * 60);
+    intervals.append(qMakePair(bufferedStart, bufferedEnd));
   }
 
   return intervals;

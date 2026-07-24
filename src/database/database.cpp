@@ -85,7 +85,9 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.series_id),
        timestampMsOrNull(event.original_occurrence_start),
        db_utils::toDuckValue(event.cancellation_reason),
-       db_utils::toDuckValue(event.canceled_by)});
+       db_utils::toDuckValue(event.canceled_by),
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes))});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -160,6 +162,8 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        timestampMsOrNull(event.original_occurrence_start),
        db_utils::toDuckValue(event.cancellation_reason),
        db_utils::toDuckValue(event.canceled_by),
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
@@ -259,7 +263,9 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
        timestampMsOrNull(series.recurrence_until),
        db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
        db_utils::toDuckValue(series.cancellation_reason),
-       db_utils::toDuckValue(series.canceled_by)});
+       db_utils::toDuckValue(series.canceled_by),
+       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
+       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes))});
 
   if (!result) {
     PLOG_ERROR << "Failed to prepare insert event series query";
@@ -308,6 +314,8 @@ bool Database::update_event_series(const DuckEventSeries &series) {
        db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
        db_utils::toDuckValue(series.cancellation_reason),
        db_utils::toDuckValue(series.canceled_by),
+       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
+       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes)),
        duckdb::Value::BIGINT(series.id)});
 
   if (!result) {
@@ -831,17 +839,42 @@ bool Database::has_conflict(const DuckEvent &event) {
   duckdb::Connection conn(*mDb);
   auto result = executePrepared(
       conn, constance::kHasConflictQuery,
-      {duckdb::Value::BIGINT(event.id),
-       db_utils::toDuckTimestamp(event.end_date.value() * 1000),
-       db_utils::toDuckTimestamp(event.start_date.value() * 1000)});
+      {duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Conflict check failed: " << result->GetError();
     return false;
   }
 
-  // If there is at least one row, a conflict exists.
-  return result->Fetch() != nullptr;
+  const auto candidateStart =
+      *event.start_date - event.buffer_before_minutes * 60'000;
+  const auto candidateEnd =
+      *event.end_date + event.buffer_after_minutes * 60'000;
+
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t index = 0; index < chunk->size(); ++index) {
+      const auto existingStart =
+          db_utils::toOptionalTimestampMs(chunk->GetValue(1, index));
+      const auto existingEnd =
+          db_utils::toOptionalTimestampMs(chunk->GetValue(2, index));
+      if (!existingStart.has_value() || !existingEnd.has_value()) {
+        continue;
+      }
+
+      const auto bufferBefore =
+          db_utils::toInt32AsInt64(chunk->GetValue(3, index));
+      const auto bufferAfter =
+          db_utils::toInt32AsInt64(chunk->GetValue(4, index));
+      const auto existingEffectiveStart = *existingStart - bufferBefore * 60'000;
+      const auto existingEffectiveEnd = *existingEnd + bufferAfter * 60'000;
+      if (candidateStart < existingEffectiveEnd &&
+          candidateEnd > existingEffectiveStart) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 std::vector<DuckEvent>
