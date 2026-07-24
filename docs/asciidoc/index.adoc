@@ -14,3 +14,11 @@ include::06-database-and-data-model.adoc[]
 include::07-testing.adoc[]
 include::08-recursive-model-migration.adoc[]
 include::09-recurring-events.adoc[]
+
+== Roadmap
+
+Полная дорожная карта проекта с целями, версиями, задачами и критериями готовности
+находится в link:../roadmap.md[docs/roadmap.md].
+
+Инженерный план реализации находится в
+link:../implementation-plan.md[docs/implementation-plan.md].
