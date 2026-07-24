@@ -45,6 +45,9 @@ TEST(DatabaseTest, AddClientAndEvent) {
   event.duration = 3600;
   event.cost = 3200.0;
   event.payment_stat_id = 2;
+  event.event_stat_id = 3;
+  event.cancellation_reason = std::string{"Client request"};
+  event.canceled_by = std::string{"client"};
 
   const auto eventId = db.add_event(event);
   EXPECT_GT(eventId, 0);
@@ -56,6 +59,11 @@ TEST(DatabaseTest, AddClientAndEvent) {
   ASSERT_TRUE(storedEvent->cost.has_value());
   EXPECT_DOUBLE_EQ(*storedEvent->cost, 3200.0);
   EXPECT_EQ(storedEvent->payment_stat_id, 2);
+  EXPECT_EQ(storedEvent->event_stat_id, 3);
+  ASSERT_TRUE(storedEvent->cancellation_reason.has_value());
+  EXPECT_EQ(*storedEvent->cancellation_reason, "Client request");
+  ASSERT_TRUE(storedEvent->canceled_by.has_value());
+  EXPECT_EQ(*storedEvent->canceled_by, "client");
 
   const auto eventClientId = db.add_event_client(eventId, clientId);
   EXPECT_GT(eventClientId, 0);
@@ -100,6 +108,55 @@ TEST(DatabaseTest, DashboardIncomeCountsOnlyPaidEvents) {
 
   const auto summary = db.get_dashboard_summary();
   EXPECT_DOUBLE_EQ(summary.income_this_month, 5000.0);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, DashboardExcludesCanceledNoShowAndRescheduledEvents) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_statuses")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  const auto nowMs =
+      static_cast<int64_t>(Poco::Timestamp{}.epochMicroseconds() / 1000);
+  const auto before = db.get_dashboard_summary();
+
+  DuckEvent scheduled;
+  scheduled.name = std::string{"Scheduled"};
+  scheduled.is_work_event = true;
+  scheduled.event_stat_id = 1;
+  scheduled.payment_stat_id = 2;
+  scheduled.start_date = nowMs;
+  scheduled.end_date = nowMs + 3600000;
+  scheduled.duration = 3600;
+  scheduled.cost = 5000.0;
+  EXPECT_GT(db.add_event(scheduled), 0);
+
+  for (const auto statusId : {3LL, 5LL, 6LL}) {
+    DuckEvent excluded = scheduled;
+    excluded.id = -1;
+    excluded.name = std::string{"Excluded"};
+    excluded.event_stat_id = statusId;
+    excluded.start_date = nowMs + 7200000 + statusId * 1000;
+    excluded.end_date = *excluded.start_date + 3600000;
+    excluded.cost = 7000.0;
+    const auto excludedId = db.add_event(excluded);
+    EXPECT_GT(excludedId, 0);
+    const auto storedExcluded = db.get_event(excludedId);
+    ASSERT_NE(storedExcluded, nullptr);
+    EXPECT_EQ(storedExcluded->event_stat_id, statusId);
+  }
+
+  const auto after = db.get_dashboard_summary();
+  EXPECT_EQ(after.sessions_this_month, before.sessions_this_month + 1);
+  EXPECT_EQ(after.work_sessions_this_month, before.work_sessions_this_month + 1);
+  EXPECT_DOUBLE_EQ(after.income_this_month, before.income_this_month + 5000.0);
 
   db_dir.remove(true);
 }

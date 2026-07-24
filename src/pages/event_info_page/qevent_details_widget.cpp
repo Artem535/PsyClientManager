@@ -195,7 +195,22 @@ void QEventDetailsWidget::initUi() {
   mRepeatTypeControl->addItem(tr("Month"), {}, {}, QStringLiteral("monthly"));
   mRepeatTypeControl->addItem(tr("Year"), {}, {}, QStringLiteral("yearly"));
   mRepeatTypeControl->setItemsShouldExpand(true);
-  constexpr int onlineSectionRow = 7;
+  mUI->mEventStatusComboBox->addItem(tr("Scheduled"), QVariant::fromValue(1));
+  mUI->mEventStatusComboBox->addItem(tr("Confirmed"), QVariant::fromValue(4));
+  mUI->mEventStatusComboBox->addItem(tr("Completed"), QVariant::fromValue(2));
+  mUI->mEventStatusComboBox->addItem(tr("Canceled"), QVariant::fromValue(3));
+  mUI->mEventStatusComboBox->addItem(tr("No show"), QVariant::fromValue(5));
+  mUI->mEventStatusComboBox->addItem(tr("Rescheduled"), QVariant::fromValue(6));
+  mUI->mCanceledByComboBox->addItem(tr("Not specified"), QString{});
+  mUI->mCanceledByComboBox->addItem(tr("Client"), QStringLiteral("client"));
+  mUI->mCanceledByComboBox->addItem(tr("Specialist"), QStringLiteral("specialist"));
+  mUI->mEventStatusLabel->setVisible(false);
+  mUI->mEventStatusComboBox->setVisible(false);
+  mUI->mCancellationReasonLabel->setVisible(false);
+  mUI->mCancellationReasonEdit->setVisible(false);
+  mUI->mCanceledByLabel->setVisible(false);
+  mUI->mCanceledByComboBox->setVisible(false);
+  constexpr int onlineSectionRow = 10;
   mUI->formLayout->insertRow(onlineSectionRow, tr("Repeat"), mRepeatTypeControl);
   mRecurringOptionsWidget = new QWidget(this);
   auto *recurringOptionsLayout = new QHBoxLayout(mRecurringOptionsWidget);
@@ -308,6 +323,9 @@ void QEventDetailsWidget::initConnections() {
           &QEventDetailsWidget::onRecurrenceTypeChanged);
   connect(mRepeatUntilSwitch, &QAbstractButton::toggled, mRepeatUntilDateEdit,
           &QWidget::setEnabled);
+  connect(mUI->mEventStatusComboBox,
+          qOverload<int>(&QComboBox::currentIndexChanged), this,
+          [this](const int) { updateCancellationControls(); });
   connect(mMeetingUrlEdit, &QLineEdit::textChanged, this,
           &QEventDetailsWidget::onMeetingUrlChanged);
   connect(mOpenMeetingButton, &QPushButton::clicked, this,
@@ -341,6 +359,9 @@ void QEventDetailsWidget::initDefaultStyle() {
   mUI->mCostSpinBox->setVisible(isVisible);
   mUI->mPaymentStatusLabel->setVisible(isVisible);
   mUI->mPaymentStatusComboBox->setVisible(isVisible);
+  mUI->mEventStatusLabel->setVisible(isVisible);
+  mUI->mEventStatusComboBox->setVisible(isVisible);
+  updateCancellationControls();
   mEventTypeSwitch->setEnabled(false);
   updateRecurringControls();
   mUI->mButtonBox->setVisible(false);
@@ -358,6 +379,9 @@ void QEventDetailsWidget::initEditStyle() {
   updateRecurringControls();
   onEventTypeToggled(mEventTypeSwitch->isChecked());
   onOnlineSessionToggled(mOnlineSessionSwitch->isChecked());
+  mUI->mEventStatusLabel->setVisible(true);
+  mUI->mEventStatusComboBox->setVisible(true);
+  updateCancellationControls();
   emit provideFillClientComboBox(mUI->mClientComboBox);
 }
 
@@ -408,6 +432,16 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
       paymentIndex != -1) {
     mUI->mPaymentStatusComboBox->setCurrentIndex(paymentIndex);
   }
+  const auto eventStatusData = QVariant::fromValue(event->eventStatusId());
+  if (const int eventStatusIndex =
+          mUI->mEventStatusComboBox->findData(eventStatusData);
+      eventStatusIndex != -1) {
+    mUI->mEventStatusComboBox->setCurrentIndex(eventStatusIndex);
+  }
+  mUI->mCancellationReasonEdit->setText(event->cancellationReason());
+  const auto canceledByIndex =
+      mUI->mCanceledByComboBox->findData(event->canceledBy());
+  mUI->mCanceledByComboBox->setCurrentIndex(canceledByIndex >= 0 ? canceledByIndex : 0);
 
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
@@ -425,6 +459,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   updateButtonState();
   onEventTypeToggled(isWorkItem);
   onOnlineSessionToggled(event->isOnline());
+  updateCancellationControls();
 }
 
 void QEventDetailsWidget::startEditingEvent(
@@ -467,6 +502,11 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date,
   mUI->mCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mUI->mPaymentStatusComboBox->setCurrentIndex(
       mUI->mPaymentStatusComboBox->findData(QVariant::fromValue(kPaymentPendingId)));
+  mUI->mEventStatusComboBox->setCurrentIndex(
+      mUI->mEventStatusComboBox->findData(QVariant::fromValue(1)));
+  mUI->mCancellationReasonEdit->clear();
+  mUI->mCanceledByComboBox->setCurrentIndex(0);
+  updateCancellationControls();
   initEditStyle();
 }
 
@@ -627,6 +667,12 @@ void QEventDetailsWidget::onApplyClicked() {
         mEventTypeSwitch->isChecked()
             ? mUI->mPaymentStatusComboBox->currentData().toLongLong()
             : kPaymentSkippedId);
+    mCurrentEvent->setEventStatusId(
+        mUI->mEventStatusComboBox->currentData().toLongLong());
+    mCurrentEvent->setCancellationReason(
+        mUI->mCancellationReasonEdit->text());
+    mCurrentEvent->setCanceledBy(
+        mUI->mCanceledByComboBox->currentData().toString());
     mCurrentEvent->setOnline(mOnlineSessionSwitch->isChecked());
     mCurrentEvent->setMeetingUrl(mOnlineSessionSwitch->isChecked()
                                      ? mMeetingUrlEdit->text()
@@ -794,6 +840,15 @@ void QEventDetailsWidget::updateButtonState() const {
   mOpenMeetingButton->setEnabled(hasValidMeetingUrl);
   mCopyMeetingUrlButton->setEnabled(hasValidMeetingUrl);
   mCopyMeetingInviteButton->setEnabled(hasValidMeetingUrl);
+}
+
+void QEventDetailsWidget::updateCancellationControls() const {
+  const auto statusId = mUI->mEventStatusComboBox->currentData().toLongLong();
+  const bool isCanceled = statusId == 3 || statusId == 5;
+  mUI->mCancellationReasonLabel->setVisible(isCanceled);
+  mUI->mCancellationReasonEdit->setVisible(isCanceled);
+  mUI->mCanceledByLabel->setVisible(isCanceled);
+  mUI->mCanceledByComboBox->setVisible(isCanceled);
 }
 
 void QEventDetailsWidget::updateRecurringControls() const {

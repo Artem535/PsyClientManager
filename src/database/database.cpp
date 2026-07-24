@@ -83,7 +83,9 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        duckdb::Value::BOOLEAN(event.is_online),
        duckdb::Value(event.meeting_url),
        db_utils::toDuckValue(event.series_id),
-       timestampMsOrNull(event.original_occurrence_start)});
+       timestampMsOrNull(event.original_occurrence_start),
+       db_utils::toDuckValue(event.cancellation_reason),
+       db_utils::toDuckValue(event.canceled_by)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -156,6 +158,8 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        duckdb::Value(event.meeting_url),
        db_utils::toDuckValue(event.series_id),
        timestampMsOrNull(event.original_occurrence_start),
+       db_utils::toDuckValue(event.cancellation_reason),
+       db_utils::toDuckValue(event.canceled_by),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
@@ -253,7 +257,9 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
        duckdb::Value(series.meeting_url),
        duckdb::Value(series.recurrence_rule),
        timestampMsOrNull(series.recurrence_until),
-       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000))});
+       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
+       db_utils::toDuckValue(series.cancellation_reason),
+       db_utils::toDuckValue(series.canceled_by)});
 
   if (!result) {
     PLOG_ERROR << "Failed to prepare insert event series query";
@@ -300,6 +306,8 @@ bool Database::update_event_series(const DuckEventSeries &series) {
        duckdb::Value(series.recurrence_rule),
        timestampMsOrNull(series.recurrence_until),
        db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
+       db_utils::toDuckValue(series.cancellation_reason),
+       db_utils::toDuckValue(series.canceled_by),
        duckdb::Value::BIGINT(series.id)});
 
   if (!result) {

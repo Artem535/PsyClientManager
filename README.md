@@ -39,6 +39,12 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 
 ## 🛣 Roadmap
 
+Детальная дорожная карта с целями, версиями, задачами и критериями готовности:
+[`docs/roadmap.md`](docs/roadmap.md).
+
+Инженерный план реализации с зависимостями, миграциями и проверками:
+[`docs/implementation-plan.md`](docs/implementation-plan.md).
+
 - Local database encryption and an app-level password/PIN lock
 - Data export, import, and backup/restore for the local database
 - Client session reminders via Telegram

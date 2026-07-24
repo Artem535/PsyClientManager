@@ -146,6 +146,7 @@ private:
   void initDefaultStates() const;
   void initDefaultTimes() const;
   void updateButtonState() const;
+  void updateCancellationControls() const;
   void updateRecurringControls() const;
   void selectWeekday(int dayOfWeek, bool checked);
   [[nodiscard]] QString selectedWeekdayRule() const;

@@ -15,6 +15,7 @@ constexpr int64_t kPaymentPaidId = 2;
 constexpr int64_t kPaymentCanceledId = 3;
 constexpr int64_t kPaymentRefundedId = 4;
 constexpr int64_t kPaymentSkippedId = 5;
+constexpr int64_t kEventScheduledId = 1;
 
 QString formatEventCost(const std::optional<double>& cost) {
   if (!cost.has_value()) {
@@ -37,6 +38,24 @@ QString paymentStatusLabel(const int64_t paymentStatusId) {
   case kPaymentPendingId:
   default:
     return QEventItem::tr("Pending");
+  }
+}
+
+QString eventStatusLabel(const int64_t eventStatusId) {
+  switch (eventStatusId) {
+  case 2:
+    return QEventItem::tr("Completed");
+  case 3:
+    return QEventItem::tr("Canceled");
+  case 4:
+    return QEventItem::tr("Confirmed");
+  case 5:
+    return QEventItem::tr("No show");
+  case 6:
+    return QEventItem::tr("Rescheduled");
+  case 1:
+  default:
+    return QEventItem::tr("Scheduled");
   }
 }
 } // namespace
@@ -65,7 +84,10 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mTitle = QString::fromStdString(event.name.value_or(""));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
+  mEventStatusId = event.event_stat_id > 0 ? event.event_stat_id : kEventScheduledId;
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
+  mCancellationReason = QString::fromStdString(event.cancellation_reason.value_or(""));
+  mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
   mSeriesId = event.series_id;
@@ -98,7 +120,10 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mTitle = QString::fromStdString(event.name.value_or("Undefined"));
   mClientName = QString::fromStdString(event.client_name.value_or(""));
   mCost = event.cost;
+  mEventStatusId = event.event_stat_id > 0 ? event.event_stat_id : kEventScheduledId;
   mPaymentStatusId = event.payment_stat_id > 0 ? event.payment_stat_id : kPaymentPendingId;
+  mCancellationReason = QString::fromStdString(event.cancellation_reason.value_or(""));
+  mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
   mSeriesId = event.series_id;
@@ -129,11 +154,18 @@ DuckEvent QEventItem::toEvent() const {
   event.id = mId;
   event.name = mTitle.toStdString();
   event.is_work_event = mIsWorkItem;
+  event.event_stat_id = mEventStatusId;
   event.start_date = mStartTime.toUTC().toMSecsSinceEpoch();
   event.end_date = mEndTime.toUTC().toMSecsSinceEpoch();
   event.duration = static_cast<int64_t>(mDuration) * 60;
   event.cost = mCost;
   event.payment_stat_id = mIsWorkItem ? mPaymentStatusId : kPaymentSkippedId;
+  if (!mCancellationReason.isEmpty()) {
+    event.cancellation_reason = mCancellationReason.toStdString();
+  }
+  if (!mCanceledBy.isEmpty()) {
+    event.canceled_by = mCanceledBy.toStdString();
+  }
   event.is_online = mIsOnline;
   event.meeting_url = mMeetingUrl.trimmed().toStdString();
   event.series_id = mSeriesId;
@@ -171,7 +203,10 @@ QDateTime QEventItem::getEndTime() const { return mEndTime; }
 QString QEventItem::getTitle() const { return mTitle; }
 QString QEventItem::getClientName() const { return mClientName; }
 std::optional<double> QEventItem::cost() const { return mCost; }
+int64_t QEventItem::eventStatusId() const { return mEventStatusId; }
 int64_t QEventItem::paymentStatusId() const { return mPaymentStatusId; }
+QString QEventItem::cancellationReason() const { return mCancellationReason; }
+QString QEventItem::canceledBy() const { return mCanceledBy; }
 bool QEventItem::isOnline() const { return mIsOnline; }
 QString QEventItem::meetingUrl() const { return mMeetingUrl; }
 int64_t QEventItem::getId() const { return mId; }
@@ -198,12 +233,39 @@ void QEventItem::setCost(std::optional<double> cost) {
   update();
 }
 
+void QEventItem::setEventStatusId(const int64_t eventStatusId) {
+  const auto normalizedId = eventStatusId > 0 ? eventStatusId : kEventScheduledId;
+  if (mEventStatusId == normalizedId) {
+    return;
+  }
+  mEventStatusId = normalizedId;
+  update();
+}
+
 void QEventItem::setPaymentStatusId(const int64_t paymentStatusId) {
   const auto normalizedId = paymentStatusId > 0 ? paymentStatusId : kPaymentPendingId;
   if (mPaymentStatusId == normalizedId) {
     return;
   }
   mPaymentStatusId = normalizedId;
+  update();
+}
+
+void QEventItem::setCancellationReason(const QString &reason) {
+  const auto normalizedReason = reason.trimmed();
+  if (mCancellationReason == normalizedReason) {
+    return;
+  }
+  mCancellationReason = normalizedReason;
+  update();
+}
+
+void QEventItem::setCanceledBy(const QString &canceledBy) {
+  const auto normalizedCanceledBy = canceledBy.trimmed();
+  if (mCanceledBy == normalizedCanceledBy) {
+    return;
+  }
+  mCanceledBy = normalizedCanceledBy;
   update();
 }
 
@@ -477,6 +539,7 @@ void QEventItem::paint(QPainter *painter,
 
     appendEntry(userIcon, mClientName, secondaryFont);
     appendEntry(coinsIcon, costText, secondaryFont);
+    appendEntry(onlineIcon, eventStatusLabel(mEventStatusId), secondaryFont);
     appendEntry(coinsIcon, paymentStatusLabel(mPaymentStatusId), secondaryFont);
     if (mIsOnline) {
       appendEntry(onlineIcon, tr("Online"), secondaryFont);

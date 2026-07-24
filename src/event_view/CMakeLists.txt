@@ -14,6 +14,8 @@ qt_add_library(${TARGET_NAME} STATIC
         event_view.cpp
         event_item.cpp
         qtimeline_model.cpp
+        schedule_conflict_service.cpp
+        schedule_conflict_service.h
         recurrence_utils.cpp
         recurrence_utils.h
 )
