@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-07-24
+
+### Added
+
+- event statuses for scheduled, confirmed, completed, canceled, no-show, and rescheduled sessions
+- cancellation reason and cancellation initiator fields for events and recurring series
+- reusable schedule conflict service with recurring-occurrence coverage
+
+### Changed
+
+- analytics and reminders now exclude canceled, no-show, and rescheduled sessions
+- event status is kept separate from payment status
+- contributor workflow now documents issue, branch, version, changelog, and MR requirements
+
 ## [0.1.5] - 2026-07-05
 
 ### Added
