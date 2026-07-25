@@ -95,6 +95,7 @@ public:
                                                            int months_back = 6);
   DashboardSummary get_dashboard_summary();
   std::vector<DashboardMonthlyStats> get_dashboard_monthly_stats(int months_back = 6);
+  DuckApplicationMetadata get_application_metadata();
 
   DuckClient get_client_by_event(const int64_t &event_id);
 
@@ -102,6 +103,7 @@ private:
   void add_demo_data();
   void init_tables();
   void apply_schema_migrations();
+  void init_application_metadata();
   void init_payment_status_table();
   void init_event_status_table();
 

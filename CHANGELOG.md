@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.8] - 2026-07-25
+
+### Added
+
+- Persistent application metadata with workspace identity and schema/backup format versions.
+- Database regression coverage for metadata persistence across application restarts.
+
 ## [0.1.7] - 2026-07-24
 
 ### Added
