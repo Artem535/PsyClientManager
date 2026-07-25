@@ -81,6 +81,7 @@ qt_add_translations(PsyClientManager
 add_subdirectory(src/widgets)
 add_subdirectory(src/config)
 add_subdirectory(src/database)
+add_subdirectory(src/backup)
 add_subdirectory(src/client_model)
 add_subdirectory(src/pages/client_info_page)
 add_subdirectory(src/pages/event_info_page)

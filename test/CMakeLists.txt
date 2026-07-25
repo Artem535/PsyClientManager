@@ -38,3 +38,17 @@ target_link_libraries(PsyClientManager_schedule_conflict_tests PRIVATE
     PsyClientManager_event_view
 )
 gtest_discover_tests(PsyClientManager_schedule_conflict_tests)
+
+# Backup tests
+find_package(reflectcpp CONFIG REQUIRED)
+add_executable(PsyClientManager_backup_tests backup_tests.cpp)
+target_link_libraries(PsyClientManager_backup_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    PsyClientManager_config
+    PsyClientManager_database
+    PsyClientManager_backup
+    Poco::Foundation
+    reflectcpp::reflectcpp
+)
+gtest_discover_tests(PsyClientManager_backup_tests)
