@@ -1,11 +1,16 @@
 #include <Poco/File.h>
 #include <Poco/Path.h>
+#include <Poco/UUIDGenerator.h>
+#include <Poco/Zip/Decompress.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <rfl/json.hpp>
 
 #include "backup_manifest.hpp"
+#include "backup_service.h"
 #include "checksum_utils.hpp"
+#include "config.h"
+#include "database.h"
 
 namespace {
 
@@ -63,4 +68,81 @@ TEST(BackupManifestTest, JsonRoundTripPreservesAllFields) {
   EXPECT_EQ(parsed.value().entries[0].size_bytes, 4821);
   EXPECT_EQ(parsed.value().entries[0].sha256,
            "0123456789abcdef0123456789abcdef");
+}
+
+namespace {
+
+pcm::database::Database makeTestDatabase(const std::string &dirName) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}};
+  Poco::File dbDir(conf.db_conf().db_pth);
+  if (dbDir.exists()) {
+    dbDir.remove(true);
+  }
+  return pcm::database::Database{conf};
+}
+
+pcm::backup::BackupManifest extractManifest(const std::string &backupPath,
+                                            const std::string &extractDir) {
+  std::ifstream zipIn(backupPath, std::ios::binary);
+  Poco::Zip::Decompress decompress(zipIn, Poco::Path(extractDir));
+  decompress.decompressAllFiles();
+  const auto manifestPath =
+      Poco::Path(extractDir).append("manifest.json").toString();
+  return rfl::json::load<pcm::backup::BackupManifest>(manifestPath).value();
+}
+
+} // namespace
+
+TEST(BackupServiceTest, CreateBackupDatabaseOnlyProducesValidArchive) {
+  auto db = makeTestDatabase("tmp_dir_backup_db_only");
+
+  DuckClient client;
+  client.name = std::string{"Backup"};
+  client.last_name = std::string{"Client"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto destPath =
+      Poco::Path(Poco::Path::current()).append("tmp_backup_db_only.psybackup")
+          .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  const auto result = service.create_backup(db, destPath);
+  ASSERT_TRUE(result.ok) << result.error;
+  ASSERT_TRUE(Poco::File(destPath).exists());
+
+  const auto extractDir =
+      Poco::Path(Poco::Path::current()).append("tmp_backup_db_only_extract")
+          .toString();
+  Poco::File extractDirFile(extractDir);
+  if (extractDirFile.exists()) {
+    extractDirFile.remove(true);
+  }
+
+  const auto manifest = extractManifest(destPath, extractDir);
+  EXPECT_EQ(manifest.kind, "database");
+  ASSERT_FALSE(manifest.entries.empty());
+
+  bool foundClientTable = false;
+  for (const auto &entry : manifest.entries) {
+    Poco::Path entryPath(extractDir);
+    entryPath.append(Poco::Path(entry.path, Poco::Path::PATH_UNIX));
+    ASSERT_TRUE(Poco::File(entryPath).exists()) << entry.path;
+    EXPECT_EQ(pcm::backup::sha256_file(entryPath.toString()), entry.sha256)
+        << entry.path;
+    if (entry.path == "database/client.parquet") {
+      foundClientTable = true;
+    }
+  }
+  EXPECT_TRUE(foundClientTable);
+
+  extractDirFile.remove(true);
+  destFile.remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_backup_db_only"))
+      .remove(true);
 }
