@@ -27,6 +27,20 @@
 - `db_utils.hpp`
 : value conversion helpers between DuckDB and C++ optional types.
 
+=== `src/backup`
+
+- `BackupService`
+: builds a `.psybackup` zip (consistent DuckDB export via
+  `Database::export_snapshot`, optional attachments, SHA-256 checksummed
+  `manifest.json`), finalized with a same-directory temp file + atomic
+  rename.
+- `BackupValidator`
+: re-verifies a `.psybackup` file's manifest and per-entry checksums.
+- `backup_manifest.hpp`
+: `BackupManifest`/`BackupEntry` DTOs (rfl JSON).
+- `checksum_utils.hpp`
+: `sha256_file` via `Poco::SHA2Engine`.
+
 === `src/client_model`
 
 - `QClientModel`
