@@ -47,6 +47,8 @@ private:
   QTimeEdit *mWorkDayStartEdit{nullptr};
   QTimeEdit *mWorkDayEndEdit{nullptr};
   QSpinBox *mDefaultSessionDurationSpinBox{nullptr};
+  QSpinBox *mDefaultBufferBeforeSpinBox{nullptr};
+  QSpinBox *mDefaultBufferAfterSpinBox{nullptr};
   QTextEdit *mMeetingInviteTemplateEdit{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;

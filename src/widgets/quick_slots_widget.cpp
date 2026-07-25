@@ -125,8 +125,10 @@ void QuickSlotsWidget::refreshSlots() {
 
 bool QuickSlotsWidget::slotOverlapsAnyEvent(const QDateTime &slotStart,
                                             const QDateTime &slotEnd) const {
-  const auto slotStartMs = slotStart.toMSecsSinceEpoch();
-  const auto slotEndMs = slotEnd.toMSecsSinceEpoch();
+  const auto slotStartMs = slotStart.toMSecsSinceEpoch() -
+                           pcm::app_settings::defaultBufferBeforeMinutes() * 60'000LL;
+  const auto slotEndMs = slotEnd.toMSecsSinceEpoch() +
+                         pcm::app_settings::defaultBufferAfterMinutes() * 60'000LL;
 
   for (const auto &[eventStart, eventEnd] : mBusyIntervals) {
     const auto eventStartMs = eventStart.toMSecsSinceEpoch();

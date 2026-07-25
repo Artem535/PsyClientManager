@@ -1,7 +1,9 @@
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <Poco/Timestamp.h>
+#include <duckdb.hpp>
 #include <gtest/gtest.h>
+#include <limits>
 #include "config.h"
 #include "database.h"
 
@@ -157,6 +159,95 @@ TEST(DatabaseTest, DashboardExcludesCanceledNoShowAndRescheduledEvents) {
   EXPECT_EQ(after.sessions_this_month, before.sessions_this_month + 1);
   EXPECT_EQ(after.work_sessions_this_month, before.work_sessions_this_month + 1);
   EXPECT_DOUBLE_EQ(after.income_this_month, before.income_this_month + 5000.0);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, PersistsBuffersAndRejectsBufferedAdjacentEvent) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_buffers")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  constexpr int64_t startMs = 4102444800000LL;
+
+  DuckEvent event;
+  event.name = std::string{"Buffered Event"};
+  event.start_date = startMs;
+  event.end_date = startMs + 3600000;
+  event.duration = 3600;
+  event.buffer_before_minutes = 10;
+  event.buffer_after_minutes = 15;
+
+  const auto eventId = db.add_event(event, false);
+  ASSERT_GT(eventId, 0);
+  const auto storedEvent = db.get_event(eventId);
+  ASSERT_NE(storedEvent, nullptr);
+  EXPECT_EQ(storedEvent->buffer_before_minutes, 10);
+  EXPECT_EQ(storedEvent->buffer_after_minutes, 15);
+
+  DuckEvent adjacent = event;
+  adjacent.id = -1;
+  adjacent.name = std::string{"Adjacent Event"};
+  adjacent.start_date = startMs + 3600000 + 5 * 60000;
+  adjacent.end_date = *adjacent.start_date + 3600000;
+  adjacent.buffer_before_minutes = 0;
+  adjacent.buffer_after_minutes = 0;
+  EXPECT_EQ(db.add_event(adjacent, false), 0);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_null_buffers")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  DuckEvent event;
+  event.name = std::string{"Legacy Event"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+  DuckEventSeries series;
+  series.name = std::string{"Legacy Series"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+  duckdb::DuckDB rawDatabase((conf.db_conf().db_pth.toString() + "/database.db").c_str());
+  duckdb::Connection rawConnection(rawDatabase);
+  ASSERT_FALSE(rawConnection.Query(
+      "UPDATE Event SET buffer_before_minutes = NULL, buffer_after_minutes = NULL")
+                   ->HasError());
+  ASSERT_FALSE(rawConnection.Query(
+      "UPDATE EventSeries SET buffer_before_minutes = NULL, buffer_after_minutes = NULL")
+                   ->HasError());
+  auto nullCheck = rawConnection.Query(
+      "SELECT buffer_before_minutes, buffer_after_minutes FROM Event WHERE id = " +
+      std::to_string(eventId));
+  ASSERT_FALSE(nullCheck->HasError());
+  const auto nullChunk = nullCheck->Fetch();
+  ASSERT_NE(nullChunk, nullptr);
+  ASSERT_TRUE(nullChunk->GetValue(0, 0).IsNull());
+  ASSERT_TRUE(nullChunk->GetValue(1, 0).IsNull());
+
+  EXPECT_NO_THROW(db.get_event(eventId));
+  EXPECT_NO_THROW(db.get_event_series(seriesId));
+  EXPECT_NO_THROW(db.get_day_events(0, std::numeric_limits<int64_t>::max()));
 
   db_dir.remove(true);
 }

@@ -636,6 +636,18 @@
 <context>
     <name>QEventDetailsWidget</name>
     <message>
+        <source>Buffers</source>
+        <translation>Буферы</translation>
+    </message>
+    <message>
+        <source>Before</source>
+        <translation>До</translation>
+    </message>
+    <message>
+        <source>After</source>
+        <translation>После</translation>
+    </message>
+    <message>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="101"/>
         <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_REGULAR</source>
@@ -1004,6 +1016,22 @@ See you!</source>
 </context>
 <context>
     <name>SettingsDialog</name>
+    <message>
+        <source>Default buffer before</source>
+        <translation>Буфер до встречи по умолчанию</translation>
+    </message>
+    <message>
+        <source>Default buffer after</source>
+        <translation>Буфер после встречи по умолчанию</translation>
+    </message>
+    <message>
+        <source>Time reserved before each new session and Quick Slot.</source>
+        <translation>Время, резервируемое перед каждой новой сессией и быстрым слотом.</translation>
+    </message>
+    <message>
+        <source>Time reserved after each new session and Quick Slot.</source>
+        <translation>Время, резервируемое после каждой новой сессии и быстрого слота.</translation>
+    </message>
     <message>
         <location filename="../src/app/settings_dialog.cpp" line="59"/>
         <source>Settings</source>

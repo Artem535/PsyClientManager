@@ -18,6 +18,8 @@ constexpr auto kDefaultWorkEventCostKey = "event/defaultWorkEventCost";
 constexpr auto kWorkDayStartKey = "event/workDayStart";
 constexpr auto kWorkDayEndKey = "event/workDayEnd";
 constexpr auto kDefaultSessionDurationMinutesKey = "event/defaultSessionDurationMinutes";
+constexpr auto kDefaultBufferBeforeMinutesKey = "event/defaultBufferBeforeMinutes";
+constexpr auto kDefaultBufferAfterMinutesKey = "event/defaultBufferAfterMinutes";
 constexpr auto kMeetingInviteTemplateKey = "online/meetingInviteTemplate";
 
 QColor defaultWorkEventColor() {
@@ -51,6 +53,9 @@ QTime defaultWorkDayEndValue() {
 int defaultSessionDurationMinutesValue() {
   return 60;
 }
+
+int defaultBufferBeforeMinutesValue() { return 0; }
+int defaultBufferAfterMinutesValue() { return 0; }
 
 int defaultNotificationLeadMinutesValue() {
   return 30;
@@ -193,6 +198,28 @@ int defaultSessionDurationMinutes() {
 void setDefaultSessionDurationMinutes(const int minutes) {
   QSettings settings;
   settings.setValue(kDefaultSessionDurationMinutesKey, minutes);
+}
+
+int defaultBufferBeforeMinutes() {
+  QSettings settings;
+  return settings.value(kDefaultBufferBeforeMinutesKey,
+                        defaultBufferBeforeMinutesValue()).toInt();
+}
+
+void setDefaultBufferBeforeMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kDefaultBufferBeforeMinutesKey, minutes);
+}
+
+int defaultBufferAfterMinutes() {
+  QSettings settings;
+  return settings.value(kDefaultBufferAfterMinutesKey,
+                        defaultBufferAfterMinutesValue()).toInt();
+}
+
+void setDefaultBufferAfterMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kDefaultBufferAfterMinutesKey, minutes);
 }
 
 QString meetingInviteTemplate() {

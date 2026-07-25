@@ -10,6 +10,14 @@
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
 namespace {
+void setBufferMinutes(const DuckEvent &event, std::int64_t &beforeMinutes,
+                      std::int64_t &afterMinutes) {
+  beforeMinutes = event.buffer_before_minutes;
+  afterMinutes = event.buffer_after_minutes;
+}
+} // namespace
+
+namespace {
 constexpr int64_t kPaymentPendingId = 1;
 constexpr int64_t kPaymentPaidId = 2;
 constexpr int64_t kPaymentCanceledId = 3;
@@ -93,6 +101,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
+  setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -129,6 +138,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
+  setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -171,6 +181,8 @@ DuckEvent QEventItem::toEvent() const {
   event.series_id = mSeriesId;
   event.original_occurrence_start = mOriginalOccurrenceStart;
   event.is_virtual_occurrence = mIsVirtualOccurrence;
+  event.buffer_before_minutes = mBufferBeforeMinutes;
+  event.buffer_after_minutes = mBufferAfterMinutes;
   return event;
 }
 
@@ -282,6 +294,17 @@ void QEventItem::setMeetingUrl(const QString &meetingUrl) {
     return;
   mMeetingUrl = normalizedUrl;
   update();
+}
+
+int64_t QEventItem::bufferBeforeMinutes() const { return mBufferBeforeMinutes; }
+int64_t QEventItem::bufferAfterMinutes() const { return mBufferAfterMinutes; }
+
+void QEventItem::setBufferBeforeMinutes(const int64_t minutes) {
+  mBufferBeforeMinutes = std::max<int64_t>(0, minutes);
+}
+
+void QEventItem::setBufferAfterMinutes(const int64_t minutes) {
+  mBufferAfterMinutes = std::max<int64_t>(0, minutes);
 }
 
 void QEventItem::setStartTime(const QDateTime &startTime) {

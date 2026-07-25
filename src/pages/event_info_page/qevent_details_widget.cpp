@@ -297,6 +297,26 @@ void QEventDetailsWidget::initUi() {
   mUI->formLayout->insertRow(onlineSectionRow + 5, QString(),
                              mMeetingActionsWidget);
 
+  mBuffersWidget = new QWidget(this);
+  auto *buffersLayout = new QHBoxLayout(mBuffersWidget);
+  buffersLayout->setContentsMargins(0, 0, 0, 0);
+  buffersLayout->setSpacing(8);
+  buffersLayout->addWidget(new QLabel(tr("Before"), mBuffersWidget));
+  mBufferBeforeSpinBox = new QSpinBox(mBuffersWidget);
+  mBufferBeforeSpinBox->setRange(0, 240);
+  mBufferBeforeSpinBox->setSuffix(tr(" min"));
+  mBufferBeforeSpinBox->setMinimumWidth(92);
+  buffersLayout->addWidget(mBufferBeforeSpinBox);
+  buffersLayout->addWidget(new QLabel(tr("After"), mBuffersWidget));
+  mBufferAfterSpinBox = new QSpinBox(mBuffersWidget);
+  mBufferAfterSpinBox->setRange(0, 240);
+  mBufferAfterSpinBox->setSuffix(tr(" min"));
+  mBufferAfterSpinBox->setMinimumWidth(92);
+  buffersLayout->addWidget(mBufferAfterSpinBox);
+  buffersLayout->addStretch();
+  mUI->formLayout->insertRow(onlineSectionRow + 6, tr("Buffers"),
+                             mBuffersWidget);
+
   mUI->mAddButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
   mUI->mAddButton->setIconSize(QSize(16, 16));
   mUI->mChangeButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
@@ -442,6 +462,10 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   const auto canceledByIndex =
       mUI->mCanceledByComboBox->findData(event->canceledBy());
   mUI->mCanceledByComboBox->setCurrentIndex(canceledByIndex >= 0 ? canceledByIndex : 0);
+  mBufferBeforeSpinBox->setValue(
+      static_cast<int>(event->bufferBeforeMinutes()));
+  mBufferAfterSpinBox->setValue(
+      static_cast<int>(event->bufferAfterMinutes()));
 
   if (isWorkItem && event->getId() != 0) {
     // Find selected client ID in the client list
@@ -506,6 +530,8 @@ void QEventDetailsWidget::startCreatingNewEvent(const QDate &date,
       mUI->mEventStatusComboBox->findData(QVariant::fromValue(1)));
   mUI->mCancellationReasonEdit->clear();
   mUI->mCanceledByComboBox->setCurrentIndex(0);
+  mBufferBeforeSpinBox->setValue(pcm::app_settings::defaultBufferBeforeMinutes());
+  mBufferAfterSpinBox->setValue(pcm::app_settings::defaultBufferAfterMinutes());
   updateCancellationControls();
   initEditStyle();
 }
@@ -677,6 +703,8 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setMeetingUrl(mOnlineSessionSwitch->isChecked()
                                      ? mMeetingUrlEdit->text()
                                      : QString{});
+    mCurrentEvent->setBufferBeforeMinutes(mBufferBeforeSpinBox->value());
+    mCurrentEvent->setBufferAfterMinutes(mBufferAfterSpinBox->value());
   }
 
   if (mCurrentEvent) {
@@ -948,5 +976,7 @@ DuckEvent QEventDetailsWidget::collectEventData() const {
   event.is_online = mOnlineSessionSwitch->isChecked();
   event.meeting_url =
       event.is_online ? mMeetingUrlEdit->text().trimmed().toStdString() : std::string{};
+  event.buffer_before_minutes = mBufferBeforeSpinBox->value();
+  event.buffer_after_minutes = mBufferAfterSpinBox->value();
   return event;
 }

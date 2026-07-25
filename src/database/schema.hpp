@@ -105,6 +105,25 @@ inline std::ostream &operator<<(std::ostream &os, const DuckClient &c) {
   print_optional(os, c.time_zone) << "}";
   return os;
 }
+
+inline void readBufferMinutes(const duckdb::DataChunk &chunk,
+                              const duckdb::idx_t index,
+                              const duckdb::idx_t beforeColumn,
+                              const duckdb::idx_t afterColumn,
+                              std::int64_t &beforeMinutes,
+                              std::int64_t &afterMinutes) {
+  if (chunk.ColumnCount() > beforeColumn) {
+    beforeMinutes = db_utils::toOptionalInt32AsInt64(
+                          chunk.GetValue(beforeColumn, index))
+                        .value_or(0);
+  }
+  if (chunk.ColumnCount() > afterColumn) {
+    afterMinutes = db_utils::toOptionalInt32AsInt64(
+                         chunk.GetValue(afterColumn, index))
+                       .value_or(0);
+  }
+}
+
 // --- DuckEvent ---
 struct DuckEvent {
   std::int64_t id = -1;
@@ -125,6 +144,8 @@ struct DuckEvent {
   std::optional<std::int64_t> original_occurrence_start = std::nullopt;
   std::optional<std::string> cancellation_reason = std::nullopt;
   std::optional<std::string> canceled_by = std::nullopt;
+  std::int64_t buffer_before_minutes = 0;
+  std::int64_t buffer_after_minutes = 0;
   bool is_virtual_occurrence = false;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -163,6 +184,8 @@ struct DuckEvent {
     if (chunk.ColumnCount() > 16) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(16, index));
     }
+    readBufferMinutes(chunk, index, 17, 18, buffer_before_minutes,
+                      buffer_after_minutes);
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
@@ -218,6 +241,8 @@ struct DuckEventSeries {
   bool active = true;
   std::optional<std::string> cancellation_reason = std::nullopt;
   std::optional<std::string> canceled_by = std::nullopt;
+  std::int64_t buffer_before_minutes = 0;
+  std::int64_t buffer_after_minutes = 0;
 
   DuckEventSeries() = default;
   DuckEventSeries(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -244,6 +269,8 @@ struct DuckEventSeries {
     if (chunk.ColumnCount() > 17) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(17, index));
     }
+    readBufferMinutes(chunk, index, 18, 19, buffer_before_minutes,
+                      buffer_after_minutes);
   }
 };
 // --- DuckEventClient ---

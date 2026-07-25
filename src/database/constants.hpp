@@ -51,7 +51,9 @@ CREATE TABLE IF NOT EXISTS Event (
     series_id INTEGER,
     original_occurrence_start TIMESTAMP,
     cancellation_reason TEXT,
-    canceled_by TEXT
+    canceled_by TEXT,
+    buffer_before_minutes INTEGER DEFAULT 0,
+    buffer_after_minutes INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS EventSeries (
@@ -74,7 +76,9 @@ CREATE TABLE IF NOT EXISTS EventSeries (
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     cancellation_reason TEXT,
-    canceled_by TEXT
+    canceled_by TEXT,
+    buffer_before_minutes INTEGER DEFAULT 0,
+    buffer_after_minutes INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS EventSeriesException (
@@ -121,6 +125,10 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS original_occurrence_start TIMESTAMP;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS canceled_by TEXT;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_before_minutes INTEGER DEFAULT 0;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DEFAULT 0;
+UPDATE Event SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
+UPDATE Event SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
 
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS description TEXT;
@@ -141,6 +149,10 @@ ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS canceled_by TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS buffer_before_minutes INTEGER DEFAULT 0;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DEFAULT 0;
+UPDATE EventSeries SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
+UPDATE EventSeries SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
 
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
@@ -154,11 +166,11 @@ INSERT INTO Event (
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
     is_online, meeting_url, series_id, original_occurrence_start,
-    cancellation_reason, canceled_by
+    cancellation_reason, canceled_by, buffer_before_minutes, buffer_after_minutes
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 FROM Event
 RETURNING id
 )duckdb";
@@ -180,11 +192,13 @@ SET name = $1,
     original_occurrence_start = $13,
     cancellation_reason = $14,
     canceled_by = $15,
+    buffer_before_minutes = $16,
+    buffer_after_minutes = $17,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
     END
-WHERE id = $14
+WHERE id = $18
 )duckdb";
 
 constexpr auto kInsertEventSeriesQuery = R"duckdb(
@@ -194,12 +208,13 @@ INSERT INTO EventSeries (
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
     is_online, meeting_url, recurrence_rule, recurrence_until,
-    active, created_at, updated_at, cancellation_reason, canceled_by
+    active, created_at, updated_at, cancellation_reason, canceled_by,
+    buffer_before_minutes, buffer_after_minutes
 )
 SELECT
     COALESCE((SELECT MAX(id) FROM EventSeries), 0) + 1,
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, TRUE, $15, $15, $16, $17
+    $11, $12, $13, $14, TRUE, $15, $15, $16, $17, $18, $19
 RETURNING id
 )duckdb";
 
@@ -234,8 +249,10 @@ SET name = $1,
     recurrence_until = $14,
     updated_at = $15,
     cancellation_reason = $16,
-    canceled_by = $17
-WHERE id = $16
+    canceled_by = $17,
+    buffer_before_minutes = $18,
+    buffer_after_minutes = $19
+WHERE id = $20
 )duckdb";
 
 constexpr auto kDeactivateEventSeriesQuery = R"duckdb(
@@ -353,11 +370,12 @@ ORDER BY created_at ASC, id ASC
 )duckdb";
 
 constexpr auto kHasConflictQuery = R"duckdb(
-SELECT 1 FROM Event
+SELECT id, start_date, end_date,
+       COALESCE(buffer_before_minutes, 0), COALESCE(buffer_after_minutes, 0)
+FROM Event
 WHERE id != $1
-  AND start_date < $2
-  AND end_date > $3
-LIMIT 1
+  AND start_date IS NOT NULL
+  AND end_date IS NOT NULL
 )duckdb";
 
 constexpr auto kSelectDayEventsQuery = R"duckdb(

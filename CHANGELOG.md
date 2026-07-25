@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2026-07-24
+
+### Added
+
+- Configurable buffers before and after events, including recurring series.
+- Buffer-aware conflict checks in Timeline and DuckDB.
+- Buffer-aware Quick Slots and default buffer settings.
+- Russian translations for the new buffer controls.
+
+### Fixed
+
+- Event updates now bind the database event identifier to the correct SQL parameter.
+
 ## [0.1.6] - 2026-07-24
 
 ### Added
