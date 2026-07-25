@@ -9,7 +9,10 @@
       "platform": "windows"
     },
     "plog",
-    "poco",
+    {
+      "name": "poco",
+      "features": ["zip"]
+    },
     {
       "name": "reflectcpp",
       "features": [
