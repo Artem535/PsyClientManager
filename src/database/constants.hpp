@@ -127,6 +127,8 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS canceled_by TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_before_minutes INTEGER DEFAULT 0;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DEFAULT 0;
+UPDATE Event SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
+UPDATE Event SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
 
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS description TEXT;
@@ -149,6 +151,8 @@ ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS canceled_by TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS buffer_before_minutes INTEGER DEFAULT 0;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DEFAULT 0;
+UPDATE EventSeries SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
+UPDATE EventSeries SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
 
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
@@ -366,7 +370,8 @@ ORDER BY created_at ASC, id ASC
 )duckdb";
 
 constexpr auto kHasConflictQuery = R"duckdb(
-SELECT id, start_date, end_date, buffer_before_minutes, buffer_after_minutes
+SELECT id, start_date, end_date,
+       COALESCE(buffer_before_minutes, 0), COALESCE(buffer_after_minutes, 0)
 FROM Event
 WHERE id != $1
   AND start_date IS NOT NULL

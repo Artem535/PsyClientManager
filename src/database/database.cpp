@@ -862,9 +862,9 @@ bool Database::has_conflict(const DuckEvent &event) {
       }
 
       const auto bufferBefore =
-          db_utils::toInt32AsInt64(chunk->GetValue(3, index));
+          db_utils::toOptionalInt32AsInt64(chunk->GetValue(3, index)).value_or(0);
       const auto bufferAfter =
-          db_utils::toInt32AsInt64(chunk->GetValue(4, index));
+          db_utils::toOptionalInt32AsInt64(chunk->GetValue(4, index)).value_or(0);
       const auto existingEffectiveStart = *existingStart - bufferBefore * 60'000;
       const auto existingEffectiveEnd = *existingEnd + bufferAfter * 60'000;
       if (candidateStart < existingEffectiveEnd &&

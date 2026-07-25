@@ -113,12 +113,14 @@ inline void readBufferMinutes(const duckdb::DataChunk &chunk,
                               std::int64_t &beforeMinutes,
                               std::int64_t &afterMinutes) {
   if (chunk.ColumnCount() > beforeColumn) {
-    beforeMinutes =
-        db_utils::toInt32AsInt64(chunk.GetValue(beforeColumn, index));
+    beforeMinutes = db_utils::toOptionalInt32AsInt64(
+                          chunk.GetValue(beforeColumn, index))
+                        .value_or(0);
   }
   if (chunk.ColumnCount() > afterColumn) {
-    afterMinutes =
-        db_utils::toInt32AsInt64(chunk.GetValue(afterColumn, index));
+    afterMinutes = db_utils::toOptionalInt32AsInt64(
+                         chunk.GetValue(afterColumn, index))
+                       .value_or(0);
   }
 }
 
