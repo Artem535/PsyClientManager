@@ -20,12 +20,12 @@ namespace {
 struct ScratchGuard {
   std::string path;
   ~ScratchGuard() {
-    Poco::File f(path);
-    if (f.exists()) {
-      try {
+    try {
+      Poco::File f(path);
+      if (f.exists()) {
         f.remove(true);
-      } catch (...) {
       }
+    } catch (...) {
     }
   }
 };
@@ -64,10 +64,8 @@ ValidationResult BackupValidator::validate(const std::string &backup_path) {
       return result;
     }
 
-    {
-      Poco::Zip::Decompress decompress(zipIn, Poco::Path(extractDir));
-      decompress.decompressAllFiles();
-    }
+    Poco::Zip::Decompress decompress(zipIn, Poco::Path(extractDir));
+    decompress.decompressAllFiles();
 
     const auto manifestPath =
         Poco::Path(extractDir).append("manifest.json").toString();

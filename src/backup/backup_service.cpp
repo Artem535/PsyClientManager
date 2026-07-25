@@ -1,7 +1,6 @@
 // backup_service.cpp
 #include "backup_service.h"
 
-#include <Poco/DateTime.h>
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <Poco/RecursiveDirectoryIterator.h>
@@ -16,18 +15,22 @@
 #include "backup_manifest.hpp"
 #include "checksum_utils.hpp"
 
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+
 namespace pcm::backup {
 namespace {
 
 struct ScratchGuard {
   std::string path;
   ~ScratchGuard() {
-    Poco::File f(path);
-    if (f.exists()) {
-      try {
+    try {
+      Poco::File f(path);
+      if (f.exists()) {
         f.remove(true);
-      } catch (...) {
       }
+    } catch (...) {
     }
   }
 };
@@ -35,12 +38,12 @@ struct ScratchGuard {
 struct TempFileGuard {
   std::string path;
   ~TempFileGuard() {
-    Poco::File f(path);
-    if (f.exists()) {
-      try {
+    try {
+      Poco::File f(path);
+      if (f.exists()) {
         f.remove();
-      } catch (...) {
       }
+    } catch (...) {
     }
   }
 };
@@ -83,6 +86,12 @@ BackupResult BackupService::create_backup(const database::Database &db,
         Poco::Path(Poco::Path::temp()).append("psybackup-" + uuid).toString();
     ScratchGuard guard{scratchDir};
     Poco::File(scratchDir).createDirectories();
+#ifndef _WIN32
+    // Restrict the scratch directory to the current user: it holds a
+    // plaintext export of client PII for the duration of create_backup.
+    // TODO: Windows ACL hardening is a separate follow-up.
+    ::chmod(scratchDir.c_str(), S_IRWXU);
+#endif
 
     const auto databaseDir =
         Poco::Path(scratchDir).append("database").toString();
@@ -134,6 +143,14 @@ BackupResult BackupService::create_backup(const database::Database &db,
       compress.addRecursive(Poco::Path(scratchDir),
                             Poco::Zip::ZipCommon::CL_MAXIMUM, true);
       compress.close();
+      zipOut.flush();
+      if (!zipOut) {
+        return {false, "failed to write temporary archive"};
+      }
+      zipOut.close();
+      if (!zipOut) {
+        return {false, "failed to finalize temporary archive"};
+      }
     }
 
     Poco::File(tempZipPath).renameTo(destination_path);
