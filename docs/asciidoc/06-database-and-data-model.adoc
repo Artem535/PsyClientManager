@@ -9,9 +9,25 @@
 On first initialization, it:
 
 1. creates schema,
-2. inserts payment statuses,
-3. inserts event statuses,
-4. inserts demo data.
+2. initializes `ApplicationMetadata`,
+3. inserts payment statuses,
+4. inserts event statuses,
+5. inserts demo data.
+
+=== Application Metadata
+
+`ApplicationMetadata` contains one persistent row for the local workspace:
+
+- `workspace_uuid` identifies the workspace across application restarts;
+- `schema_version` identifies the database schema contract;
+- `backup_format_version` reserves a version for future `.psybackup` files;
+- `created_at` records workspace initialization;
+- `last_migration_at` records the latest successful metadata migration pass.
+
+Initialization is idempotent: a restart keeps the existing workspace UUID and
+creation timestamp while refreshing only the migration timestamp. The metadata
+is exposed through `Database::get_application_metadata()` for backup and restore
+services.
 
 === Tables
 
@@ -22,6 +38,7 @@ Defined in `src/database/constants.hpp`:
 - `EventClient` (link table)
 - `PaymentStatus`
 - `EventStatus`
+- `ApplicationMetadata`
 
 === C++ Data Objects
 
@@ -32,6 +49,7 @@ Defined in `src/database/schema.hpp`:
 - `ObxEventClient`
 - `ObxPaymentStatus`
 - `ObxEventStatus`
+- `DuckApplicationMetadata`
 
 All parse rows from `duckdb::DataChunk`.
 

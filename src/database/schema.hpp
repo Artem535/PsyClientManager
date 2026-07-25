@@ -23,6 +23,34 @@ inline std::ostream &print_optional(std::ostream &os,
   return os;
 }
 
+struct DuckApplicationMetadata {
+  std::int32_t schema_version = 1;
+  std::int32_t backup_format_version = 1;
+  std::string workspace_uuid;
+  std::int64_t created_at = 0;
+  std::int64_t last_migration_at = 0;
+
+  DuckApplicationMetadata() = default;
+  DuckApplicationMetadata(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+    schema_version = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
+    backup_format_version = db_utils::toInt32AsInt64(chunk.GetValue(1, index));
+    workspace_uuid = chunk.GetValue(2, index).ToString();
+    created_at = db_utils::toOptionalTimestampMs(chunk.GetValue(3, index)).value_or(0);
+    last_migration_at =
+        db_utils::toOptionalTimestampMs(chunk.GetValue(4, index)).value_or(0);
+  }
+};
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const DuckApplicationMetadata &metadata) {
+  os << "DuckApplicationMetadata{schema_version=" << metadata.schema_version
+     << ", backup_format_version=" << metadata.backup_format_version
+     << ", workspace_uuid=" << metadata.workspace_uuid
+     << ", created_at=" << metadata.created_at
+     << ", last_migration_at=" << metadata.last_migration_at << "}";
+  return os;
+}
+
 // --- DuckPaymentStatus ---
 struct DuckPaymentStatus {
   std::int64_t id = -1;

@@ -5,6 +5,15 @@
 namespace pcm::database::constance {
 
 constexpr auto kCreateTables = R"duckdb(
+CREATE TABLE IF NOT EXISTS ApplicationMetadata (
+    id INTEGER PRIMARY KEY,
+    schema_version INTEGER NOT NULL,
+    backup_format_version INTEGER NOT NULL,
+    workspace_uuid TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    last_migration_at TIMESTAMP NOT NULL
+);
+
 -- Payment statuses
 CREATE TABLE IF NOT EXISTS PaymentStatus (
     id INTEGER PRIMARY KEY,
@@ -117,6 +126,12 @@ CREATE TABLE IF NOT EXISTS ClientNoteAttachment (
 )duckdb";
 
 constexpr auto kSchemaMigrations = R"duckdb(
+ALTER TABLE ApplicationMetadata ADD COLUMN IF NOT EXISTS schema_version INTEGER;
+ALTER TABLE ApplicationMetadata ADD COLUMN IF NOT EXISTS backup_format_version INTEGER;
+ALTER TABLE ApplicationMetadata ADD COLUMN IF NOT EXISTS workspace_uuid TEXT;
+ALTER TABLE ApplicationMetadata ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;
+ALTER TABLE ApplicationMetadata ADD COLUMN IF NOT EXISTS last_migration_at TIMESTAMP;
+
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS cost DOUBLE;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS reminder_notified_at TIMESTAMP;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;
@@ -531,5 +546,29 @@ SELECT 4, 2, 4 WHERE NOT EXISTS (SELECT 1 FROM EventClient WHERE client_id = 2 A
 INSERT INTO EventClient (id, client_id, event_id)
 SELECT 5, 3, 3 WHERE NOT EXISTS (SELECT 1 FROM EventClient WHERE client_id = 3 AND event_id = 3);
 )";
+
+constexpr auto kSelectApplicationMetadata = R"duckdb(
+SELECT schema_version, backup_format_version, workspace_uuid, created_at,
+       last_migration_at
+FROM ApplicationMetadata
+WHERE id = 1
+)duckdb";
+
+constexpr auto kInsertApplicationMetadata = R"duckdb(
+INSERT INTO ApplicationMetadata (
+    id, schema_version, backup_format_version, workspace_uuid, created_at,
+    last_migration_at
+)
+SELECT 1, $1, $2, $3, $4, $4
+WHERE NOT EXISTS (SELECT 1 FROM ApplicationMetadata WHERE id = 1)
+)duckdb";
+
+constexpr auto kUpdateApplicationMetadataMigrationTime = R"duckdb(
+UPDATE ApplicationMetadata
+SET schema_version = $1,
+    backup_format_version = $2,
+    last_migration_at = $3
+WHERE id = 1
+)duckdb";
 
 } // namespace pcm::database::constance

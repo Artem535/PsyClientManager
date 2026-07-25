@@ -1,5 +1,7 @@
 #include "database.h"
 
+#include <Poco/UUIDGenerator.h>
+
 namespace pcm::database {
 namespace {
 duckdb::Value fkOrNull(const int64_t id) {
@@ -46,6 +48,7 @@ Database::Database(const config::Config &conf) {
 
   init_tables();
   apply_schema_migrations();
+  init_application_metadata();
   init_payment_status_table();
   init_event_status_table();
 
@@ -1063,6 +1066,21 @@ DuckClient Database::get_client_by_event(const int64_t &event_id) {
   return DuckClient(*chunk, 0);
 }
 
+DuckApplicationMetadata Database::get_application_metadata() {
+  duckdb::Connection conn(*mDb);
+  auto result = conn.Query(constance::kSelectApplicationMetadata);
+  if (!result || result->HasError()) {
+    throw std::runtime_error("Failed to read application metadata: " +
+                             (result ? result->GetError() : "unknown error"));
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    throw std::runtime_error("Application metadata is not initialized");
+  }
+  return DuckApplicationMetadata(*chunk, 0);
+}
+
 // --- Init ---
 
 void Database::add_demo_data() {
@@ -1086,6 +1104,31 @@ void Database::apply_schema_migrations() {
   auto result = conn.Query(constance::kSchemaMigrations);
   if (result->HasError()) {
     PLOG_ERROR << "Error applying schema migrations: " << result->GetError();
+  }
+}
+
+void Database::init_application_metadata() {
+  duckdb::Connection conn(*mDb);
+  const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
+  const auto workspaceUuid =
+      Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
+  auto insertResult = executePrepared(
+      conn, constance::kInsertApplicationMetadata,
+      {duckdb::Value::INTEGER(1), duckdb::Value::INTEGER(1),
+       duckdb::Value(workspaceUuid), db_utils::toDuckTimestamp(nowMs * 1000)});
+  if (!insertResult || insertResult->HasError()) {
+    PLOG_ERROR << "Error initializing application metadata: "
+               << (insertResult ? insertResult->GetError() : "unknown error");
+    return;
+  }
+
+  auto updateResult = executePrepared(
+      conn, constance::kUpdateApplicationMetadataMigrationTime,
+      {duckdb::Value::INTEGER(1), duckdb::Value::INTEGER(1),
+       db_utils::toDuckTimestamp(nowMs * 1000)});
+  if (!updateResult || updateResult->HasError()) {
+    PLOG_ERROR << "Error updating application migration metadata: "
+               << (updateResult ? updateResult->GetError() : "unknown error");
   }
 }
 

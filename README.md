@@ -36,6 +36,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Language selection in settings
 - Configurable colors for work and personal events
 - Quick access to the local database folder
+- Persistent workspace and schema metadata for future backup/restore workflows
 
 ## 🛣 Roadmap
 

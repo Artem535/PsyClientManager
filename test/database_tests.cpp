@@ -22,6 +22,39 @@ TEST(DatabaseTest, InitDatabase) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, PersistsApplicationMetadataAcrossRestart) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_metadata")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  DuckApplicationMetadata first;
+  {
+    pcm::database::Database db{conf};
+    first = db.get_application_metadata();
+  }
+
+  ASSERT_EQ(first.schema_version, 1);
+  ASSERT_EQ(first.backup_format_version, 1);
+  ASSERT_FALSE(first.workspace_uuid.empty());
+  ASSERT_GT(first.created_at, 0);
+  ASSERT_GT(first.last_migration_at, 0);
+
+  {
+    pcm::database::Database db{conf};
+    const auto second = db.get_application_metadata();
+    EXPECT_EQ(second.workspace_uuid, first.workspace_uuid);
+    EXPECT_EQ(second.created_at, first.created_at);
+    EXPECT_GE(second.last_migration_at, first.last_migration_at);
+  }
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, AddClientAndEvent) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{
