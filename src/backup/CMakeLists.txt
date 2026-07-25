@@ -8,6 +8,8 @@ add_library(${TARGET_NAME} STATIC
         checksum_utils.hpp
         backup_service.h
         backup_service.cpp
+        backup_validator.h
+        backup_validator.cpp
 )
 
 target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,13 +1,16 @@
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <Poco/UUIDGenerator.h>
+#include <Poco/Zip/Compress.h>
 #include <Poco/Zip/Decompress.h>
+#include <Poco/Zip/ZipCommon.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <rfl/json.hpp>
 
 #include "backup_manifest.hpp"
 #include "backup_service.h"
+#include "backup_validator.h"
 #include "checksum_utils.hpp"
 #include "config.h"
 #include "database.h"
@@ -230,5 +233,132 @@ TEST(BackupServiceTest, CreateBackupFailsWhenAttachmentsRootMissing) {
 
   Poco::File(Poco::Path(Poco::Path::current())
                 .append("tmp_dir_backup_missing_attachments"))
+      .remove(true);
+}
+
+TEST(BackupValidatorTest, ValidatesACleanBackupAsOk) {
+  auto db = makeTestDatabase("tmp_dir_validate_ok");
+
+  DuckClient client;
+  client.name = std::string{"Validate"};
+  client.last_name = std::string{"Ok"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto destPath = Poco::Path(Poco::Path::current())
+                            .append("tmp_backup_validate_ok.psybackup")
+                            .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  ASSERT_TRUE(service.create_backup(db, destPath).ok);
+
+  pcm::backup::BackupValidator validator;
+  const auto result = validator.validate(destPath);
+  EXPECT_TRUE(result.ok);
+  EXPECT_TRUE(result.errors.empty());
+
+  destFile.remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_validate_ok"))
+      .remove(true);
+}
+
+TEST(BackupValidatorTest, DetectsCorruptedEntry) {
+  auto db = makeTestDatabase("tmp_dir_validate_corrupt");
+
+  DuckClient client;
+  client.name = std::string{"Validate"};
+  client.last_name = std::string{"Corrupt"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto destPath = Poco::Path(Poco::Path::current())
+                            .append("tmp_backup_validate_corrupt.psybackup")
+                            .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  ASSERT_TRUE(service.create_backup(db, destPath).ok);
+
+  {
+    std::fstream f(destPath, std::ios::binary | std::ios::in | std::ios::out);
+    ASSERT_TRUE(f);
+    f.seekg(0, std::ios::end);
+    const std::streamoff size = f.tellg();
+    ASSERT_GT(size, 100);
+    const std::streamoff mid = size / 2;
+    f.seekg(mid, std::ios::beg);
+    char original = 0;
+    f.read(&original, 1);
+    const char corrupted = static_cast<char>(~original);
+    f.seekp(mid, std::ios::beg);
+    f.write(&corrupted, 1);
+  }
+
+  pcm::backup::BackupValidator validator;
+  const auto result = validator.validate(destPath);
+  EXPECT_FALSE(result.ok);
+  EXPECT_FALSE(result.errors.empty());
+
+  destFile.remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_validate_corrupt"))
+      .remove(true);
+}
+
+TEST(BackupValidatorTest, RejectsUnsupportedFormatVersion) {
+  auto db = makeTestDatabase("tmp_dir_validate_version");
+
+  const auto destPath = Poco::Path(Poco::Path::current())
+                            .append("tmp_backup_validate_version.psybackup")
+                            .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  ASSERT_TRUE(service.create_backup(db, destPath).ok);
+
+  const auto extractDir = Poco::Path(Poco::Path::current())
+                              .append("tmp_backup_validate_version_extract")
+                              .toString();
+  Poco::File extractDirFile(extractDir);
+  if (extractDirFile.exists()) {
+    extractDirFile.remove(true);
+  }
+  auto manifest = extractManifest(destPath, extractDir);
+  manifest.psybackup_format_version = 999;
+  ASSERT_TRUE(rfl::json::save(
+      Poco::Path(extractDir).append("manifest.json").toString(), manifest,
+      rfl::json::pretty));
+
+  const auto tamperedPath = Poco::Path(Poco::Path::current())
+                                .append("tmp_backup_validate_version_tampered.psybackup")
+                                .toString();
+  Poco::File tamperedFile(tamperedPath);
+  if (tamperedFile.exists()) {
+    tamperedFile.remove();
+  }
+  {
+    std::ofstream zipOut(tamperedPath, std::ios::binary | std::ios::trunc);
+    Poco::Zip::Compress compress(zipOut, true);
+    compress.addRecursive(Poco::Path(extractDir),
+                          Poco::Zip::ZipCommon::CL_MAXIMUM, true);
+    compress.close();
+  }
+
+  pcm::backup::BackupValidator validator;
+  const auto result = validator.validate(tamperedPath);
+  EXPECT_FALSE(result.ok);
+  EXPECT_FALSE(result.errors.empty());
+
+  extractDirFile.remove(true);
+  destFile.remove();
+  tamperedFile.remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_validate_version"))
       .remove(true);
 }
