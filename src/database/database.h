@@ -96,6 +96,7 @@ public:
   DashboardSummary get_dashboard_summary();
   std::vector<DashboardMonthlyStats> get_dashboard_monthly_stats(int months_back = 6);
   DuckApplicationMetadata get_application_metadata();
+  bool export_snapshot(const std::string &target_dir) const;
 
   DuckClient get_client_by_event(const int64_t &event_id);
 

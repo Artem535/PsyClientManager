@@ -1081,6 +1081,29 @@ DuckApplicationMetadata Database::get_application_metadata() {
   return DuckApplicationMetadata(*chunk, 0);
 }
 
+bool Database::export_snapshot(const std::string &target_dir) const {
+  duckdb::Connection conn(*mDb);
+  std::string escaped_dir;
+  escaped_dir.reserve(target_dir.size());
+  for (const char ch : target_dir) {
+    if (ch == '\'') {
+      escaped_dir += "''";
+    } else {
+      escaped_dir += ch;
+    }
+  }
+
+  const auto query =
+      "EXPORT DATABASE '" + escaped_dir + "' (FORMAT PARQUET);";
+  auto result = conn.Query(query);
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "export_snapshot failed: "
+               << (result ? result->GetError() : std::string{"null result"});
+    return false;
+  }
+  return true;
+}
+
 // --- Init ---
 
 void Database::add_demo_data() {
