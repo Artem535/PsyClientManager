@@ -145,6 +145,11 @@ TEST(BackupServiceTest, CreateBackupDatabaseOnlyProducesValidArchive) {
   }
   EXPECT_TRUE(foundClientTable);
 
+  const auto meta = db.get_application_metadata();
+  EXPECT_EQ(manifest.workspace_uuid, meta.workspace_uuid);
+  EXPECT_EQ(manifest.schema_version, meta.schema_version);
+  EXPECT_EQ(manifest.backup_format_version, meta.backup_format_version);
+
   extractDirFile.remove(true);
   destFile.remove();
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_backup_db_only"))
@@ -196,6 +201,11 @@ TEST(BackupServiceTest, CreateBackupWithAttachmentsIncludesAttachmentTree) {
 
   bool foundAttachment = false;
   for (const auto &entry : manifest.entries) {
+    Poco::Path entryPath(extractDir);
+    entryPath.append(Poco::Path(entry.path, Poco::Path::PATH_UNIX));
+    ASSERT_TRUE(Poco::File(entryPath).exists()) << entry.path;
+    EXPECT_EQ(pcm::backup::sha256_file(entryPath.toString()), entry.sha256)
+        << entry.path;
     if (entry.path == "attachments/42/7/note.txt") {
       foundAttachment = true;
     }
@@ -417,5 +427,39 @@ TEST(BackupServiceTest, FailedBackupLeavesExistingDestinationUntouched) {
 
   destFile.remove();
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_atomicity"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, FailedRenameLeavesNoPartialFile) {
+  auto db = makeTestDatabase("tmp_dir_failed_rename");
+
+  const auto destPath = Poco::Path(Poco::Path::current())
+                            .append("tmp_backup_failed_rename.psybackup")
+                            .toString();
+  Poco::File destBlocker(destPath);
+  if (destBlocker.exists()) {
+    destBlocker.remove(true);
+  }
+  destBlocker.createDirectories();
+
+  pcm::backup::BackupService service;
+  const auto result = service.create_backup(db, destPath);
+  EXPECT_FALSE(result.ok);
+
+  Poco::File destAfter(destPath);
+  EXPECT_TRUE(destAfter.exists());
+  EXPECT_TRUE(destAfter.isDirectory());
+
+  const auto parentDir = Poco::Path(Poco::Path::current());
+  Poco::DirectoryIterator dirIt(parentDir);
+  const Poco::DirectoryIterator dirEnd;
+  for (; dirIt != dirEnd; ++dirIt) {
+    EXPECT_EQ(dirIt.name().find("tmp_backup_failed_rename.psybackup.partial-"),
+             std::string::npos)
+        << "leftover partial file: " << dirIt.name();
+  }
+
+  destBlocker.remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_failed_rename"))
       .remove(true);
 }
