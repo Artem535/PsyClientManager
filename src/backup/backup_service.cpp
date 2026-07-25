@@ -74,7 +74,8 @@ std::vector<BackupEntry> collectEntries(const std::string &scratchDir) {
 } // namespace
 
 BackupResult BackupService::create_backup(const database::Database &db,
-                                          const std::string &destination_path) {
+                                          const std::string &destination_path,
+                                          const BackupOptions &options) {
   try {
     const auto uuid =
         Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
@@ -89,6 +90,20 @@ BackupResult BackupService::create_backup(const database::Database &db,
       return {false, "failed to export a consistent database snapshot"};
     }
 
+    std::string kind = "database";
+    if (options.attachments_root.has_value()) {
+      Poco::File attachmentsRootFile(*options.attachments_root);
+      if (!attachmentsRootFile.exists() || !attachmentsRootFile.isDirectory()) {
+        return {false,
+                "attachments_root does not exist or is not a directory: " +
+                    *options.attachments_root};
+      }
+      const auto attachmentsDir =
+          Poco::Path(scratchDir).append("attachments").toString();
+      attachmentsRootFile.copyTo(attachmentsDir);
+      kind = "database_and_attachments";
+    }
+
     BackupManifest manifest;
     manifest.created_at = static_cast<std::int64_t>(
         Poco::Timestamp().epochMicroseconds() / 1000);
@@ -96,7 +111,7 @@ BackupResult BackupService::create_backup(const database::Database &db,
     manifest.workspace_uuid = metadata.workspace_uuid;
     manifest.schema_version = metadata.schema_version;
     manifest.backup_format_version = metadata.backup_format_version;
-    manifest.kind = "database";
+    manifest.kind = kind;
     manifest.entries = collectEntries(scratchDir);
 
     const auto manifestPath =

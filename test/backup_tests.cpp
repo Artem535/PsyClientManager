@@ -146,3 +146,89 @@ TEST(BackupServiceTest, CreateBackupDatabaseOnlyProducesValidArchive) {
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_backup_db_only"))
       .remove(true);
 }
+
+TEST(BackupServiceTest, CreateBackupWithAttachmentsIncludesAttachmentTree) {
+  auto db = makeTestDatabase("tmp_dir_backup_with_attachments");
+
+  const auto attachmentsRoot =
+      Poco::Path(Poco::Path::current()).append("tmp_attachments_root").toString();
+  Poco::File attachmentsRootFile(attachmentsRoot);
+  if (attachmentsRootFile.exists()) {
+    attachmentsRootFile.remove(true);
+  }
+  Poco::File(Poco::Path(attachmentsRoot).append("42").append("7")).createDirectories();
+  std::ofstream attachmentOut(
+      Poco::Path(attachmentsRoot).append("42").append("7").append("note.txt")
+          .toString(),
+      std::ios::binary | std::ios::trunc);
+  attachmentOut << "attachment contents";
+  attachmentOut.close();
+
+  const auto destPath =
+      Poco::Path(Poco::Path::current()).append("tmp_backup_with_attachments.psybackup")
+          .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  pcm::backup::BackupOptions options;
+  options.attachments_root = attachmentsRoot;
+  const auto result = service.create_backup(db, destPath, options);
+  ASSERT_TRUE(result.ok) << result.error;
+
+  const auto extractDir =
+      Poco::Path(Poco::Path::current())
+          .append("tmp_backup_with_attachments_extract")
+          .toString();
+  Poco::File extractDirFile(extractDir);
+  if (extractDirFile.exists()) {
+    extractDirFile.remove(true);
+  }
+
+  const auto manifest = extractManifest(destPath, extractDir);
+  EXPECT_EQ(manifest.kind, "database_and_attachments");
+
+  bool foundAttachment = false;
+  for (const auto &entry : manifest.entries) {
+    if (entry.path == "attachments/42/7/note.txt") {
+      foundAttachment = true;
+    }
+  }
+  EXPECT_TRUE(foundAttachment);
+
+  extractDirFile.remove(true);
+  destFile.remove();
+  attachmentsRootFile.remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                .append("tmp_dir_backup_with_attachments"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, CreateBackupFailsWhenAttachmentsRootMissing) {
+  auto db = makeTestDatabase("tmp_dir_backup_missing_attachments");
+
+  const auto destPath =
+      Poco::Path(Poco::Path::current())
+          .append("tmp_backup_missing_attachments.psybackup")
+          .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  pcm::backup::BackupOptions options;
+  options.attachments_root = Poco::Path(Poco::Path::current())
+                                 .append("tmp_attachments_does_not_exist")
+                                 .toString();
+  const auto result = service.create_backup(db, destPath, options);
+  EXPECT_FALSE(result.ok);
+  EXPECT_FALSE(result.error.empty());
+  EXPECT_FALSE(Poco::File(destPath).exists());
+
+  Poco::File(Poco::Path(Poco::Path::current())
+                .append("tmp_dir_backup_missing_attachments"))
+      .remove(true);
+}
