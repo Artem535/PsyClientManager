@@ -1,3 +1,4 @@
+#include <Poco/DirectoryIterator.h>
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <Poco/UUIDGenerator.h>
@@ -360,5 +361,61 @@ TEST(BackupValidatorTest, RejectsUnsupportedFormatVersion) {
   destFile.remove();
   tamperedFile.remove();
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_validate_version"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, FailedBackupLeavesExistingDestinationUntouched) {
+  auto db = makeTestDatabase("tmp_dir_atomicity");
+
+  DuckClient client;
+  client.name = std::string{"Atomic"};
+  client.last_name = std::string{"Ity"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto destPath = Poco::Path(Poco::Path::current())
+                            .append("tmp_backup_atomicity.psybackup")
+                            .toString();
+  Poco::File destFile(destPath);
+  if (destFile.exists()) {
+    destFile.remove();
+  }
+
+  pcm::backup::BackupService service;
+  ASSERT_TRUE(service.create_backup(db, destPath).ok);
+
+  std::ifstream before(destPath, std::ios::binary);
+  const std::string beforeContents((std::istreambuf_iterator<char>(before)),
+                                   std::istreambuf_iterator<char>());
+  before.close();
+
+  pcm::backup::BackupValidator validator;
+  ASSERT_TRUE(validator.validate(destPath).ok);
+
+  pcm::backup::BackupOptions options;
+  options.attachments_root = Poco::Path(Poco::Path::current())
+                                 .append("tmp_atomicity_missing_attachments")
+                                 .toString();
+  const auto failedResult = service.create_backup(db, destPath, options);
+  EXPECT_FALSE(failedResult.ok);
+
+  std::ifstream after(destPath, std::ios::binary);
+  const std::string afterContents((std::istreambuf_iterator<char>(after)),
+                                  std::istreambuf_iterator<char>());
+  after.close();
+
+  EXPECT_EQ(beforeContents, afterContents);
+  EXPECT_TRUE(validator.validate(destPath).ok);
+
+  const auto parentDir = Poco::Path(Poco::Path::current());
+  Poco::DirectoryIterator dirIt(parentDir);
+  const Poco::DirectoryIterator dirEnd;
+  for (; dirIt != dirEnd; ++dirIt) {
+    EXPECT_EQ(dirIt.name().find("tmp_backup_atomicity.psybackup.partial-"),
+             std::string::npos)
+        << "leftover partial file: " << dirIt.name();
+  }
+
+  destFile.remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_atomicity"))
       .remove(true);
 }
