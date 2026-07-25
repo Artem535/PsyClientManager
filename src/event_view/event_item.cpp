@@ -10,6 +10,14 @@
 Q_LOGGING_CATEGORY(logPcmEventItem, "pcm.EventItem")
 
 namespace {
+void setBufferMinutes(const DuckEvent &event, std::int64_t &beforeMinutes,
+                      std::int64_t &afterMinutes) {
+  beforeMinutes = event.buffer_before_minutes;
+  afterMinutes = event.buffer_after_minutes;
+}
+} // namespace
+
+namespace {
 constexpr int64_t kPaymentPendingId = 1;
 constexpr int64_t kPaymentPaidId = 2;
 constexpr int64_t kPaymentCanceledId = 3;
@@ -93,8 +101,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
-  mBufferBeforeMinutes = event.buffer_before_minutes;
-  mBufferAfterMinutes = event.buffer_after_minutes;
+  setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =
@@ -131,8 +138,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
-  mBufferBeforeMinutes = event.buffer_before_minutes;
-  mBufferAfterMinutes = event.buffer_after_minutes;
+  setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
   const auto endUtc =

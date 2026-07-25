@@ -105,6 +105,23 @@ inline std::ostream &operator<<(std::ostream &os, const DuckClient &c) {
   print_optional(os, c.time_zone) << "}";
   return os;
 }
+
+inline void readBufferMinutes(const duckdb::DataChunk &chunk,
+                              const duckdb::idx_t index,
+                              const duckdb::idx_t beforeColumn,
+                              const duckdb::idx_t afterColumn,
+                              std::int64_t &beforeMinutes,
+                              std::int64_t &afterMinutes) {
+  if (chunk.ColumnCount() > beforeColumn) {
+    beforeMinutes =
+        db_utils::toInt32AsInt64(chunk.GetValue(beforeColumn, index));
+  }
+  if (chunk.ColumnCount() > afterColumn) {
+    afterMinutes =
+        db_utils::toInt32AsInt64(chunk.GetValue(afterColumn, index));
+  }
+}
+
 // --- DuckEvent ---
 struct DuckEvent {
   std::int64_t id = -1;
@@ -165,12 +182,8 @@ struct DuckEvent {
     if (chunk.ColumnCount() > 16) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(16, index));
     }
-    if (chunk.ColumnCount() > 17) {
-      buffer_before_minutes = db_utils::toInt32AsInt64(chunk.GetValue(17, index));
-    }
-    if (chunk.ColumnCount() > 18) {
-      buffer_after_minutes = db_utils::toInt32AsInt64(chunk.GetValue(18, index));
-    }
+    readBufferMinutes(chunk, index, 17, 18, buffer_before_minutes,
+                      buffer_after_minutes);
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
@@ -254,12 +267,8 @@ struct DuckEventSeries {
     if (chunk.ColumnCount() > 17) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(17, index));
     }
-    if (chunk.ColumnCount() > 18) {
-      buffer_before_minutes = db_utils::toInt32AsInt64(chunk.GetValue(18, index));
-    }
-    if (chunk.ColumnCount() > 19) {
-      buffer_after_minutes = db_utils::toInt32AsInt64(chunk.GetValue(19, index));
-    }
+    readBufferMinutes(chunk, index, 18, 19, buffer_before_minutes,
+                      buffer_after_minutes);
   }
 };
 // --- DuckEventClient ---
