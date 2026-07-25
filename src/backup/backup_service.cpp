@@ -78,13 +78,7 @@ BackupResult BackupService::create_backup(const database::Database &db,
   BackupManifest manifest;
   manifest.created_at =
       static_cast<std::int64_t>(Poco::Timestamp().epochMicroseconds() / 1000);
-  // get_application_metadata() is logically const (it opens its own
-  // duckdb::Connection and only reads), but is not declared const on
-  // database::Database. create_backup must keep db as `const &` per the
-  // public API later tasks depend on, so we const_cast here rather than
-  // widen the Database interface, which is out of this task's scope.
-  const auto metadata =
-      const_cast<database::Database &>(db).get_application_metadata();
+  const auto metadata = db.get_application_metadata();
   manifest.workspace_uuid = metadata.workspace_uuid;
   manifest.schema_version = metadata.schema_version;
   manifest.backup_format_version = metadata.backup_format_version;

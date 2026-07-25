@@ -1066,7 +1066,7 @@ DuckClient Database::get_client_by_event(const int64_t &event_id) {
   return DuckClient(*chunk, 0);
 }
 
-DuckApplicationMetadata Database::get_application_metadata() {
+DuckApplicationMetadata Database::get_application_metadata() const {
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(constance::kSelectApplicationMetadata);
   if (!result || result->HasError()) {
