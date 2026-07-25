@@ -32,6 +32,19 @@ struct ScratchGuard {
   }
 };
 
+struct TempFileGuard {
+  std::string path;
+  ~TempFileGuard() {
+    Poco::File f(path);
+    if (f.exists()) {
+      try {
+        f.remove();
+      } catch (...) {
+      }
+    }
+  }
+};
+
 std::string toRelative(const std::string &base, const std::string &full) {
   std::string rel = full.substr(base.size());
   if (!rel.empty() && (rel.front() == '/' || rel.front() == '\\')) {
@@ -62,62 +75,60 @@ std::vector<BackupEntry> collectEntries(const std::string &scratchDir) {
 
 BackupResult BackupService::create_backup(const database::Database &db,
                                           const std::string &destination_path) {
-  const auto uuid =
-      Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
-  const auto scratchDir =
-      Poco::Path(Poco::Path::temp()).append("psybackup-" + uuid).toString();
-  ScratchGuard guard{scratchDir};
-  Poco::File(scratchDir).createDirectories();
-
-  const auto databaseDir =
-      Poco::Path(scratchDir).append("database").toString();
-  if (!db.export_snapshot(databaseDir)) {
-    return {false, "failed to export a consistent database snapshot"};
-  }
-
-  BackupManifest manifest;
-  manifest.created_at =
-      static_cast<std::int64_t>(Poco::Timestamp().epochMicroseconds() / 1000);
-  const auto metadata = db.get_application_metadata();
-  manifest.workspace_uuid = metadata.workspace_uuid;
-  manifest.schema_version = metadata.schema_version;
-  manifest.backup_format_version = metadata.backup_format_version;
-  manifest.kind = "database";
-  manifest.entries = collectEntries(scratchDir);
-
-  const auto manifestPath =
-      Poco::Path(scratchDir).append("manifest.json").toString();
-  const auto saveResult =
-      rfl::json::save(manifestPath, manifest, rfl::json::pretty);
-  if (!saveResult) {
-    return {false, "failed to write backup manifest: " +
-                       saveResult.error().what()};
-  }
-
-  const auto tempZipPath = destination_path + ".partial-" + uuid;
-  {
-    std::ofstream zipOut(tempZipPath, std::ios::binary | std::ios::trunc);
-    if (!zipOut) {
-      return {false, "failed to open temporary archive for writing"};
-    }
-    Poco::Zip::Compress compress(zipOut, true);
-    compress.addRecursive(Poco::Path(scratchDir),
-                          Poco::Zip::ZipCommon::CL_MAXIMUM, true);
-    compress.close();
-  }
-
   try {
-    Poco::File(tempZipPath).renameTo(destination_path);
-  } catch (const Poco::Exception &ex) {
-    Poco::File tempZipFile(tempZipPath);
-    if (tempZipFile.exists()) {
-      tempZipFile.remove();
-    }
-    return {false,
-            std::string("failed to finalize backup: ") + ex.displayText()};
-  }
+    const auto uuid =
+        Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
+    const auto scratchDir =
+        Poco::Path(Poco::Path::temp()).append("psybackup-" + uuid).toString();
+    ScratchGuard guard{scratchDir};
+    Poco::File(scratchDir).createDirectories();
 
-  return {true, {}};
+    const auto databaseDir =
+        Poco::Path(scratchDir).append("database").toString();
+    if (!db.export_snapshot(databaseDir)) {
+      return {false, "failed to export a consistent database snapshot"};
+    }
+
+    BackupManifest manifest;
+    manifest.created_at = static_cast<std::int64_t>(
+        Poco::Timestamp().epochMicroseconds() / 1000);
+    const auto metadata = db.get_application_metadata();
+    manifest.workspace_uuid = metadata.workspace_uuid;
+    manifest.schema_version = metadata.schema_version;
+    manifest.backup_format_version = metadata.backup_format_version;
+    manifest.kind = "database";
+    manifest.entries = collectEntries(scratchDir);
+
+    const auto manifestPath =
+        Poco::Path(scratchDir).append("manifest.json").toString();
+    const auto saveResult =
+        rfl::json::save(manifestPath, manifest, rfl::json::pretty);
+    if (!saveResult) {
+      return {false, "failed to write backup manifest: " +
+                         saveResult.error().what()};
+    }
+
+    const auto tempZipPath = destination_path + ".partial-" + uuid;
+    TempFileGuard zipGuard{tempZipPath};
+    {
+      std::ofstream zipOut(tempZipPath, std::ios::binary | std::ios::trunc);
+      if (!zipOut) {
+        return {false, "failed to open temporary archive for writing"};
+      }
+      Poco::Zip::Compress compress(zipOut, true);
+      compress.addRecursive(Poco::Path(scratchDir),
+                            Poco::Zip::ZipCommon::CL_MAXIMUM, true);
+      compress.close();
+    }
+
+    Poco::File(tempZipPath).renameTo(destination_path);
+
+    return {true, {}};
+  } catch (const Poco::Exception &ex) {
+    return {false, std::string("backup failed: ") + ex.displayText()};
+  } catch (const std::exception &ex) {
+    return {false, std::string("backup failed: ") + ex.what()};
+  }
 }
 
 } // namespace pcm::backup

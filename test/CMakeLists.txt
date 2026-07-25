@@ -6,7 +6,7 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 # Find Poco
-find_package(Poco REQUIRED COMPONENTS Foundation)
+find_package(Poco REQUIRED COMPONENTS Foundation Zip)
 
 # Config tests
 add_executable(PsyClientManager_config_tests config_tests.cpp)
@@ -49,6 +49,7 @@ target_link_libraries(PsyClientManager_backup_tests PRIVATE
     PsyClientManager_database
     PsyClientManager_backup
     Poco::Foundation
+    Poco::Zip
     reflectcpp::reflectcpp
 )
 gtest_discover_tests(PsyClientManager_backup_tests)
