@@ -1,22 +1,31 @@
 #include "settings_dialog.h"
 
 #include "../widgets/app_settings.h"
+#include "backup_service.h"
+#include "backup_validator.h"
 
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
 #include <oclero/qlementine/widgets/Switch.hpp>
 
 #include <QComboBox>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QDoubleSpinBox>
+#include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QStackedWidget>
+#include <QStandardPaths>
 #include <QTextEdit>
+#include <QThread>
 #include <QTimeEdit>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -51,6 +60,34 @@ QWidget *makeSettingRow(const QString &title, const QString &description,
 
   return row;
 }
+
+class BackupWorker final : public QObject {
+  Q_OBJECT
+
+public:
+  BackupWorker(std::shared_ptr<pcm::database::Database> db,
+              QString destinationPath, QString attachmentsRoot)
+      : mDb(std::move(db)), mDestinationPath(std::move(destinationPath)),
+        mAttachmentsRoot(std::move(attachmentsRoot)) {}
+
+public slots:
+  void run() {
+    pcm::backup::BackupService service;
+    pcm::backup::BackupOptions options;
+    options.attachments_root = mAttachmentsRoot.toStdString();
+    const auto result =
+        service.create_backup(*mDb, mDestinationPath.toStdString(), options);
+    emit finished(result.ok, QString::fromStdString(result.error));
+  }
+
+signals:
+  void finished(bool ok, const QString &error);
+
+private:
+  std::shared_ptr<pcm::database::Database> mDb;
+  QString mDestinationPath;
+  QString mAttachmentsRoot;
+};
 } // namespace
 
 SettingsDialog::SettingsDialog(std::shared_ptr<pcm::database::Database> db,
@@ -137,6 +174,38 @@ void SettingsDialog::setupUi() {
   databaseLayout->addWidget(mDatabasePathLabel);
   databaseLayout->addWidget(mOpenDatabaseFolderButton, 0, Qt::AlignLeft);
   generalSettingsLayout->addWidget(databaseBox);
+
+  auto *backupBox = new QGroupBox(tr("Backup"), generalPage);
+  auto *backupLayout = new QVBoxLayout(backupBox);
+  backupLayout->setContentsMargins(16, 16, 16, 16);
+  backupLayout->setSpacing(10);
+  auto *backupDescription = new QLabel(
+      tr("Create a full backup (database and attachments) as a single "
+        ".psybackup file, or validate an existing one."),
+      backupBox);
+  backupDescription->setWordWrap(true);
+  backupDescription->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
+  auto *backupButtonsRow = new QWidget(backupBox);
+  auto *backupButtonsLayout = new QHBoxLayout(backupButtonsRow);
+  backupButtonsLayout->setContentsMargins(0, 0, 0, 0);
+  backupButtonsLayout->setSpacing(10);
+  mCreateBackupButton = new QPushButton(tr("Create backup..."), backupBox);
+  mValidateBackupButton = new QPushButton(tr("Validate backup..."), backupBox);
+  backupButtonsLayout->addWidget(mCreateBackupButton);
+  backupButtonsLayout->addWidget(mValidateBackupButton);
+  backupButtonsLayout->addStretch();
+  mBackupStatusLabel = new QLabel(backupBox);
+  mBackupStatusLabel->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
+  mBackupStatusLabel->setVisible(false);
+  mBackupProgressBar = new QProgressBar(backupBox);
+  mBackupProgressBar->setRange(0, 0);
+  mBackupProgressBar->setTextVisible(false);
+  mBackupProgressBar->setVisible(false);
+  backupLayout->addWidget(backupDescription);
+  backupLayout->addWidget(backupButtonsRow);
+  backupLayout->addWidget(mBackupStatusLabel);
+  backupLayout->addWidget(mBackupProgressBar);
+  generalSettingsLayout->addWidget(backupBox);
 
   auto *notificationsBox = new QGroupBox(tr("Notifications"), generalPage);
   auto *notificationsLayout = new QVBoxLayout(notificationsBox);
@@ -290,6 +359,8 @@ void SettingsDialog::connectSignals() const {
   });
   connect(mOpenDatabaseFolderButton, &QPushButton::clicked, this,
           &SettingsDialog::openDatabaseFolder);
+  connect(mCreateBackupButton, &QPushButton::clicked, this,
+          &SettingsDialog::createBackup);
   connect(mNotificationsEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
             pcm::app_settings::setNotificationsEnabled(checked);
@@ -345,3 +416,50 @@ void SettingsDialog::openDatabaseFolder() const {
   const auto path = QString::fromStdString(mConfig.db_conf.value_.db_pth.toString());
   QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
+
+void SettingsDialog::createBackup() {
+  const auto defaultName =
+      QStringLiteral("PsyClientManager-%1.psybackup")
+          .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss"));
+  const auto defaultDir =
+      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+  const auto destinationPath = QFileDialog::getSaveFileName(
+      this, tr("Create Backup"), QDir(defaultDir).filePath(defaultName),
+      tr("PsyClientManager Backup (*.psybackup)"));
+  if (destinationPath.isEmpty()) {
+    return;
+  }
+
+  mCreateBackupButton->setEnabled(false);
+  mValidateBackupButton->setEnabled(false);
+  mBackupStatusLabel->setText(tr("Creating backup…"));
+  mBackupStatusLabel->setVisible(true);
+  mBackupProgressBar->setVisible(true);
+
+  auto *thread = new QThread(this);
+  auto *worker = new BackupWorker(mDb, destinationPath,
+                                  pcm::app_settings::attachmentsStorageRoot());
+  worker->moveToThread(thread);
+
+  connect(thread, &QThread::started, worker, &BackupWorker::run);
+  connect(worker, &BackupWorker::finished, this,
+          [this, destinationPath](const bool ok, const QString &error) {
+            mBackupStatusLabel->setVisible(false);
+            mBackupProgressBar->setVisible(false);
+            mCreateBackupButton->setEnabled(true);
+            mValidateBackupButton->setEnabled(true);
+            if (ok) {
+              QMessageBox::information(
+                  this, tr("Backup Created"),
+                  tr("Backup created at:\n%1").arg(destinationPath));
+            } else {
+              QMessageBox::warning(this, tr("Backup Failed"), error);
+            }
+          });
+  connect(worker, &BackupWorker::finished, thread, &QThread::quit);
+  connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+  connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  thread->start();
+}
+
+#include "settings_dialog.moc"

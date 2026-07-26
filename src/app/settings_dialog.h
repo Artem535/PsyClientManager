@@ -14,6 +14,7 @@ class QDialogButtonBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
+class QProgressBar;
 class QPushButton;
 class QSpinBox;
 class QStackedWidget;
@@ -39,12 +40,18 @@ private:
   void loadSettings() const;
   void connectSignals() const;
   void openDatabaseFolder() const;
+  void createBackup();
+  void validateBackup();
 
   oclero::qlementine::SegmentedControl *mSettingsSections{nullptr};
   QStackedWidget *mSettingsStack{nullptr};
   QComboBox *mLanguageCombo{nullptr};
   QLabel *mDatabasePathLabel{nullptr};
   QPushButton *mOpenDatabaseFolderButton{nullptr};
+  QPushButton *mCreateBackupButton{nullptr};
+  QPushButton *mValidateBackupButton{nullptr};
+  QProgressBar *mBackupProgressBar{nullptr};
+  QLabel *mBackupStatusLabel{nullptr};
   oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};
   QSpinBox *mNotificationLeadMinutesSpinBox{nullptr};
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
