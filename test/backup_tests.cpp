@@ -5,6 +5,7 @@
 #include <Poco/Zip/Compress.h>
 #include <Poco/Zip/Decompress.h>
 #include <Poco/Zip/ZipCommon.h>
+#include <algorithm>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <rfl/json.hpp>
@@ -15,6 +16,7 @@
 #include "checksum_utils.hpp"
 #include "config.h"
 #include "database.h"
+#include "restore_service.h"
 
 namespace {
 
@@ -462,4 +464,192 @@ TEST(BackupServiceTest, FailedRenameLeavesNoPartialFile) {
   destBlocker.remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_failed_rename"))
       .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresDatabaseSnapshotIntoNewDirectory) {
+  auto sourceDb = makeTestDatabase("tmp_restore_source");
+  DuckClient client;
+  client.name = std::string{"Restored"};
+  client.last_name = std::string{"Client"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_database.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+  EXPECT_TRUE(restoreResult.protective_database_path.empty());
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  ASSERT_TRUE(std::any_of(
+      clients.begin(), clients.end(), [](const auto &storedClient) {
+        return storedClient && storedClient->name.value_or("") == "Restored";
+      }));
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, PreservesCurrentDatabaseBeforeReplacement) {
+  auto sourceDb = makeTestDatabase("tmp_restore_replace_source");
+  DuckClient sourceClient;
+  sourceClient.name = std::string{"New"};
+  ASSERT_GT(sourceDb.add_client(sourceClient), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_replace.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_replace_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_replace_target");
+    DuckClient oldClient;
+    oldClient.name = std::string{"Old"};
+    ASSERT_GT(targetDb.add_client(oldClient), 0);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+  ASSERT_FALSE(restoreResult.protective_database_path.empty());
+  EXPECT_TRUE(Poco::File(restoreResult.protective_database_path).exists());
+
+  pcm::config::Config restoredConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{restoredConfig};
+  const auto restoredClients = restoredDb.get_clients();
+  ASSERT_TRUE(std::any_of(
+      restoredClients.begin(), restoredClients.end(), [](const auto &client) {
+        return client && client->name.value_or("") == "New";
+      }));
+
+  pcm::config::Config protectiveConfig{.db_conf = pcm::config::DatabaseConfig{
+      .db_pth = Poco::Path(restoreResult.protective_database_path)}};
+  pcm::database::Database protectiveDb{protectiveConfig};
+  const auto oldClients = protectiveDb.get_clients();
+  EXPECT_TRUE(std::any_of(
+      oldClients.begin(), oldClients.end(), [](const auto &client) {
+        return client && client->name.value_or("") == "Old";
+      }));
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(restoreResult.protective_database_path).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_replace_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresAttachmentsAlongsideDatabase) {
+  auto sourceDb = makeTestDatabase("tmp_restore_attachment_source");
+  const auto sourceAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_attachment_source_files")
+                                     .toString();
+  if (Poco::File(sourceAttachments).exists()) {
+    Poco::File(sourceAttachments).remove(true);
+  }
+  Poco::File(sourceAttachments).createDirectories();
+  const auto sourceFile = Poco::Path(sourceAttachments).append("note.txt").toString();
+  std::ofstream(sourceFile) << "protected note";
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_attachment.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  pcm::backup::BackupOptions backupOptions;
+  backupOptions.attachments_root = sourceAttachments;
+  ASSERT_TRUE(pcm::backup::BackupService{}
+                  .create_backup(sourceDb, backupPath, backupOptions)
+                  .ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_attachment_target")
+                              .toString();
+  const auto targetAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_attachment_target_files")
+                                     .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  if (Poco::File(targetAttachments).exists()) {
+    Poco::File(targetAttachments).remove(true);
+  }
+
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.attachments_root = targetAttachments;
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  const auto restoredFile =
+      Poco::Path(targetAttachments).append("note.txt").toString();
+  ASSERT_TRUE(Poco::File(restoredFile).exists());
+  std::ifstream restoredInput(restoredFile);
+  const std::string contents((std::istreambuf_iterator<char>(restoredInput)),
+                             std::istreambuf_iterator<char>());
+  EXPECT_EQ(contents, "protected note");
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(targetAttachments).remove(true);
+  Poco::File(sourceAttachments).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_attachment_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RejectsInvalidBackupWithoutChangingTarget) {
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_invalid_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_invalid_target");
+    DuckClient oldClient;
+    oldClient.name = std::string{"Safe"};
+    ASSERT_GT(targetDb.add_client(oldClient), 0);
+  }
+
+  const auto invalidPath = Poco::Path(Poco::Path::current())
+                               .append("tmp_invalid_restore.psybackup")
+                               .toString();
+  if (Poco::File(invalidPath).exists()) {
+    Poco::File(invalidPath).remove();
+  }
+  std::ofstream invalid(invalidPath, std::ios::binary | std::ios::trunc);
+  invalid << "not a backup";
+  invalid.close();
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(invalidPath, targetPath);
+  EXPECT_FALSE(restoreResult.ok);
+  EXPECT_TRUE(Poco::File(targetPath).exists());
+
+  Poco::File(invalidPath).remove();
+  Poco::File(targetPath).remove(true);
 }

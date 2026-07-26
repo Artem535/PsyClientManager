@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.12] - 2026-07-26
+
+### Added
+
+- `RestoreService` for validated `.psybackup` database restores.
+- Staged DuckDB import, attachment restore, and protective pre-restore copies.
+- Restore regression tests for database, attachments, invalid archives, and replacement safety.
+
 ## [0.1.11] - 2026-07-26
 
 ### Added
