@@ -50,4 +50,6 @@ QString currencyCode();
 void setCurrencyCode(const QString &code);
 QString currencySymbol();
 
+QString attachmentsStorageRoot();
+
 } // namespace pcm::app_settings

@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.9 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.11 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 option(PCM_BUILD_TESTS "Build project tests" OFF)
@@ -81,6 +81,7 @@ qt_add_translations(PsyClientManager
 add_subdirectory(src/widgets)
 add_subdirectory(src/config)
 add_subdirectory(src/database)
+add_subdirectory(src/backup)
 add_subdirectory(src/client_model)
 add_subdirectory(src/pages/client_info_page)
 add_subdirectory(src/pages/event_info_page)

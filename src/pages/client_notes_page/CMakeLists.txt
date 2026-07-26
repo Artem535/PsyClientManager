@@ -14,10 +14,12 @@ qt_add_library(${TARGET_NAME} STATIC
 
 add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_widgets
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_widgets
         Qt6::Widgets
 )
 

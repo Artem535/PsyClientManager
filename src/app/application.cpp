@@ -28,7 +28,7 @@ int Application::run(int argc, char *argv[]) {
   app.setOrganizationName("PsyClientManager");
   app.setApplicationName("PsyClientManager");
   app.setApplicationDisplayName("PsyClientManager");
-  app.setApplicationVersion("0.1.9");
+  app.setApplicationVersion("0.1.11");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);
@@ -95,6 +95,7 @@ int Application::run(int argc, char *argv[]) {
   mMainWindow->addAnalyticsPage(mDb);
   mMainWindow->addClientCardPage(mDb);
   mMainWindow->addClientNotesPage(mDb);
+  mMainWindow->setDatabase(mDb);
   mMainWindow->connectSignals();
   mMainWindow->installEventFilter(this);
   connectSignals();

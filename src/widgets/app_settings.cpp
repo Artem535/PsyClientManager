@@ -1,8 +1,10 @@
 #include "app_settings.h"
 
 #include <QColor>
+#include <QDir>
 #include <QObject>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTime>
 
 namespace {
@@ -257,6 +259,12 @@ QString currencySymbol() {
     return QStringLiteral("£");
   }
   return QStringLiteral("₽");
+}
+
+QString attachmentsStorageRoot() {
+  const auto basePath =
+      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+  return QDir(basePath).filePath("storage/notes");
 }
 
 } // namespace pcm::app_settings
