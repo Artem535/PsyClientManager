@@ -30,7 +30,8 @@ QString formatEventCost(const std::optional<double>& cost) {
     return {};
   }
 
-  return QLocale(QLocale::Russian).toString(*cost, 'f', 0) + QStringLiteral(" ₽");
+  return QLocale(QLocale::Russian).toString(*cost, 'f', 0) + QStringLiteral(" ") +
+         pcm::app_settings::currencySymbol();
 }
 
 QString paymentStatusLabel(const int64_t paymentStatusId) {

@@ -168,7 +168,7 @@ void QEventDetailsWidget::initUi() {
   mUI->mCostSpinBox->setMinimum(0.0);
   mUI->mCostSpinBox->setMaximum(1'000'000.0);
   mUI->mCostSpinBox->setSingleStep(100.0);
-  mUI->mCostSpinBox->setSuffix(tr(" ₽"));
+  mUI->mCostSpinBox->setSuffix(QStringLiteral(" ") + pcm::app_settings::currencySymbol());
   mUI->mPaymentStatusComboBox->addItem(tr("Pending"),
                                        QVariant::fromValue(kPaymentPendingId));
   mUI->mPaymentStatusComboBox->addItem(tr("Paid"),
