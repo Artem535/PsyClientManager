@@ -88,6 +88,32 @@ private:
   QString mDestinationPath;
   QString mAttachmentsRoot;
 };
+
+class ValidateWorker final : public QObject {
+  Q_OBJECT
+
+public:
+  explicit ValidateWorker(QString backupPath)
+      : mBackupPath(std::move(backupPath)) {}
+
+public slots:
+  void run() {
+    pcm::backup::BackupValidator validator;
+    const auto result = validator.validate(mBackupPath.toStdString());
+    QStringList errors;
+    errors.reserve(static_cast<int>(result.errors.size()));
+    for (const auto &error : result.errors) {
+      errors << QString::fromStdString(error);
+    }
+    emit finished(result.ok, errors);
+  }
+
+signals:
+  void finished(bool ok, const QStringList &errors);
+
+private:
+  QString mBackupPath;
+};
 } // namespace
 
 SettingsDialog::SettingsDialog(std::shared_ptr<pcm::database::Database> db,
@@ -361,6 +387,8 @@ void SettingsDialog::connectSignals() const {
           &SettingsDialog::openDatabaseFolder);
   connect(mCreateBackupButton, &QPushButton::clicked, this,
           &SettingsDialog::createBackup);
+  connect(mValidateBackupButton, &QPushButton::clicked, this,
+          &SettingsDialog::validateBackup);
   connect(mNotificationsEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
             pcm::app_settings::setNotificationsEnabled(checked);
@@ -457,6 +485,53 @@ void SettingsDialog::createBackup() {
             }
           });
   connect(worker, &BackupWorker::finished, thread, &QThread::quit);
+  connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+  connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  thread->start();
+}
+
+void SettingsDialog::validateBackup() {
+  const auto defaultDir =
+      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+  const auto backupPath = QFileDialog::getOpenFileName(
+      this, tr("Validate Backup"), defaultDir,
+      tr("PsyClientManager Backup (*.psybackup)"));
+  if (backupPath.isEmpty()) {
+    return;
+  }
+
+  mCreateBackupButton->setEnabled(false);
+  mValidateBackupButton->setEnabled(false);
+  mBackupStatusLabel->setText(tr("Validating backup…"));
+  mBackupStatusLabel->setVisible(true);
+  mBackupProgressBar->setVisible(true);
+
+  auto *thread = new QThread(this);
+  auto *worker = new ValidateWorker(backupPath);
+  worker->moveToThread(thread);
+
+  connect(thread, &QThread::started, worker, &ValidateWorker::run);
+  connect(worker, &ValidateWorker::finished, this,
+          [this](const bool ok, const QStringList &errors) {
+            mBackupStatusLabel->setVisible(false);
+            mBackupProgressBar->setVisible(false);
+            mCreateBackupButton->setEnabled(true);
+            mValidateBackupButton->setEnabled(true);
+            if (ok) {
+              QMessageBox::information(this, tr("Backup Valid"),
+                                       tr("The backup is valid."));
+            } else {
+              QString message;
+              if (errors.size() > 10) {
+                message = errors.mid(0, 10).join('\n') +
+                          tr("\n... and %1 more").arg(errors.size() - 10);
+              } else {
+                message = errors.join('\n');
+              }
+              QMessageBox::warning(this, tr("Backup Invalid"), message);
+            }
+          });
+  connect(worker, &ValidateWorker::finished, thread, &QThread::quit);
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
   thread->start();
