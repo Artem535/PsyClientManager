@@ -21,6 +21,7 @@ constexpr auto kDefaultSessionDurationMinutesKey = "event/defaultSessionDuration
 constexpr auto kDefaultBufferBeforeMinutesKey = "event/defaultBufferBeforeMinutes";
 constexpr auto kDefaultBufferAfterMinutesKey = "event/defaultBufferAfterMinutes";
 constexpr auto kMeetingInviteTemplateKey = "online/meetingInviteTemplate";
+constexpr auto kCurrencyCodeKey = "ui/currency";
 
 QColor defaultWorkEventColor() {
   return QColor(37, 99, 235);
@@ -232,6 +233,30 @@ QString meetingInviteTemplate() {
 void setMeetingInviteTemplate(const QString &templateText) {
   QSettings settings;
   settings.setValue(kMeetingInviteTemplateKey, templateText);
+}
+
+QString currencyCode() {
+  QSettings settings;
+  return settings.value(kCurrencyCodeKey, QStringLiteral("RUB")).toString();
+}
+
+void setCurrencyCode(const QString &code) {
+  QSettings settings;
+  settings.setValue(kCurrencyCodeKey, code);
+}
+
+QString currencySymbol() {
+  const auto code = currencyCode();
+  if (code == QStringLiteral("USD")) {
+    return QStringLiteral("$");
+  }
+  if (code == QStringLiteral("EUR")) {
+    return QStringLiteral("€");
+  }
+  if (code == QStringLiteral("GBP")) {
+    return QStringLiteral("£");
+  }
+  return QStringLiteral("₽");
 }
 
 } // namespace pcm::app_settings
