@@ -29,6 +29,7 @@ qt_add_ui(${TARGET_NAME} SOURCES
 add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_backup
         ${PROJECT_NAME}_client_page
         ${PROJECT_NAME}_client_info_card_page
         ${PROJECT_NAME}_client_notes_page
@@ -42,6 +43,7 @@ add_dependencies(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
+        ${PROJECT_NAME}_backup
         ${PROJECT_NAME}_client_page
         ${PROJECT_NAME}_client_info_card_page
         ${PROJECT_NAME}_client_notes_page

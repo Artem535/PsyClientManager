@@ -1,5 +1,6 @@
 #include "client_notes_page.h"
 
+#include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
 
 #include <QDesktopServices>
@@ -378,7 +379,7 @@ void ClientNotesPage::addAttachmentWidgets(
     }
 
     const auto absolutePath =
-        QDir(attachmentsStorageRoot()).filePath(relativePath);
+        QDir(pcm::app_settings::attachmentsStorageRoot()).filePath(relativePath);
     const auto fileName =
         QString::fromStdString(attachment.file_name.value_or(""));
     const auto mimeType =
@@ -442,12 +443,6 @@ void ClientNotesPage::refreshPendingAttachments() {
   mPendingAttachmentsList->setVisible(!mPendingAttachments.isEmpty());
 }
 
-QString ClientNotesPage::attachmentsStorageRoot() const {
-  const auto basePath =
-      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-  return QDir(basePath).filePath("storage/notes");
-}
-
 QString ClientNotesPage::relativeNoteAttachmentPath(const int64_t clientId,
                                                     const int64_t noteId,
                                                     const QString &fileName) const {
@@ -462,7 +457,7 @@ bool ClientNotesPage::persistPendingAttachments(const int64_t noteId) {
     return false;
   }
 
-  const auto rootPath = attachmentsStorageRoot();
+  const auto rootPath = pcm::app_settings::attachmentsStorageRoot();
   QDir rootDir(rootPath);
   if (!rootDir.mkpath(QStringLiteral("."))) {
     return false;

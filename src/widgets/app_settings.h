@@ -46,4 +46,6 @@ void setDefaultBufferAfterMinutes(int minutes);
 QString meetingInviteTemplate();
 void setMeetingInviteTemplate(const QString &templateText);
 
+QString attachmentsStorageRoot();
+
 } // namespace pcm::app_settings

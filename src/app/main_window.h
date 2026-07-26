@@ -72,6 +72,7 @@ public:
    */
   void addClientCardPage(std::shared_ptr<pcm::database::Database> db);
   void addClientNotesPage(std::shared_ptr<pcm::database::Database> db);
+  void setDatabase(std::shared_ptr<pcm::database::Database> db);
 
   /**
    * @brief Sets up all signal/slot connections between UI elements and logic.
@@ -115,7 +116,7 @@ private:
   // UI manager
   std::unique_ptr<Ui::MainWindow> mUi;
 
-  // Database connection (currently unused)
+  // Database connection, used by SettingsDialog for backup/validate actions.
   std::shared_ptr<pcm::database::Database> mDb{nullptr};
 
   // Navigation buttons

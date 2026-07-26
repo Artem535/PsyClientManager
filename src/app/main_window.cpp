@@ -141,6 +141,10 @@ void MainWindow::addClientNotesPage(std::shared_ptr<pcm::database::Database> db)
   mPagesIndex.insertOrAssign(Pages::clientNotes, index);
 }
 
+void MainWindow::setDatabase(std::shared_ptr<pcm::database::Database> db) {
+  mDb = std::move(db);
+}
+
 
 void MainWindow::connectSignals() {
   const auto clientInfoPage =
@@ -334,7 +338,7 @@ void MainWindow::setupUtilityButtons() {
 }
 
 void MainWindow::openSettingsDialog() {
-  SettingsDialog dialog(this);
+  SettingsDialog dialog(mDb, this);
   dialog.exec();
   refreshPageAppearance();
 }
