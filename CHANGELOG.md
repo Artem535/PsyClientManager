@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.10] - 2026-07-26
+
+### Added
+
+- "Create backup..." and "Validate backup..." actions in Settings, backed
+  by the local `.psybackup` backup service.
+
 ## [0.1.9] - 2026-07-25
 
 ### Added
