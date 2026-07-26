@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.11] - 2026-07-26
+
+### Added
+
+- Currency selection in Settings (₽/$/€/£), applied to the default work
+  event cost field, the event editor, the timeline, and analytics.
+
 ## [0.1.10] - 2026-07-26
 
 ### Added

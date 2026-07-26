@@ -46,6 +46,10 @@ void setDefaultBufferAfterMinutes(int minutes);
 QString meetingInviteTemplate();
 void setMeetingInviteTemplate(const QString &templateText);
 
+QString currencyCode();
+void setCurrencyCode(const QString &code);
+QString currencySymbol();
+
 QString attachmentsStorageRoot();
 
 } // namespace pcm::app_settings

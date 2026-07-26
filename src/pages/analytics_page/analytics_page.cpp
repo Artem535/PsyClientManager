@@ -1,6 +1,7 @@
 #include "analytics_page.h"
 
 #include "qcustomplot.h"
+#include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
 
 #include <oclero/qlementine/style/QlementineStyle.hpp>
@@ -68,7 +69,8 @@ protected:
 
 QString formatCurrency(const double value) {
   const auto rounded = qRound64(value);
-  return QLocale().toString(rounded) + QObject::tr(" ₽");
+  return QLocale().toString(rounded) + QStringLiteral(" ") +
+         pcm::app_settings::currencySymbol();
 }
 
 int monthsBetweenInclusive(const QDate &startMonth, const QDate &endMonth) {
