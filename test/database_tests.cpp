@@ -55,6 +55,40 @@ TEST(DatabaseTest, PersistsApplicationMetadataAcrossRestart) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, ExportSnapshotWritesConsistentParquetFiles) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_export")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Export"};
+  client.last_name = std::string{"Test"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto exportDir =
+      Poco::Path(Poco::Path::current()).append("tmp_dir_export_snapshot").toString();
+  Poco::File exportDirFile(exportDir);
+  if (exportDirFile.exists()) {
+    exportDirFile.remove(true);
+  }
+
+  ASSERT_TRUE(db.export_snapshot(exportDir));
+
+  EXPECT_TRUE(Poco::File(Poco::Path(exportDir).append("schema.sql")).exists());
+  EXPECT_TRUE(Poco::File(Poco::Path(exportDir).append("load.sql")).exists());
+  EXPECT_TRUE(Poco::File(Poco::Path(exportDir).append("client.parquet")).exists());
+
+  Poco::File(exportDir).remove(true);
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, AddClientAndEvent) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

@@ -45,7 +45,6 @@ private:
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
-  [[nodiscard]] QString attachmentsStorageRoot() const;
   [[nodiscard]] QString relativeNoteAttachmentPath(int64_t clientId,
                                                    int64_t noteId,
                                                    const QString &fileName) const;

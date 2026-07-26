@@ -8,6 +8,9 @@ Tests live in `test/` and are wired from `test/CMakeLists.txt`.
 : basic construction test for `pcm::config::Config`.
 - `database_tests.cpp`
 : DB initialization test with temporary directory.
+- `backup_tests.cpp`
+: checksum utility, manifest round-trip, database/attachment backup
+  creation, validator, and atomicity coverage.
 
 Framework: GoogleTest (`GTest`).
 

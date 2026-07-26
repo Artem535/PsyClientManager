@@ -20,7 +20,8 @@ On first initialization, it:
 
 - `workspace_uuid` identifies the workspace across application restarts;
 - `schema_version` identifies the database schema contract;
-- `backup_format_version` reserves a version for future `.psybackup` files;
+- `backup_format_version` reserves a version for `.psybackup` files, written
+  by `BackupService` in `src/backup` (see <<Modules>>);
 - `created_at` records workspace initialization;
 - `last_migration_at` records the latest successful metadata migration pass.
 

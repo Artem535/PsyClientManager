@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.10] - 2026-07-26
+
+### Added
+
+- "Create backup..." and "Validate backup..." actions in Settings, backed
+  by the local `.psybackup` backup service.
+
+## [0.1.9] - 2026-07-25
+
+### Added
+
+- Local `.psybackup` backup format: `BackupService` writes a consistent DuckDB
+  snapshot (via `EXPORT DATABASE ... FORMAT PARQUET`), optional attachments,
+  and a SHA-256 checksummed manifest into a zip archive, finalized atomically.
+- `BackupValidator` to verify a `.psybackup` file's manifest and checksums.
+- Database and attachment backup coverage in the test suite.
+
 ## [0.1.8] - 2026-07-25
 
 ### Added

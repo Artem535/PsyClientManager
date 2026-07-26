@@ -1066,7 +1066,7 @@ DuckClient Database::get_client_by_event(const int64_t &event_id) {
   return DuckClient(*chunk, 0);
 }
 
-DuckApplicationMetadata Database::get_application_metadata() {
+DuckApplicationMetadata Database::get_application_metadata() const {
   duckdb::Connection conn(*mDb);
   auto result = conn.Query(constance::kSelectApplicationMetadata);
   if (!result || result->HasError()) {
@@ -1079,6 +1079,29 @@ DuckApplicationMetadata Database::get_application_metadata() {
     throw std::runtime_error("Application metadata is not initialized");
   }
   return DuckApplicationMetadata(*chunk, 0);
+}
+
+bool Database::export_snapshot(const std::string &target_dir) const {
+  duckdb::Connection conn(*mDb);
+  std::string escaped_dir;
+  escaped_dir.reserve(target_dir.size());
+  for (const char ch : target_dir) {
+    if (ch == '\'') {
+      escaped_dir += "''";
+    } else {
+      escaped_dir += ch;
+    }
+  }
+
+  const auto query =
+      "EXPORT DATABASE '" + escaped_dir + "' (FORMAT PARQUET);";
+  auto result = conn.Query(query);
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "export_snapshot failed: "
+               << (result ? result->GetError() : std::string{"null result"});
+    return false;
+  }
+  return true;
 }
 
 // --- Init ---
