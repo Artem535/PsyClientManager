@@ -95,6 +95,7 @@ int Application::run(int argc, char *argv[]) {
   mMainWindow->addAnalyticsPage(mDb);
   mMainWindow->addClientCardPage(mDb);
   mMainWindow->addClientNotesPage(mDb);
+  mMainWindow->setDatabase(mDb);
   mMainWindow->connectSignals();
   mMainWindow->installEventFilter(this);
   connectSignals();

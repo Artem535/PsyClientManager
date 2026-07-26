@@ -4,6 +4,12 @@
 
 #include <QDialog>
 
+#include <memory>
+
+namespace pcm::database {
+class Database;
+}
+
 class QDialogButtonBox;
 class QComboBox;
 class QDoubleSpinBox;
@@ -24,7 +30,8 @@ class SettingsDialog final : public QDialog {
   Q_OBJECT
 
 public:
-  explicit SettingsDialog(QWidget *parent = nullptr);
+  explicit SettingsDialog(std::shared_ptr<pcm::database::Database> db,
+                          QWidget *parent = nullptr);
   ~SettingsDialog() override = default;
 
 private:
@@ -52,4 +59,5 @@ private:
   QTextEdit *mMeetingInviteTemplateEdit{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
+  std::shared_ptr<pcm::database::Database> mDb;
 };

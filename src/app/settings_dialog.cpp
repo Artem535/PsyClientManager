@@ -53,8 +53,9 @@ QWidget *makeSettingRow(const QString &title, const QString &description,
 }
 } // namespace
 
-SettingsDialog::SettingsDialog(QWidget *parent)
-    : QDialog(parent) {
+SettingsDialog::SettingsDialog(std::shared_ptr<pcm::database::Database> db,
+                               QWidget *parent)
+    : QDialog(parent), mDb(std::move(db)) {
   setupUi();
   loadSettings();
   connectSignals();
