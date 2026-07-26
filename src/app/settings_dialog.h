@@ -43,6 +43,7 @@ private:
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};
+  QComboBox *mCurrencyCombo{nullptr};
   QDoubleSpinBox *mDefaultWorkCostSpinBox{nullptr};
   QTimeEdit *mWorkDayStartEdit{nullptr};
   QTimeEdit *mWorkDayEndEdit{nullptr};

@@ -165,12 +165,17 @@ void SettingsDialog::setupUi() {
   mPreventOverlapsSwitch = new oclero::qlementine::Switch(eventsBox);
   mWorkEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
   mPersonalEventColorEditor = new oclero::qlementine::ColorEditor(eventsBox);
+  mCurrencyCombo = new QComboBox(eventsBox);
+  mCurrencyCombo->addItem(tr("Russian Ruble (₽)"), QStringLiteral("RUB"));
+  mCurrencyCombo->addItem(tr("US Dollar ($)"), QStringLiteral("USD"));
+  mCurrencyCombo->addItem(tr("Euro (€)"), QStringLiteral("EUR"));
+  mCurrencyCombo->addItem(tr("British Pound (£)"), QStringLiteral("GBP"));
   mDefaultWorkCostSpinBox = new QDoubleSpinBox(eventsBox);
   mDefaultWorkCostSpinBox->setDecimals(2);
   mDefaultWorkCostSpinBox->setMinimum(0.0);
   mDefaultWorkCostSpinBox->setMaximum(1'000'000.0);
   mDefaultWorkCostSpinBox->setSingleStep(100.0);
-  mDefaultWorkCostSpinBox->setSuffix(tr(" ₽"));
+  mDefaultWorkCostSpinBox->setSuffix(QStringLiteral(" ") + pcm::app_settings::currencySymbol());
   mWorkDayStartEdit = new QTimeEdit(eventsBox);
   mWorkDayStartEdit->setDisplayFormat("HH:mm");
   mWorkDayEndEdit = new QTimeEdit(eventsBox);
@@ -210,6 +215,10 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Default buffer after"),
                      tr("Time reserved after each new session and Quick Slot."),
                      mDefaultBufferAfterSpinBox, eventsBox));
+  eventsLayout->addWidget(
+      makeSettingRow(tr("Currency"),
+                     tr("Symbol shown next to cost values throughout the app."),
+                     mCurrencyCombo, eventsBox));
   eventsLayout->addWidget(
       makeSettingRow(tr("Default work event cost"),
                      tr("Used to prefill new work sessions."),
@@ -271,6 +280,8 @@ void SettingsDialog::loadSettings() const {
       pcm::app_settings::defaultBufferBeforeMinutes());
   mDefaultBufferAfterSpinBox->setValue(
       pcm::app_settings::defaultBufferAfterMinutes());
+  const auto currencyIndex = mCurrencyCombo->findData(pcm::app_settings::currencyCode());
+  mCurrencyCombo->setCurrentIndex(currencyIndex >= 0 ? currencyIndex : 0);
   mDefaultWorkCostSpinBox->setValue(pcm::app_settings::defaultWorkEventCost());
   mWorkEventColorEditor->setColor(pcm::app_settings::workEventColor());
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
@@ -322,6 +333,10 @@ void SettingsDialog::connectSignals() const {
           [](const int minutes) {
             pcm::app_settings::setDefaultBufferAfterMinutes(minutes);
           });
+  connect(mCurrencyCombo, &QComboBox::currentIndexChanged, this, [this](const int index) {
+    pcm::app_settings::setCurrencyCode(mCurrencyCombo->itemData(index).toString());
+    mDefaultWorkCostSpinBox->setSuffix(QStringLiteral(" ") + pcm::app_settings::currencySymbol());
+  });
   connect(mDefaultWorkCostSpinBox, &QDoubleSpinBox::valueChanged, this,
           [](const double value) {
             pcm::app_settings::setDefaultWorkEventCost(value);
