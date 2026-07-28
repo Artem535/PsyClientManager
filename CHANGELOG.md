@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.13] - 2026-07-28
+
+### Added
+
+- "Restore backup..." action in Settings, using a deferred apply-on-restart
+  flow so the restore only runs with no open database connection.
+
 ## [0.1.12] - 2026-07-26
 
 ### Added
