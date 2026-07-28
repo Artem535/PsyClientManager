@@ -1,7 +1,10 @@
 #include "application.h"
+#include "../backup/restore_service.h"
 #include "../widgets/app_settings.h"
 
+#include <Poco/Path.h>
 #include <QLocale>
+#include <QMessageBox>
 #include <QLibraryInfo>
 #include <QMenu>
 #include <QStringList>
@@ -18,9 +21,7 @@ namespace {
 constexpr int kNotificationPollIntervalMs = 30 * 1000;
 }
 
-Application::Application() {
-  mDb = std::make_shared<database::Database>(mConf);
-}
+Application::Application() = default;
 
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
@@ -86,6 +87,31 @@ int Application::run(int argc, char *argv[]) {
     qCWarning(logApplication) << "Failed to load translations. Locale:"
                               << localeName;
   }
+
+  const auto markerPath = Poco::Path(mConf.config_pth.value())
+                              .makeParent()
+                              .append("pending-restore.json")
+                              .toString();
+  if (const auto marker = pcm::backup::read_pending_restore_marker(markerPath)) {
+    pcm::backup::RestoreService service;
+    pcm::backup::RestoreOptions options;
+    options.attachments_root =
+        pcm::app_settings::attachmentsStorageRoot().toStdString();
+    const auto result = service.restore_backup(
+        marker->backup_path, mConf.db_conf.value_.db_pth.toString(), options);
+    pcm::backup::remove_pending_restore_marker(markerPath);
+    if (result.ok) {
+      QMessageBox::information(nullptr, tr("Restore Complete"),
+                               tr("The backup was restored successfully."));
+    } else {
+      QMessageBox::warning(
+          nullptr, tr("Restore Failed"),
+          tr("The restore could not be completed:\n%1\n\nYour previous "
+             "data was kept.").arg(QString::fromStdString(result.error)));
+    }
+  }
+
+  mDb = std::make_shared<database::Database>(mConf);
 
   mMainWindow = std::make_unique<MainWindow>();
   mClientModel = std::make_shared<QClientModel>(mDb);
