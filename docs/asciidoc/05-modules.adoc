@@ -36,6 +36,12 @@
   rename.
 - `BackupValidator`
 : re-verifies a `.psybackup` file's manifest and per-entry checksums.
+- `RestoreService`
+: validates a `.psybackup`, imports its DuckDB snapshot into a staging directory,
+  and replaces the configured database and optional attachments directory only
+  after validation succeeds. Existing directories are retained as
+  `.pre-restore-<uuid>` protective copies. The application must close active
+  database connections before replacement.
 - `backup_manifest.hpp`
 : `BackupManifest`/`BackupEntry` DTOs (rfl JSON).
 - `checksum_utils.hpp`

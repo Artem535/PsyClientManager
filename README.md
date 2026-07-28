@@ -38,6 +38,7 @@ It is built as a native Qt Widgets application and targets Linux, Windows, and m
 - Quick access to the local database folder
 - Persistent workspace and schema metadata for future backup/restore workflows
 - Local `.psybackup` backups of the database and attachments, created and validated from Settings
+- Staged restore from `.psybackup` with protective pre-restore copies
 
 ## 🛣 Roadmap
 
