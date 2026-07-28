@@ -109,6 +109,37 @@ std::string readManifest(const std::string &extractDir,
 
 } // namespace
 
+bool write_pending_restore_marker(const std::string &marker_path,
+                                  const std::string &backup_path) {
+  PendingRestoreMarker marker;
+  marker.backup_path = backup_path;
+  const auto saveResult =
+      rfl::json::save(marker_path, marker, rfl::json::pretty);
+  return static_cast<bool>(saveResult);
+}
+
+std::optional<PendingRestoreMarker>
+read_pending_restore_marker(const std::string &marker_path) {
+  if (!Poco::File(marker_path).exists()) {
+    return std::nullopt;
+  }
+  const auto parsed = rfl::json::load<PendingRestoreMarker>(marker_path);
+  if (!parsed) {
+    return std::nullopt;
+  }
+  return parsed.value();
+}
+
+void remove_pending_restore_marker(const std::string &marker_path) {
+  try {
+    Poco::File file(marker_path);
+    if (file.exists()) {
+      file.remove();
+    }
+  } catch (...) {
+  }
+}
+
 RestoreResult RestoreService::restore_backup(const std::string &backup_path,
                                              const std::string &database_root,
                                              const RestoreOptions &options) {

@@ -16,6 +16,16 @@ struct RestoreResult {
   std::string protective_attachments_path;
 };
 
+struct PendingRestoreMarker {
+  std::string backup_path;
+};
+
+bool write_pending_restore_marker(const std::string &marker_path,
+                                   const std::string &backup_path);
+std::optional<PendingRestoreMarker>
+read_pending_restore_marker(const std::string &marker_path);
+void remove_pending_restore_marker(const std::string &marker_path);
+
 class RestoreService {
 public:
   RestoreResult restore_backup(const std::string &backup_path,

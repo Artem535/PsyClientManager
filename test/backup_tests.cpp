@@ -653,3 +653,57 @@ TEST(RestoreServiceTest, RejectsInvalidBackupWithoutChangingTarget) {
   Poco::File(invalidPath).remove();
   Poco::File(targetPath).remove(true);
 }
+
+TEST(PendingRestoreMarkerTest, WriteThenReadRoundTripsBackupPath) {
+  const auto markerPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_pending_restore.json")
+                              .toString();
+  if (Poco::File(markerPath).exists()) {
+    Poco::File(markerPath).remove();
+  }
+
+  ASSERT_TRUE(pcm::backup::write_pending_restore_marker(
+      markerPath, "/backups/example.psybackup"));
+
+  const auto marker = pcm::backup::read_pending_restore_marker(markerPath);
+  ASSERT_TRUE(marker.has_value());
+  EXPECT_EQ(marker->backup_path, "/backups/example.psybackup");
+
+  Poco::File(markerPath).remove();
+}
+
+TEST(PendingRestoreMarkerTest, ReadReturnsNulloptWhenFileIsMissing) {
+  const auto markerPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_pending_restore_missing.json")
+                              .toString();
+  if (Poco::File(markerPath).exists()) {
+    Poco::File(markerPath).remove();
+  }
+
+  EXPECT_FALSE(
+      pcm::backup::read_pending_restore_marker(markerPath).has_value());
+}
+
+TEST(PendingRestoreMarkerTest, RemoveDeletesTheMarkerFile) {
+  const auto markerPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_pending_restore_remove.json")
+                              .toString();
+  ASSERT_TRUE(pcm::backup::write_pending_restore_marker(
+      markerPath, "/backups/example.psybackup"));
+  ASSERT_TRUE(Poco::File(markerPath).exists());
+
+  pcm::backup::remove_pending_restore_marker(markerPath);
+
+  EXPECT_FALSE(Poco::File(markerPath).exists());
+}
+
+TEST(PendingRestoreMarkerTest, RemoveIsANoOpWhenFileIsMissing) {
+  const auto markerPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_pending_restore_noop.json")
+                              .toString();
+  if (Poco::File(markerPath).exists()) {
+    Poco::File(markerPath).remove();
+  }
+
+  EXPECT_NO_THROW(pcm::backup::remove_pending_restore_marker(markerPath));
+}
