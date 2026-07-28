@@ -42,6 +42,7 @@ private:
   void openDatabaseFolder() const;
   void createBackup();
   void validateBackup();
+  void restoreBackup();
 
   oclero::qlementine::SegmentedControl *mSettingsSections{nullptr};
   QStackedWidget *mSettingsStack{nullptr};
@@ -50,6 +51,7 @@ private:
   QPushButton *mOpenDatabaseFolderButton{nullptr};
   QPushButton *mCreateBackupButton{nullptr};
   QPushButton *mValidateBackupButton{nullptr};
+  QPushButton *mRestoreBackupButton{nullptr};
   QProgressBar *mBackupProgressBar{nullptr};
   QLabel *mBackupStatusLabel{nullptr};
   oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};

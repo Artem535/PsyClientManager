@@ -3,11 +3,13 @@
 #include "../widgets/app_settings.h"
 #include "backup_service.h"
 #include "backup_validator.h"
+#include "restore_service.h"
 
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
 #include <oclero/qlementine/widgets/Switch.hpp>
 
+#include <QApplication>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -29,6 +31,8 @@
 #include <QTimeEdit>
 #include <QUrl>
 #include <QVBoxLayout>
+
+#include <Poco/Path.h>
 
 namespace {
 QWidget *makeSettingRow(const QString &title, const QString &description,
@@ -217,8 +221,10 @@ void SettingsDialog::setupUi() {
   backupButtonsLayout->setSpacing(10);
   mCreateBackupButton = new QPushButton(tr("Create backup..."), backupBox);
   mValidateBackupButton = new QPushButton(tr("Validate backup..."), backupBox);
+  mRestoreBackupButton = new QPushButton(tr("Restore backup..."), backupBox);
   backupButtonsLayout->addWidget(mCreateBackupButton);
   backupButtonsLayout->addWidget(mValidateBackupButton);
+  backupButtonsLayout->addWidget(mRestoreBackupButton);
   backupButtonsLayout->addStretch();
   mBackupStatusLabel = new QLabel(backupBox);
   mBackupStatusLabel->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
@@ -400,6 +406,8 @@ void SettingsDialog::connectSignals() const {
           &SettingsDialog::createBackup);
   connect(mValidateBackupButton, &QPushButton::clicked, this,
           &SettingsDialog::validateBackup);
+  connect(mRestoreBackupButton, &QPushButton::clicked, this,
+          &SettingsDialog::restoreBackup);
   connect(mNotificationsEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
             pcm::app_settings::setNotificationsEnabled(checked);
@@ -545,6 +553,84 @@ void SettingsDialog::validateBackup() {
               }
               QMessageBox::warning(this, tr("Backup Invalid"), message);
             }
+          });
+  connect(worker, &ValidateWorker::finished, thread, &QThread::quit);
+  connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+  connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  thread->start();
+}
+
+void SettingsDialog::restoreBackup() {
+  const auto defaultDir =
+      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+  const auto backupPath = QFileDialog::getOpenFileName(
+      this, tr("Restore Backup"), defaultDir,
+      tr("PsyClientManager Backup (*.psybackup)"));
+  if (backupPath.isEmpty()) {
+    return;
+  }
+
+  mCreateBackupButton->setEnabled(false);
+  mValidateBackupButton->setEnabled(false);
+  mRestoreBackupButton->setEnabled(false);
+  mBackupStatusLabel->setText(tr("Checking backup…"));
+  mBackupStatusLabel->setVisible(true);
+  mBackupProgressBar->setVisible(true);
+
+  auto *thread = new QThread(this);
+  auto *worker = new ValidateWorker(backupPath);
+  worker->moveToThread(thread);
+
+  connect(thread, &QThread::started, worker, &ValidateWorker::run);
+  connect(worker, &ValidateWorker::finished, this,
+          [this, backupPath](const bool ok, const QStringList &errors) {
+            mBackupStatusLabel->setVisible(false);
+            mBackupProgressBar->setVisible(false);
+            mCreateBackupButton->setEnabled(true);
+            mValidateBackupButton->setEnabled(true);
+            mRestoreBackupButton->setEnabled(true);
+            if (!ok) {
+              QString message;
+              if (errors.size() > 10) {
+                message = errors.mid(0, 10).join('\n') +
+                          tr("\n... and %1 more").arg(errors.size() - 10);
+              } else {
+                message = errors.join('\n');
+              }
+              QMessageBox::warning(this, tr("Backup Invalid"), message);
+              return;
+            }
+
+            const auto confirmation = QMessageBox::warning(
+                this, tr("Restore Backup"),
+                tr("This will replace all current data (clients, events, "
+                   "notes, and attachments) with the contents of this "
+                   "backup. Your current data will be kept as a protective "
+                   "copy, but the application must restart to complete the "
+                   "restore. Continue?"),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (confirmation != QMessageBox::Yes) {
+              return;
+            }
+
+            const auto markerPath = Poco::Path(mConfig.config_pth.value())
+                                        .makeParent()
+                                        .append("pending-restore.json")
+                                        .toString();
+            if (!pcm::backup::write_pending_restore_marker(
+                    markerPath, backupPath.toStdString())) {
+              QMessageBox::warning(
+                  this, tr("Restore Failed"),
+                  tr("Could not stage the restore. Check that there is "
+                     "enough disk space and try again."));
+              return;
+            }
+
+            QMessageBox::information(
+                this, tr("Restore Staged"),
+                tr("PsyClientManager will now close. Restart it to "
+                   "complete the restore."));
+            QApplication::quit();
           });
   connect(worker, &ValidateWorker::finished, thread, &QThread::quit);
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
