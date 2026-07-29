@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.16] - 2026-07-29
+
+### Added
+
+- Automatic backups: a configurable interval-based background backup with
+  count-based retention, plus a shutdown safety-net check, on top of the
+  existing manual backup flow. Configurable in Settings → Backup →
+  Automatic Backups.
+
 ## [0.1.15] - 2026-07-29
 
 ### Fixed
