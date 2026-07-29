@@ -339,15 +339,6 @@ void Application::notifyUpcomingSeriesOccurrences(const int64_t nowMs,
     return statusId == 1 || statusId == 2 || statusId == 4;
   };
 
-  const auto materialized = mDb->get_day_events(nowMs, windowEndMs);
-  std::set<std::pair<int64_t, int64_t>> materializedOccurrences;
-  for (const auto &event : materialized) {
-    if (event.series_id.has_value() && event.original_occurrence_start.has_value()) {
-      materializedOccurrences.insert(
-          {*event.series_id, *event.original_occurrence_start});
-    }
-  }
-
   const auto exceptions =
       mDb->get_event_series_exceptions_for_range(nowMs, windowEndMs);
   const auto alreadyNotified =
@@ -360,11 +351,13 @@ void Application::notifyUpcomingSeriesOccurrences(const int64_t nowMs,
     }
     pcm::recurrence::resolveSeriesClientName(*mDb, series);
 
+    const auto materializedStarts =
+        mDb->get_materialized_occurrence_starts_for_series(series.id);
     const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
     for (const auto &occurrence : occurrences) {
       const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
       const std::pair<int64_t, int64_t> key{series.id, occurrenceStartMs};
-      if (exceptions.contains(key) || materializedOccurrences.contains(key) ||
+      if (exceptions.contains(key) || materializedStarts.contains(occurrenceStartMs) ||
           alreadyNotified.contains(key)) {
         continue;
       }
