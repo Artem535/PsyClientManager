@@ -12,6 +12,10 @@ add_library(${TARGET_NAME} STATIC
         backup_validator.cpp
         restore_service.h
         restore_service.cpp
+        backup_rotation_service.h
+        backup_rotation_service.cpp
+        auto_backup_due.h
+        auto_backup_due.cpp
 )
 
 target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

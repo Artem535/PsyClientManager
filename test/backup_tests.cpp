@@ -9,8 +9,11 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <rfl/json.hpp>
+#include <vector>
 
+#include "auto_backup_due.h"
 #include "backup_manifest.hpp"
+#include "backup_rotation_service.h"
 #include "backup_service.h"
 #include "backup_validator.h"
 #include "checksum_utils.hpp"
@@ -751,4 +754,70 @@ TEST(RestoreServiceTest, RestoresSeriesOccurrenceReminderState) {
   Poco::File(targetPath).remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_reminder_source"))
       .remove(true);
+}
+
+TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
+  const auto dir =
+      Poco::Path(Poco::Path::current()).append("tmp_rotation_dir").toString();
+  if (Poco::File(dir).exists()) {
+    Poco::File(dir).remove(true);
+  }
+  Poco::File(dir).createDirectories();
+
+  const std::vector<std::string> autoNames = {
+      "PsyClientManager-auto-20260101-000000.psybackup",
+      "PsyClientManager-auto-20260102-000000.psybackup",
+      "PsyClientManager-auto-20260103-000000.psybackup",
+      "PsyClientManager-auto-20260104-000000.psybackup",
+      "PsyClientManager-auto-20260105-000000.psybackup",
+  };
+  for (const auto &name : autoNames) {
+    std::ofstream(Poco::Path(dir).append(name).toString()) << "x";
+  }
+  // A manual backup in the same directory must never be touched by rotation.
+  const auto manualName =
+      Poco::Path(dir).append("PsyClientManager-20260106-000000.psybackup").toString();
+  std::ofstream(manualName) << "x";
+
+  pcm::backup::BackupRotationService service;
+  const auto result = service.prune(dir, "PsyClientManager-auto-", 3);
+  ASSERT_TRUE(result.ok) << result.error;
+  EXPECT_EQ(result.removed_count, 2);
+
+  EXPECT_FALSE(Poco::File(Poco::Path(dir).append(autoNames[0]).toString()).exists());
+  EXPECT_FALSE(Poco::File(Poco::Path(dir).append(autoNames[1]).toString()).exists());
+  EXPECT_TRUE(Poco::File(Poco::Path(dir).append(autoNames[2]).toString()).exists());
+  EXPECT_TRUE(Poco::File(Poco::Path(dir).append(autoNames[3]).toString()).exists());
+  EXPECT_TRUE(Poco::File(Poco::Path(dir).append(autoNames[4]).toString()).exists());
+  EXPECT_TRUE(Poco::File(manualName).exists());
+
+  Poco::File(dir).remove(true);
+}
+
+TEST(BackupRotationServiceTest, NonExistentDirectoryIsNotAnError) {
+  pcm::backup::BackupRotationService service;
+  const auto result =
+      service.prune("tmp_rotation_dir_missing", "PsyClientManager-auto-", 3);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.removed_count, 0);
+}
+
+TEST(AutoBackupDueTest, DisabledIsNeverDue) {
+  EXPECT_FALSE(pcm::backup::isAutoBackupDue(false, 0, 7, 999'999'999'999));
+}
+
+TEST(AutoBackupDueTest, NeverRunIsDueImmediatelyWhenEnabled) {
+  EXPECT_TRUE(pcm::backup::isAutoBackupDue(true, 0, 7, 1'000));
+}
+
+TEST(AutoBackupDueTest, NotYetDueWithinInterval) {
+  const std::int64_t lastRun = 1'700'000'000'000;
+  const std::int64_t sixDaysLater = lastRun + 6LL * 24 * 60 * 60 * 1000;
+  EXPECT_FALSE(pcm::backup::isAutoBackupDue(true, lastRun, 7, sixDaysLater));
+}
+
+TEST(AutoBackupDueTest, DueOnceIntervalElapsed) {
+  const std::int64_t lastRun = 1'700'000'000'000;
+  const std::int64_t sevenDaysLater = lastRun + 7LL * 24 * 60 * 60 * 1000;
+  EXPECT_TRUE(pcm::backup::isAutoBackupDue(true, lastRun, 7, sevenDaysLater));
 }
