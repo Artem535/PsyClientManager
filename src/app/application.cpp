@@ -1,5 +1,6 @@
 #include "application.h"
 #include "../backup/restore_service.h"
+#include "../event_view/recurrence_utils.h"
 #include "../widgets/app_settings.h"
 
 #include <Poco/Path.h>
@@ -228,15 +229,22 @@ QString Application::notificationBodyForEvent(const DuckEvent &event) const {
 
   QString clientText;
   if (event.is_work_event) {
-    try {
-      const auto client = mDb->get_client_by_event(event.id);
-      const auto firstName = QString::fromStdString(client.name.value_or(""));
-      const auto lastName = QString::fromStdString(client.last_name.value_or(""));
-      const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+    if (event.client_name.has_value()) {
+      const auto fullName = QString::fromStdString(*event.client_name).trimmed();
       if (!fullName.isEmpty()) {
         clientText = tr("Client: %1").arg(fullName);
       }
-    } catch (const std::exception &) {
+    } else {
+      try {
+        const auto client = mDb->get_client_by_event(event.id);
+        const auto firstName = QString::fromStdString(client.name.value_or(""));
+        const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+        const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+        if (!fullName.isEmpty()) {
+          clientText = tr("Client: %1").arg(fullName);
+        }
+      } catch (const std::exception &) {
+      }
     }
   }
 
@@ -314,6 +322,76 @@ void Application::checkUpcomingEventNotifications() {
                            notificationBodyForEvent(event),
                            QSystemTrayIcon::Information, 15'000);
     mDb->mark_event_reminder_notified(event.id, nowMs);
+  }
+
+  notifyUpcomingSeriesOccurrences(nowMs, windowEndMs);
+}
+
+void Application::notifyUpcomingSeriesOccurrences(const int64_t nowMs,
+                                                   const int64_t windowEndMs) {
+  const auto localTz = QTimeZone::systemTimeZone();
+  const auto rangeStart =
+      QDateTime::fromMSecsSinceEpoch(nowMs, QTimeZone::UTC).toTimeZone(localTz);
+  const auto rangeEnd =
+      QDateTime::fromMSecsSinceEpoch(windowEndMs, QTimeZone::UTC).toTimeZone(localTz);
+
+  // Mirrors the status filter used by kSelectUpcomingEventsQuery: scheduled(1),
+  // completed(2), confirmed(4). Excludes canceled(3), no_show(5), rescheduled(6).
+  const auto isEligibleStatus = [](const int64_t statusId) {
+    return statusId == 1 || statusId == 2 || statusId == 4;
+  };
+
+  const auto materialized = mDb->get_day_events(nowMs, windowEndMs);
+  std::set<std::pair<int64_t, int64_t>> materializedOccurrences;
+  for (const auto &event : materialized) {
+    if (event.series_id.has_value() && event.original_occurrence_start.has_value()) {
+      materializedOccurrences.insert(
+          {*event.series_id, *event.original_occurrence_start});
+    }
+  }
+
+  const auto exceptions =
+      mDb->get_event_series_exceptions_for_range(nowMs, windowEndMs);
+  const auto alreadyNotified =
+      mDb->get_notified_series_occurrences_for_range(nowMs, windowEndMs);
+
+  auto seriesList = mDb->get_event_series_for_range(nowMs, windowEndMs);
+  for (auto &series : seriesList) {
+    if (!isEligibleStatus(series.event_stat_id)) {
+      continue;
+    }
+    if (series.is_work_event && series.client_id.has_value()) {
+      try {
+        const auto client = mDb->get_client(*series.client_id);
+        if (client) {
+          const auto firstName = QString::fromStdString(client->name.value_or(""));
+          const auto lastName = QString::fromStdString(client->last_name.value_or(""));
+          const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+          if (!fullName.isEmpty()) {
+            series.client_name = fullName.toStdString();
+          }
+        }
+      } catch (const std::exception &) {
+      }
+    }
+
+    const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
+    for (const auto &occurrence : occurrences) {
+      const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
+      const std::pair<int64_t, int64_t> key{series.id, occurrenceStartMs};
+      if (exceptions.contains(key) || materializedOccurrences.contains(key) ||
+          alreadyNotified.contains(key)) {
+        continue;
+      }
+
+      const auto virtualEvent =
+          pcm::recurrence::buildVirtualOccurrence(series, occurrence, 0);
+      mTrayIcon->showMessage(notificationTitleForEvent(virtualEvent),
+                             notificationBodyForEvent(virtualEvent),
+                             QSystemTrayIcon::Information, 15'000);
+      mDb->mark_series_occurrence_reminder_notified(series.id, occurrenceStartMs,
+                                                     nowMs);
+    }
   }
 }
 
