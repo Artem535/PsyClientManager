@@ -14,6 +14,7 @@ class QDialogButtonBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
+class QLineEdit;
 class QProgressBar;
 class QPushButton;
 class QSpinBox;
@@ -43,6 +44,7 @@ private:
   void createBackup();
   void validateBackup();
   void restoreBackup();
+  void browseAutoBackupDestination();
 
   oclero::qlementine::SegmentedControl *mSettingsSections{nullptr};
   QStackedWidget *mSettingsStack{nullptr};
@@ -54,6 +56,11 @@ private:
   QPushButton *mRestoreBackupButton{nullptr};
   QProgressBar *mBackupProgressBar{nullptr};
   QLabel *mBackupStatusLabel{nullptr};
+  oclero::qlementine::Switch *mAutoBackupEnabledSwitch{nullptr};
+  QSpinBox *mAutoBackupIntervalSpinBox{nullptr};
+  QSpinBox *mAutoBackupKeepCountSpinBox{nullptr};
+  QLineEdit *mAutoBackupDestinationEdit{nullptr};
+  QPushButton *mAutoBackupBrowseButton{nullptr};
   oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};
   QSpinBox *mNotificationLeadMinutesSpinBox{nullptr};
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};

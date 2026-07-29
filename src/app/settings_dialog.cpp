@@ -20,6 +20,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
@@ -239,6 +240,44 @@ void SettingsDialog::setupUi() {
   backupLayout->addWidget(mBackupProgressBar);
   generalSettingsLayout->addWidget(backupBox);
 
+  auto *autoBackupBox = new QGroupBox(tr("Automatic Backups"), generalPage);
+  auto *autoBackupLayout = new QVBoxLayout(autoBackupBox);
+  autoBackupLayout->setContentsMargins(16, 16, 16, 16);
+  autoBackupLayout->setSpacing(14);
+  mAutoBackupEnabledSwitch = new oclero::qlementine::Switch(autoBackupBox);
+  mAutoBackupIntervalSpinBox = new QSpinBox(autoBackupBox);
+  mAutoBackupIntervalSpinBox->setMinimum(1);
+  mAutoBackupIntervalSpinBox->setMaximum(90);
+  mAutoBackupIntervalSpinBox->setSuffix(tr(" days"));
+  mAutoBackupKeepCountSpinBox = new QSpinBox(autoBackupBox);
+  mAutoBackupKeepCountSpinBox->setMinimum(1);
+  mAutoBackupKeepCountSpinBox->setMaximum(50);
+  auto *destinationRow = new QWidget(autoBackupBox);
+  auto *destinationLayout = new QHBoxLayout(destinationRow);
+  destinationLayout->setContentsMargins(0, 0, 0, 0);
+  destinationLayout->setSpacing(10);
+  mAutoBackupDestinationEdit = new QLineEdit(destinationRow);
+  mAutoBackupDestinationEdit->setReadOnly(true);
+  mAutoBackupBrowseButton = new QPushButton(tr("Browse..."), destinationRow);
+  destinationLayout->addWidget(mAutoBackupDestinationEdit, 1);
+  destinationLayout->addWidget(mAutoBackupBrowseButton);
+  autoBackupLayout->addWidget(makeSettingRow(
+      tr("Automatic backups"),
+      tr("Periodically create a backup in the background without needing "
+        "to click \"Create backup...\"."),
+      mAutoBackupEnabledSwitch, autoBackupBox));
+  autoBackupLayout->addWidget(
+      makeSettingRow(tr("Backup interval"), tr("How often an automatic backup is taken."),
+                    mAutoBackupIntervalSpinBox, autoBackupBox));
+  autoBackupLayout->addWidget(makeSettingRow(
+      tr("Keep last"),
+      tr("How many automatic backups to keep before older ones are deleted."),
+      mAutoBackupKeepCountSpinBox, autoBackupBox));
+  autoBackupLayout->addWidget(makeSettingRow(tr("Destination folder"),
+                                             tr("Where automatic backups are saved."),
+                                             destinationRow, autoBackupBox));
+  generalSettingsLayout->addWidget(autoBackupBox);
+
   auto *notificationsBox = new QGroupBox(tr("Notifications"), generalPage);
   auto *notificationsLayout = new QVBoxLayout(notificationsBox);
   notificationsLayout->setContentsMargins(16, 16, 16, 16);
@@ -373,6 +412,15 @@ void SettingsDialog::loadSettings() const {
       pcm::app_settings::notificationLeadMinutes());
   mNotificationLeadMinutesSpinBox->setEnabled(
       mNotificationsEnabledSwitch->isChecked());
+  mAutoBackupEnabledSwitch->setChecked(pcm::app_settings::autoBackupEnabled());
+  mAutoBackupIntervalSpinBox->setValue(pcm::app_settings::autoBackupIntervalDays());
+  mAutoBackupKeepCountSpinBox->setValue(pcm::app_settings::autoBackupKeepCount());
+  mAutoBackupDestinationEdit->setText(pcm::app_settings::autoBackupDestination());
+  const auto autoBackupEnabled = mAutoBackupEnabledSwitch->isChecked();
+  mAutoBackupIntervalSpinBox->setEnabled(autoBackupEnabled);
+  mAutoBackupKeepCountSpinBox->setEnabled(autoBackupEnabled);
+  mAutoBackupDestinationEdit->setEnabled(autoBackupEnabled);
+  mAutoBackupBrowseButton->setEnabled(autoBackupEnabled);
   mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
   mWorkDayStartEdit->setTime(pcm::app_settings::workDayStart());
   mWorkDayEndEdit->setTime(pcm::app_settings::workDayEnd());
@@ -417,6 +465,24 @@ void SettingsDialog::connectSignals() const {
           [](const int minutes) {
             pcm::app_settings::setNotificationLeadMinutes(minutes);
           });
+  connect(mAutoBackupEnabledSwitch, &QAbstractButton::toggled, this,
+          [this](const bool checked) {
+            pcm::app_settings::setAutoBackupEnabled(checked);
+            mAutoBackupIntervalSpinBox->setEnabled(checked);
+            mAutoBackupKeepCountSpinBox->setEnabled(checked);
+            mAutoBackupDestinationEdit->setEnabled(checked);
+            mAutoBackupBrowseButton->setEnabled(checked);
+          });
+  connect(mAutoBackupIntervalSpinBox, &QSpinBox::valueChanged, this,
+          [](const int days) {
+            pcm::app_settings::setAutoBackupIntervalDays(days);
+          });
+  connect(mAutoBackupKeepCountSpinBox, &QSpinBox::valueChanged, this,
+          [](const int count) {
+            pcm::app_settings::setAutoBackupKeepCount(count);
+          });
+  connect(mAutoBackupBrowseButton, &QPushButton::clicked, this,
+          &SettingsDialog::browseAutoBackupDestination);
   connect(mPreventOverlapsSwitch, &QAbstractButton::toggled, this,
           [](const bool checked) {
             pcm::app_settings::setPreventEventOverlaps(checked);
@@ -511,6 +577,17 @@ void SettingsDialog::createBackup() {
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
   thread->start();
+}
+
+void SettingsDialog::browseAutoBackupDestination() {
+  const auto selected = QFileDialog::getExistingDirectory(
+      this, tr("Select Automatic Backup Folder"),
+      mAutoBackupDestinationEdit->text());
+  if (selected.isEmpty()) {
+    return;
+  }
+  mAutoBackupDestinationEdit->setText(selected);
+  pcm::app_settings::setAutoBackupDestination(selected);
 }
 
 void SettingsDialog::validateBackup() {
