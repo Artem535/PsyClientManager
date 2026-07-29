@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.15] - 2026-07-29
+
+### Fixed
+
+- Rescheduling a single recurring occurrence to a time outside its original
+  day or reminder window no longer produces a phantom duplicate Timeline
+  card or reminder at the stale original slot.
+
 ## [0.1.14] - 2026-07-29
 
 ### Fixed
