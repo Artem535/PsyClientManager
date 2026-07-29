@@ -24,6 +24,11 @@ constexpr auto kDefaultBufferBeforeMinutesKey = "event/defaultBufferBeforeMinute
 constexpr auto kDefaultBufferAfterMinutesKey = "event/defaultBufferAfterMinutes";
 constexpr auto kMeetingInviteTemplateKey = "online/meetingInviteTemplate";
 constexpr auto kCurrencyCodeKey = "ui/currency";
+constexpr auto kAutoBackupEnabledKey = "backup/autoEnabled";
+constexpr auto kAutoBackupIntervalDaysKey = "backup/autoIntervalDays";
+constexpr auto kAutoBackupKeepCountKey = "backup/autoKeepCount";
+constexpr auto kAutoBackupDestinationKey = "backup/autoDestination";
+constexpr auto kAutoBackupLastRunAtMsKey = "backup/autoLastRunAtMs";
 
 QColor defaultWorkEventColor() {
   return QColor(37, 99, 235);
@@ -70,6 +75,20 @@ QString defaultMeetingInviteTemplateValue() {
                      "Connection link:\n"
                      "{meeting_url}\n\n"
                      "See you!");
+}
+
+int defaultAutoBackupIntervalDaysValue() {
+  return 7;
+}
+
+int defaultAutoBackupKeepCountValue() {
+  return 7;
+}
+
+QString defaultAutoBackupDestinationValue() {
+  const auto basePath =
+      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+  return QDir(basePath).filePath("backups");
 }
 } // namespace
 
@@ -265,6 +284,62 @@ QString attachmentsStorageRoot() {
   const auto basePath =
       QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
   return QDir(basePath).filePath("storage/notes");
+}
+
+bool autoBackupEnabled() {
+  QSettings settings;
+  return settings.value(kAutoBackupEnabledKey, true).toBool();
+}
+
+void setAutoBackupEnabled(const bool enabled) {
+  QSettings settings;
+  settings.setValue(kAutoBackupEnabledKey, enabled);
+}
+
+int autoBackupIntervalDays() {
+  QSettings settings;
+  return settings
+      .value(kAutoBackupIntervalDaysKey, defaultAutoBackupIntervalDaysValue())
+      .toInt();
+}
+
+void setAutoBackupIntervalDays(const int days) {
+  QSettings settings;
+  settings.setValue(kAutoBackupIntervalDaysKey, days);
+}
+
+int autoBackupKeepCount() {
+  QSettings settings;
+  return settings.value(kAutoBackupKeepCountKey, defaultAutoBackupKeepCountValue())
+      .toInt();
+}
+
+void setAutoBackupKeepCount(const int count) {
+  QSettings settings;
+  settings.setValue(kAutoBackupKeepCountKey, count);
+}
+
+QString autoBackupDestination() {
+  QSettings settings;
+  return settings
+      .value(kAutoBackupDestinationKey, defaultAutoBackupDestinationValue())
+      .toString();
+}
+
+void setAutoBackupDestination(const QString &path) {
+  QSettings settings;
+  settings.setValue(kAutoBackupDestinationKey, path);
+}
+
+qint64 autoBackupLastRunAtMs() {
+  QSettings settings;
+  return settings.value(kAutoBackupLastRunAtMsKey, static_cast<qint64>(0))
+      .toLongLong();
+}
+
+void setAutoBackupLastRunAtMs(const qint64 ms) {
+  QSettings settings;
+  settings.setValue(kAutoBackupLastRunAtMsKey, ms);
 }
 
 } // namespace pcm::app_settings

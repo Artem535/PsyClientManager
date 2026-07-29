@@ -52,4 +52,15 @@ QString currencySymbol();
 
 QString attachmentsStorageRoot();
 
+bool autoBackupEnabled();
+void setAutoBackupEnabled(bool enabled);
+int autoBackupIntervalDays();
+void setAutoBackupIntervalDays(int days);
+int autoBackupKeepCount();
+void setAutoBackupKeepCount(int count);
+QString autoBackupDestination();
+void setAutoBackupDestination(const QString &path);
+qint64 autoBackupLastRunAtMs();
+void setAutoBackupLastRunAtMs(qint64 ms);
+
 } // namespace pcm::app_settings
