@@ -125,6 +125,7 @@ public:
 #include "backup_rotation_service.h"
 
 #include <Poco/DirectoryIterator.h>
+#include <Poco/Exception.h>
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <algorithm>
@@ -285,6 +286,9 @@ bool isAutoBackupDue(const bool enabled, const std::int64_t lastRunAtMs,
                      const int intervalDays, const std::int64_t nowMs) {
   if (!enabled) {
     return false;
+  }
+  if (lastRunAtMs <= 0) {
+    return true;
   }
   const std::int64_t intervalMs =
       static_cast<std::int64_t>(intervalDays) * 24 * 60 * 60 * 1000;
