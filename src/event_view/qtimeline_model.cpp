@@ -88,11 +88,7 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
 
   const auto events = mDb->get_day_events(dayStartMs, dayEndMs);
   mEvents = std::move(QVector<DuckEvent>(events.begin(), events.end()));
-  std::set<std::pair<int64_t, int64_t>> materializedOccurrences;
   for (auto &event : mEvents) {
-    if (event.series_id.has_value() && event.original_occurrence_start.has_value()) {
-      materializedOccurrences.insert({*event.series_id, *event.original_occurrence_start});
-    }
     if (!event.is_work_event) {
       continue;
     }
@@ -115,11 +111,13 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   for (auto &series : seriesList) {
     pcm::recurrence::resolveSeriesClientName(*mDb, series);
 
+    const auto materializedStarts =
+        mDb->get_materialized_occurrence_starts_for_series(series.id);
     const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
     for (const auto &occurrence : occurrences) {
       const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
       if (exceptions.contains({series.id, occurrenceStartMs}) ||
-          materializedOccurrences.contains({series.id, occurrenceStartMs})) {
+          materializedStarts.contains(occurrenceStartMs)) {
         continue;
       }
       const auto virtualId =
