@@ -960,6 +960,56 @@ bool Database::mark_event_reminder_notified(const int64_t &event_id,
   return true;
 }
 
+std::set<std::pair<int64_t, int64_t>>
+Database::get_notified_series_occurrences_for_range(const int64_t &start_ms,
+                                                     const int64_t &end_ms) {
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectNotifiedSeriesOccurrencesForRangeQuery,
+      {db_utils::toDuckTimestamp(std::make_optional(start_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(end_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get notified series occurrences: " << result->GetError();
+    return {};
+  }
+
+  std::set<std::pair<int64_t, int64_t>> notified;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      const auto seriesId =
+          static_cast<int64_t>(chunk->GetValue(0, i).GetValue<int32_t>());
+      const auto occurrenceStart =
+          db_utils::toOptionalTimestampMs(chunk->GetValue(1, i)).value_or(0);
+      notified.insert({seriesId, occurrenceStart});
+    }
+  }
+  return notified;
+}
+
+bool Database::mark_series_occurrence_reminder_notified(
+    const int64_t &series_id, const int64_t &occurrence_start_ms,
+    const int64_t &notified_at_ms) {
+  if (series_id <= 0 || occurrence_start_ms <= 0 || notified_at_ms <= 0) {
+    return false;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kMarkSeriesOccurrenceReminderNotifiedQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(notified_at_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to mark series occurrence reminder as notified for series "
+               << series_id << ": " << result->GetError();
+    return false;
+  }
+
+  return true;
+}
+
 std::vector<ClientMonthlyStats>
 Database::get_client_monthly_stats(const int64_t &client_id, const int months_back) {
   if (client_id <= 0 || months_back <= 0) {

@@ -319,6 +319,51 @@ TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, TracksSeriesOccurrenceReminderNotifications) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_series_reminder")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Session"};
+  series.start_date = 1730000000000;
+  series.end_date = 1740000000000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  const int64_t occurrenceStartMs = 1730000000000;
+  const int64_t notifiedAtMs = 1730000000000;
+
+  EXPECT_TRUE(
+      db.get_notified_series_occurrences_for_range(0, occurrenceStartMs + 1)
+          .empty());
+
+  EXPECT_TRUE(db.mark_series_occurrence_reminder_notified(
+      seriesId, occurrenceStartMs, notifiedAtMs));
+
+  const auto notified =
+      db.get_notified_series_occurrences_for_range(0, occurrenceStartMs + 1);
+  ASSERT_EQ(notified.size(), 1u);
+  EXPECT_TRUE(notified.contains({seriesId, occurrenceStartMs}));
+
+  // Marking the same occurrence again must not create a duplicate row or error.
+  EXPECT_TRUE(db.mark_series_occurrence_reminder_notified(
+      seriesId, occurrenceStartMs, notifiedAtMs));
+  EXPECT_EQ(
+      db.get_notified_series_occurrences_for_range(0, occurrenceStartMs + 1).size(),
+      1u);
+
+  db_dir.remove(true);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 

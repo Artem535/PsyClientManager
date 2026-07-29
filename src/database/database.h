@@ -91,6 +91,12 @@ public:
                                              const int64_t &end_ms);
   bool mark_event_reminder_notified(const int64_t &event_id,
                                     const int64_t &notified_at_ms);
+  std::set<std::pair<int64_t, int64_t>>
+  get_notified_series_occurrences_for_range(const int64_t &start_ms,
+                                            const int64_t &end_ms);
+  bool mark_series_occurrence_reminder_notified(const int64_t &series_id,
+                                                const int64_t &occurrence_start_ms,
+                                                const int64_t &notified_at_ms);
   std::vector<ClientMonthlyStats> get_client_monthly_stats(const int64_t &client_id,
                                                            int months_back = 6);
   DashboardSummary get_dashboard_summary();

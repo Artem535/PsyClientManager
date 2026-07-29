@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS EventSeriesException (
     UNIQUE (series_id, occurrence_start)
 );
 
+CREATE TABLE IF NOT EXISTS EventSeriesOccurrenceReminder (
+    series_id INTEGER NOT NULL REFERENCES EventSeries(id),
+    occurrence_start TIMESTAMP NOT NULL,
+    notified_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (series_id, occurrence_start)
+);
+
 -- Many-to-many relationship between clients and events
 CREATE TABLE IF NOT EXISTS EventClient (
     id INTEGER PRIMARY KEY,
@@ -297,6 +304,21 @@ WHERE NOT EXISTS (
     WHERE series_id = $1 AND occurrence_start = $2
 )
 RETURNING id
+)duckdb";
+
+constexpr auto kSelectNotifiedSeriesOccurrencesForRangeQuery = R"duckdb(
+SELECT series_id, occurrence_start
+FROM EventSeriesOccurrenceReminder
+WHERE occurrence_start >= $1 AND occurrence_start <= $2
+)duckdb";
+
+constexpr auto kMarkSeriesOccurrenceReminderNotifiedQuery = R"duckdb(
+INSERT INTO EventSeriesOccurrenceReminder (series_id, occurrence_start, notified_at)
+SELECT $1, $2, $3
+WHERE NOT EXISTS (
+    SELECT 1 FROM EventSeriesOccurrenceReminder
+    WHERE series_id = $1 AND occurrence_start = $2
+)
 )duckdb";
 
 constexpr auto kDeleteEventClientByEventIdQuery =
