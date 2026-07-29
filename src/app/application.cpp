@@ -20,6 +20,12 @@ namespace pcm {
 
 namespace {
 constexpr int kNotificationPollIntervalMs = 30 * 1000;
+
+QString fullClientName(const DuckClient &client) {
+  const auto firstName = QString::fromStdString(client.name.value_or(""));
+  const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+  return QString("%1 %2").arg(firstName, lastName).trimmed();
+}
 }
 
 Application::Application() = default;
@@ -237,9 +243,7 @@ QString Application::notificationBodyForEvent(const DuckEvent &event) const {
     } else {
       try {
         const auto client = mDb->get_client_by_event(event.id);
-        const auto firstName = QString::fromStdString(client.name.value_or(""));
-        const auto lastName = QString::fromStdString(client.last_name.value_or(""));
-        const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+        const auto fullName = fullClientName(client);
         if (!fullName.isEmpty()) {
           clientText = tr("Client: %1").arg(fullName);
         }
@@ -364,9 +368,7 @@ void Application::notifyUpcomingSeriesOccurrences(const int64_t nowMs,
       try {
         const auto client = mDb->get_client(*series.client_id);
         if (client) {
-          const auto firstName = QString::fromStdString(client->name.value_or(""));
-          const auto lastName = QString::fromStdString(client->last_name.value_or(""));
-          const auto fullName = QString("%1 %2").arg(firstName, lastName).trimmed();
+          const auto fullName = fullClientName(*client);
           if (!fullName.isEmpty()) {
             series.client_name = fullName.toStdString();
           }
