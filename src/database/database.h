@@ -97,6 +97,8 @@ public:
   bool mark_series_occurrence_reminder_notified(const int64_t &series_id,
                                                 const int64_t &occurrence_start_ms,
                                                 const int64_t &notified_at_ms);
+  std::set<int64_t>
+  get_materialized_occurrence_starts_for_series(const int64_t &series_id);
   std::vector<ClientMonthlyStats> get_client_monthly_stats(const int64_t &client_id,
                                                            int months_back = 6);
   DashboardSummary get_dashboard_summary();

@@ -364,6 +364,50 @@ TEST(DatabaseTest, TracksSeriesOccurrenceReminderNotifications) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, FindsMaterializedOccurrenceRegardlessOfCurrentWindow) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_materialized_override")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Session"};
+  series.start_date = 1730000000000;
+  series.end_date = 1740000000000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  EXPECT_TRUE(
+      db.get_materialized_occurrence_starts_for_series(seriesId).empty());
+
+  // Reschedule a single occurrence far outside its original slot: the
+  // override's original_occurrence_start stays pinned to the old slot, but
+  // start_date/end_date move to a time weeks away.
+  const int64_t originalOccurrenceStartMs = 1730000000000;
+  DuckEvent overrideEvent;
+  overrideEvent.name = std::string{"Weekly Session"};
+  overrideEvent.series_id = seriesId;
+  overrideEvent.original_occurrence_start = originalOccurrenceStartMs;
+  overrideEvent.start_date = 1735000000000;
+  overrideEvent.end_date = 1735003600000;
+  const auto overrideId = db.add_event(overrideEvent);
+  ASSERT_GT(overrideId, 0);
+
+  const auto materializedStarts =
+      db.get_materialized_occurrence_starts_for_series(seriesId);
+  ASSERT_EQ(materializedStarts.size(), 1u);
+  EXPECT_TRUE(materializedStarts.contains(originalOccurrenceStartMs));
+
+  db_dir.remove(true);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 

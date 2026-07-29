@@ -321,6 +321,12 @@ WHERE NOT EXISTS (
 )
 )duckdb";
 
+constexpr auto kSelectMaterializedOccurrenceStartsForSeriesQuery = R"duckdb(
+SELECT original_occurrence_start
+FROM Event
+WHERE series_id = $1 AND original_occurrence_start IS NOT NULL
+)duckdb";
+
 constexpr auto kDeleteEventClientByEventIdQuery =
     "DELETE FROM EventClient WHERE event_id = $1";
 constexpr auto kDeleteEventByIdQuery = "DELETE FROM Event WHERE id = $1";

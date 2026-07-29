@@ -1010,6 +1010,30 @@ bool Database::mark_series_occurrence_reminder_notified(
   return true;
 }
 
+std::set<int64_t> Database::get_materialized_occurrence_starts_for_series(
+    const int64_t &series_id) {
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectMaterializedOccurrenceStartsForSeriesQuery,
+      {duckdb::Value::BIGINT(series_id)});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to get materialized occurrence starts for series "
+               << series_id << ": " << result->GetError();
+    return {};
+  }
+
+  std::set<int64_t> starts;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      const auto occurrenceStart =
+          db_utils::toOptionalTimestampMs(chunk->GetValue(0, i)).value_or(0);
+      starts.insert(occurrenceStart);
+    }
+  }
+  return starts;
+}
+
 std::vector<ClientMonthlyStats>
 Database::get_client_monthly_stats(const int64_t &client_id, const int months_back) {
   if (client_id <= 0 || months_back <= 0) {
