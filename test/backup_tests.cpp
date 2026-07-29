@@ -707,3 +707,48 @@ TEST(PendingRestoreMarkerTest, RemoveIsANoOpWhenFileIsMissing) {
 
   EXPECT_NO_THROW(pcm::backup::remove_pending_restore_marker(markerPath));
 }
+
+TEST(RestoreServiceTest, RestoresSeriesOccurrenceReminderState) {
+  auto sourceDb = makeTestDatabase("tmp_restore_reminder_source");
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Session"};
+  series.start_date = 1730000000000;
+  series.end_date = 1740000000000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = sourceDb.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+  ASSERT_TRUE(sourceDb.mark_series_occurrence_reminder_notified(
+      seriesId, 1730000000000, 1730000000000));
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_reminder.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_reminder_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto notified =
+      restoredDb.get_notified_series_occurrences_for_range(0, 1730000000001);
+  EXPECT_TRUE(notified.contains({seriesId, 1730000000000}));
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_reminder_source"))
+      .remove(true);
+}
