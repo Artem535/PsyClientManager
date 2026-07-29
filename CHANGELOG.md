@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.14] - 2026-07-29
+
+### Fixed
+
+- Session reminder notifications now fire for upcoming recurring-series
+  occurrences, not only standalone materialized events.
+
 ## [0.1.13] - 2026-07-28
 
 ### Added
