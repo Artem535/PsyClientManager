@@ -7,15 +7,6 @@
 #include <algorithm>
 #include <set>
 
-namespace {
-QString fullClientName(const DuckClient &client) {
-  const auto firstName = QString::fromStdString(client.name.value_or(""));
-  const auto lastName = QString::fromStdString(client.last_name.value_or(""));
-  return QString("%1 %2").arg(firstName, lastName).trimmed();
-}
-
-} // namespace
-
 QTimelineModel::QTimelineModel(
     const std::shared_ptr<pcm::database::Database> &db, QObject *parent)
     : QAbstractItemModel(parent), mDb(db) {}
@@ -108,7 +99,7 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
 
     try {
       const auto client = mDb->get_client_by_event(event.id);
-      const auto displayName = fullClientName(client);
+      const auto displayName = pcm::recurrence::fullClientName(client);
       if (!displayName.isEmpty()) {
         event.client_name = displayName.toStdString();
       }
@@ -126,7 +117,7 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
       try {
         const auto client = mDb->get_client(*series.client_id);
         if (client) {
-          const auto displayName = fullClientName(*client);
+          const auto displayName = pcm::recurrence::fullClientName(*client);
           if (!displayName.isEmpty()) {
             series.client_name = displayName.toStdString();
           }

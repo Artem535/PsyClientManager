@@ -7,6 +7,7 @@
 
 namespace pcm::recurrence {
 
+QString fullClientName(const DuckClient &client);
 QString weeklyRuleForDate(const QDate &date, int intervalWeeks = 1);
 QVector<QDateTime> occurrences(const DuckEventSeries &series,
                                const QDateTime &rangeStart,

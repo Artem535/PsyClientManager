@@ -45,6 +45,12 @@ QDateTime fromIcalFloatingTime(const icaltimetype &time) {
 
 namespace pcm::recurrence {
 
+QString fullClientName(const DuckClient &client) {
+  const auto firstName = QString::fromStdString(client.name.value_or(""));
+  const auto lastName = QString::fromStdString(client.last_name.value_or(""));
+  return QString("%1 %2").arg(firstName, lastName).trimmed();
+}
+
 QString weeklyRuleForDate(const QDate &date, const int intervalWeeks) {
   return QStringLiteral("FREQ=WEEKLY;INTERVAL=%1;BYDAY=%2")
       .arg(std::max(1, intervalWeeks))
