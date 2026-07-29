@@ -114,6 +114,10 @@ int Application::run(int argc, char *argv[]) {
 
   mDb = std::make_shared<database::Database>(mConf);
 
+  mAutoBackupScheduler =
+      std::make_unique<pcm::backup::AutoBackupScheduler>(mDb);
+  mAutoBackupScheduler->start();
+
   mMainWindow = std::make_unique<MainWindow>();
   mClientModel = std::make_shared<QClientModel>(mDb);
 
@@ -293,9 +297,19 @@ void Application::restoreMainWindow() {
 }
 
 void Application::quitApplication() {
+  if (mIsQuitting) {
+    return;
+  }
   mIsQuitting = true;
   if (mTrayIcon) {
     mTrayIcon->hide();
+  }
+  if (mAutoBackupScheduler && mAutoBackupScheduler->isDue()) {
+    connect(mAutoBackupScheduler.get(),
+            &pcm::backup::AutoBackupScheduler::backupFinished, this,
+            [](bool, const QString &) { QApplication::quit(); });
+    mAutoBackupScheduler->runAsync();
+    return;
   }
   QApplication::quit();
 }

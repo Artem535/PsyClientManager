@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "auto_backup_scheduler.h"
 #include "config.h"
 #include "database.h"
 #include "main_window.h"
@@ -46,6 +47,7 @@ private:
   std::shared_ptr<QClientModel> mClientModel;
   std::unique_ptr<QSystemTrayIcon> mTrayIcon;
   QTimer mNotificationTimer;
+  std::unique_ptr<pcm::backup::AutoBackupScheduler> mAutoBackupScheduler;
   bool mIsQuitting = false;
   bool mTrayCloseHintShown = false;
   config::Config mConf;

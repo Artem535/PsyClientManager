@@ -13,6 +13,7 @@ qt_add_library(${TARGET_NAME} STATIC
         application.cpp
         main_window.cpp
         settings_dialog.cpp
+        auto_backup_scheduler.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE
