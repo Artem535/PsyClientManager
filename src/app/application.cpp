@@ -358,18 +358,7 @@ void Application::notifyUpcomingSeriesOccurrences(const int64_t nowMs,
     if (!isEligibleStatus(series.event_stat_id)) {
       continue;
     }
-    if (series.is_work_event && series.client_id.has_value()) {
-      try {
-        const auto client = mDb->get_client(*series.client_id);
-        if (client) {
-          const auto fullName = pcm::recurrence::fullClientName(*client);
-          if (!fullName.isEmpty()) {
-            series.client_name = fullName.toStdString();
-          }
-        }
-      } catch (const std::exception &) {
-      }
-    }
+    pcm::recurrence::resolveSeriesClientName(*mDb, series);
 
     const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
     for (const auto &occurrence : occurrences) {

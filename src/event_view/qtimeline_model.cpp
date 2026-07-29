@@ -113,19 +113,7 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
   const auto exceptions = mDb->get_event_series_exceptions_for_range(dayStartMs, dayEndMs);
   auto seriesList = mDb->get_event_series_for_range(dayStartMs, dayEndMs);
   for (auto &series : seriesList) {
-    if (series.is_work_event && series.client_id.has_value()) {
-      try {
-        const auto client = mDb->get_client(*series.client_id);
-        if (client) {
-          const auto displayName = pcm::recurrence::fullClientName(*client);
-          if (!displayName.isEmpty()) {
-            series.client_name = displayName.toStdString();
-          }
-        }
-      } catch (const std::exception &) {
-        series.client_name = std::nullopt;
-      }
-    }
+    pcm::recurrence::resolveSeriesClientName(*mDb, series);
 
     const auto occurrences = pcm::recurrence::occurrences(series, rangeStart, rangeEnd);
     for (const auto &occurrence : occurrences) {

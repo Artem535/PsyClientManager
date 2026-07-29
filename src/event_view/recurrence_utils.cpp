@@ -1,5 +1,7 @@
 #include "recurrence_utils.h"
 
+#include "database.h"
+
 #include <libical/ical.h>
 
 #include <QTimeZone>
@@ -49,6 +51,23 @@ QString fullClientName(const DuckClient &client) {
   const auto firstName = QString::fromStdString(client.name.value_or(""));
   const auto lastName = QString::fromStdString(client.last_name.value_or(""));
   return QString("%1 %2").arg(firstName, lastName).trimmed();
+}
+
+void resolveSeriesClientName(pcm::database::Database &db, DuckEventSeries &series) {
+  if (!series.is_work_event || !series.client_id.has_value()) {
+    return;
+  }
+  try {
+    const auto client = db.get_client(*series.client_id);
+    if (client) {
+      const auto fullName = fullClientName(*client);
+      if (!fullName.isEmpty()) {
+        series.client_name = fullName.toStdString();
+      }
+    }
+  } catch (const std::exception &) {
+    series.client_name = std::nullopt;
+  }
 }
 
 QString weeklyRuleForDate(const QDate &date, const int intervalWeeks) {
