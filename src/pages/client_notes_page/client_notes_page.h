@@ -34,6 +34,9 @@ private slots:
   void onPendingAttachmentActivated(QListWidgetItem *item);
   void onOpenClientCardClicked();
 
+protected:
+  bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
   struct PendingAttachment {
     QString sourcePath;
@@ -67,6 +70,7 @@ private:
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
   QPlainTextEdit *mComposer = nullptr;
+  QLabel *mSaveStatusLabel = nullptr;
   QListWidget *mPendingAttachmentsList = nullptr;
   QPushButton *mAttachFilesButton = nullptr;
   QPushButton *mAddNoteButton = nullptr;

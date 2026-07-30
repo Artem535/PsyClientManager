@@ -12,6 +12,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QImageReader>
+#include <QKeyEvent>
 #include <QListWidgetItem>
 #include <QLocale>
 #include <QMimeDatabase>
@@ -20,6 +21,7 @@
 #include <QStandardPaths>
 #include <QTextBrowser>
 #include <QTextDocument>
+#include <QTimer>
 #include <QTimeZone>
 #include <QUrl>
 
@@ -85,6 +87,10 @@ void ClientNotesPage::onAddNoteClicked() {
   mPendingAttachments.clear();
   refreshPendingAttachments();
   reloadNotes();
+
+  mSaveStatusLabel->setText(tr("Note saved"));
+  mSaveStatusLabel->setVisible(true);
+  QTimer::singleShot(2000, this, [this]() { mSaveStatusLabel->setVisible(false); });
 }
 
 void ClientNotesPage::onAttachFilesClicked() {
@@ -134,6 +140,19 @@ void ClientNotesPage::onOpenClientCardClicked() {
   }
 
   emit openClientCardRequested(mCurrentClient);
+}
+
+bool ClientNotesPage::eventFilter(QObject *watched, QEvent *event) {
+  if (watched == mComposer && event->type() == QEvent::KeyPress) {
+    auto *keyEvent = static_cast<QKeyEvent *>(event);
+    if ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) &&
+        keyEvent->modifiers().testFlag(Qt::ControlModifier)) {
+      onAddNoteClicked();
+      return true;
+    }
+  }
+
+  return QWidget::eventFilter(watched, event);
 }
 
 void ClientNotesPage::buildUi() {
@@ -207,6 +226,11 @@ void ClientNotesPage::buildUi() {
   mComposer = new QPlainTextEdit(composerSurface);
   mComposer->setPlaceholderText(tr("Write a note in Markdown..."));
   mComposer->setMinimumHeight(120);
+  mComposer->installEventFilter(this);
+
+  mSaveStatusLabel = new QLabel(composerSurface);
+  mSaveStatusLabel->setStyleSheet("color: rgba(120, 220, 150, 0.9);");
+  mSaveStatusLabel->setVisible(false);
 
   mPendingAttachmentsList = new QListWidget(composerSurface);
   mPendingAttachmentsList->setVisible(false);
@@ -236,6 +260,7 @@ void ClientNotesPage::buildUi() {
   mAddNoteButton->setCursor(Qt::PointingHandCursor);
 
   composerLayout->addWidget(mComposer);
+  composerLayout->addWidget(mSaveStatusLabel);
   composerLayout->addWidget(mPendingAttachmentsList);
   auto *actionsLayout = new QHBoxLayout();
   actionsLayout->setContentsMargins(0, 0, 0, 0);
