@@ -74,6 +74,7 @@ private:
   QSpinBox *mDefaultBufferBeforeSpinBox{nullptr};
   QSpinBox *mDefaultBufferAfterSpinBox{nullptr};
   QTextEdit *mMeetingInviteTemplateEdit{nullptr};
+  QTextEdit *mConfirmationRequestTemplateEdit{nullptr};
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
   std::shared_ptr<pcm::database::Database> mDb;

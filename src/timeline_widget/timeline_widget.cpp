@@ -13,10 +13,16 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
   mLayout->setSpacing(0);
   setLayout(mLayout);
 
+  mUnconfirmedOnlyCheckBox = new QCheckBox(tr("Show only unconfirmed"), this);
+  mLayout->addWidget(mUnconfirmedOnlyCheckBox);
+
   mEventView = new QEventView(this);
   mEventView->setModel(mModel);
 
   mLayout->addWidget(mEventView);
+
+  connect(mUnconfirmedOnlyCheckBox, &QCheckBox::toggled, mModel,
+          &QTimelineModel::setUnconfirmedOnlyFilter);
 
   connect(mModel, &QTimelineModel::eventsLoaded, this,
           &QTimelineWidget::updateScene);

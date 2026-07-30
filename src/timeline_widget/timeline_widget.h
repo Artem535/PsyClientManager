@@ -1,6 +1,7 @@
 // src/timeline_widget/timeline_widget.h
 #pragma once
 
+#include <QCheckBox>
 #include <QLoggingCategory>
 #include <QObject>
 #include <QVBoxLayout>
@@ -59,6 +60,7 @@ signals:
 
 private:
     QVBoxLayout *mLayout = nullptr;
+    QCheckBox *mUnconfirmedOnlyCheckBox = nullptr;
     QEventView *mEventView = nullptr;
     QTimelineModel *mModel = nullptr;
 };
