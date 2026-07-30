@@ -2,7 +2,6 @@
 
 #include "database.h"
 
-#include <QComboBox>
 #include <QDateTime>
 #include <QLabel>
 #include <QListWidget>
@@ -13,6 +12,10 @@
 #include <QWidget>
 #include <memory>
 #include <optional>
+
+namespace oclero::qlementine {
+class SegmentedControl;
+}
 
 class ClientNotesPage final : public QWidget {
   Q_OBJECT
@@ -34,7 +37,7 @@ private slots:
   void onAttachFilesClicked();
   void onPendingAttachmentActivated(QListWidgetItem *item);
   void onOpenClientCardClicked();
-  void onFeedFilterChanged(int index);
+  void onFeedFilterChanged();
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
@@ -72,7 +75,7 @@ private:
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
-  QComboBox *mFeedFilterCombo = nullptr;
+  oclero::qlementine::SegmentedControl *mFeedFilterCombo = nullptr;
   bool mAttachmentsOnlyFilter = false;
   QPlainTextEdit *mComposer = nullptr;
   QLabel *mSaveStatusLabel = nullptr;

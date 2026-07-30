@@ -25,6 +25,8 @@
 #include <QTimeZone>
 #include <QUrl>
 
+#include <oclero/qlementine/widgets/SegmentedControl.hpp>
+
 namespace {
 QFrame *makeSurface(QWidget *parent = nullptr) {
   auto *frame = new QFrame(parent);
@@ -142,8 +144,8 @@ void ClientNotesPage::onOpenClientCardClicked() {
   emit openClientCardRequested(mCurrentClient);
 }
 
-void ClientNotesPage::onFeedFilterChanged(const int index) {
-  mAttachmentsOnlyFilter = mFeedFilterCombo->itemData(index).toBool();
+void ClientNotesPage::onFeedFilterChanged() {
+  mAttachmentsOnlyFilter = mFeedFilterCombo->currentData().toBool();
   reloadNotes();
 }
 
@@ -203,9 +205,9 @@ void ClientNotesPage::buildUi() {
   auto *filterRowLayout = new QHBoxLayout(filterRow);
   filterRowLayout->setContentsMargins(16, 10, 16, 10);
   filterRowLayout->setSpacing(8);
-  mFeedFilterCombo = new QComboBox(filterRow);
-  mFeedFilterCombo->addItem(tr("All"), false);
-  mFeedFilterCombo->addItem(tr("With attachments"), true);
+  mFeedFilterCombo = new oclero::qlementine::SegmentedControl(filterRow);
+  mFeedFilterCombo->addItem(tr("All"), {}, {}, false);
+  mFeedFilterCombo->addItem(tr("With attachments"), {}, {}, true);
   filterRowLayout->addWidget(mFeedFilterCombo);
   filterRowLayout->addStretch();
   feedSurfaceLayout->addWidget(filterRow);
@@ -295,8 +297,8 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onPendingAttachmentActivated);
   connect(mOpenClientCardButton, &QPushButton::clicked, this,
           &ClientNotesPage::onOpenClientCardClicked);
-  connect(mFeedFilterCombo, &QComboBox::currentIndexChanged, this,
-          &ClientNotesPage::onFeedFilterChanged);
+  connect(mFeedFilterCombo, &oclero::qlementine::SegmentedControl::currentIndexChanged,
+          this, &ClientNotesPage::onFeedFilterChanged);
 }
 
 void ClientNotesPage::reloadNotes() {
