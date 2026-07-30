@@ -421,33 +421,20 @@ void ClientNotesPage::addAttachmentWidgets(
     const auto mimeType =
         QString::fromStdString(attachment.mime_type.value_or(""));
     const auto isImage = mimeType.startsWith("image/");
+    const auto sizeText =
+        QLocale().formattedDataSize(attachment.size_bytes.value_or(0));
 
-    if (isImage) {
-      QImageReader imageReader(absolutePath);
-      imageReader.setAutoTransform(true);
-      const auto image = imageReader.read();
-      if (!image.isNull()) {
-        auto *imageLabel = new QLabel();
-        imageLabel->setPixmap(QPixmap::fromImage(image).scaled(
-            pcm::widgets::constants::kNotesAttachmentPreviewMaxWidth,
-            pcm::widgets::constants::kNotesAttachmentPreviewMaxHeight,
-            Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        imageLabel->setAlignment(Qt::AlignLeft);
-        imageLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-        imageLabel->setStyleSheet(
-            "background: rgba(255, 255, 255, 0.02);"
-            "border-radius: 10px;");
-        layout->addWidget(imageLabel);
-      }
-    }
+    auto *row = new QWidget();
+    auto *rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(8);
 
-    auto *button = new QPushButton(
-        isImage ? tr("Open image: %1").arg(fileName)
-                : tr("Open file: %1").arg(fileName));
-    button->setCursor(Qt::PointingHandCursor);
-    button->setFlat(true);
-    button->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    button->setStyleSheet(
+    auto *nameButton = new QPushButton(
+        QString("%1 · %2 · %3")
+            .arg(isImage ? tr("Image") : tr("File"), fileName, sizeText));
+    nameButton->setFlat(true);
+    nameButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    nameButton->setStyleSheet(
         "QPushButton {"
         " text-align: left;"
         " color: rgba(255, 255, 255, 0.84);"
@@ -459,10 +446,49 @@ void ClientNotesPage::addAttachmentWidgets(
         "QPushButton:hover {"
         " background: rgba(255, 255, 255, 0.07);"
         "}");
-    connect(button, &QPushButton::clicked, this, [absolutePath]() {
+
+    auto *openButton = new QPushButton(tr("Open"));
+    openButton->setCursor(Qt::PointingHandCursor);
+    openButton->setFlat(true);
+    openButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    connect(openButton, &QPushButton::clicked, this, [absolutePath]() {
       QDesktopServices::openUrl(QUrl::fromLocalFile(absolutePath));
     });
-    layout->addWidget(button, 0, Qt::AlignLeft);
+
+    rowLayout->addWidget(nameButton, 0, Qt::AlignLeft);
+    rowLayout->addWidget(openButton, 0, Qt::AlignLeft);
+    rowLayout->addStretch();
+    layout->addWidget(row);
+
+    if (isImage) {
+      nameButton->setCursor(Qt::PointingHandCursor);
+      auto *previewLabel = new QLabel();
+      previewLabel->setVisible(false);
+      previewLabel->setAlignment(Qt::AlignLeft);
+      previewLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+      previewLabel->setStyleSheet(
+          "background: rgba(255, 255, 255, 0.02);"
+          "border-radius: 10px;");
+      layout->addWidget(previewLabel);
+
+      connect(nameButton, &QPushButton::clicked, this,
+              [previewLabel, absolutePath]() {
+                if (previewLabel->pixmap().isNull()) {
+                  QImageReader imageReader(absolutePath);
+                  imageReader.setAutoTransform(true);
+                  const auto image = imageReader.read();
+                  if (!image.isNull()) {
+                    previewLabel->setPixmap(QPixmap::fromImage(image).scaled(
+                        pcm::widgets::constants::kNotesAttachmentPreviewMaxWidth,
+                        pcm::widgets::constants::kNotesAttachmentPreviewMaxHeight,
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                  }
+                }
+                previewLabel->setVisible(!previewLabel->isVisible());
+              });
+    } else {
+      nameButton->setEnabled(false);
+    }
   }
 }
 
