@@ -13,6 +13,7 @@
 #include <QHBoxLayout>
 #include <QImageReader>
 #include <QListWidgetItem>
+#include <QLocale>
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QScrollBar>
@@ -282,7 +283,17 @@ void ClientNotesPage::reloadNotes() {
   }
 
   mEmptyLabel->setVisible(false);
+  QDate previousDate;
   for (const auto &note : notes) {
+    const auto createdAt =
+        note.created_at.has_value()
+            ? QDateTime::fromMSecsSinceEpoch(*note.created_at, QTimeZone::systemTimeZone())
+            : QDateTime{};
+    const auto noteDate = createdAt.isValid() ? createdAt.date() : QDate();
+    if (noteDate.isValid() && noteDate != previousDate) {
+      addDateDivider(noteDate);
+      previousDate = noteDate;
+    }
     addNoteBubble(note);
   }
 
@@ -383,6 +394,15 @@ void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
   }
 
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, bubble, 0, Qt::AlignLeft);
+}
+
+void ClientNotesPage::addDateDivider(const QDate &date) {
+  auto *divider = new QLabel(mFeedWidget);
+  divider->setAlignment(Qt::AlignCenter);
+  divider->setText(QStringLiteral("— %1 —").arg(
+      QLocale().toString(date, QLocale::LongFormat)));
+  divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
+  mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
 }
 
 void ClientNotesPage::addAttachmentWidgets(

@@ -46,6 +46,7 @@ private:
   void reloadNotes();
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
+  void addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
