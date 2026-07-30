@@ -756,6 +756,52 @@ TEST(RestoreServiceTest, RestoresSeriesOccurrenceReminderState) {
       .remove(true);
 }
 
+TEST(RestoreServiceTest, RestoresEventConfirmedAt) {
+  auto sourceDb = makeTestDatabase("tmp_restore_confirmed_source");
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = sourceDb.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  auto toConfirm = *sourceDb.get_event(eventId);
+  toConfirm.confirmed_at = 1730000500000;
+  ASSERT_TRUE(sourceDb.update_event(toConfirm));
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_confirmed.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_confirmed_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto restoredEvent = restoredDb.get_event(eventId);
+  ASSERT_NE(restoredEvent, nullptr);
+  ASSERT_TRUE(restoredEvent->confirmed_at.has_value());
+  EXPECT_EQ(*restoredEvent->confirmed_at, 1730000500000);
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_confirmed_source"))
+      .remove(true);
+}
+
 TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
   const auto dir =
       Poco::Path(Poco::Path::current()).append("tmp_rotation_dir").toString();
