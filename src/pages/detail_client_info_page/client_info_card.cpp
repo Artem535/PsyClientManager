@@ -1,8 +1,10 @@
 #include "client_info_card.h"
+#include "recurrence_utils.h"
 #include "ui/pages/ui_detailclientinfo.h"
 
 #include <oclero/qlementine/widgets/Switch.hpp>
 
+#include <QDateTime>
 #include <QIcon>
 #include <QSize>
 
@@ -24,6 +26,10 @@ QClientInfoCardPage::QClientInfoCardPage(std::shared_ptr<pcm::database::Database
   mUi->verticalLayout_3->replaceWidget(mUi->graphicsPlaceholder, mChartsWidget);
   mUi->graphicsPlaceholder->hide();
   mUi->graphicsPlaceholder->deleteLater();
+
+  mAppointmentSummaryWidget = new AppointmentSummaryWidget(this);
+  mUi->verticalLayout_3->insertWidget(
+      mUi->verticalLayout_3->indexOf(mChartsWidget), mAppointmentSummaryWidget);
 
   mUi->editButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
   mUi->editButton->setIconSize(QSize(16, 16));
@@ -47,6 +53,7 @@ void QClientInfoCardPage::setClientInfo(
   emit provideClearUI();
   emit provideUpdateUI();
   refreshCharts();
+  refreshAppointmentSummary();
 }
 void QClientInfoCardPage::enterInEditMode() {
   setReadOnly(false);
@@ -243,4 +250,22 @@ void QClientInfoCardPage::refreshCharts() const {
   }
 
   mChartsWidget->setMonthlyStats(mDb->get_client_monthly_stats(mClientInfo.getId()));
+}
+
+void QClientInfoCardPage::refreshAppointmentSummary() const {
+  if (!mAppointmentSummaryWidget) {
+    return;
+  }
+  if (!mDb || mClientInfo.getId() <= 0) {
+    mAppointmentSummaryWidget->clear();
+    return;
+  }
+
+  const auto windowStart = QDateTime::currentDateTime().addMonths(-3);
+  const auto windowEnd = QDateTime::currentDateTime().addMonths(3);
+  const auto events =
+      pcm::recurrence::eventsForClient(*mDb, mClientInfo.getId(), windowStart, windowEnd);
+  const auto nowMs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+  mAppointmentSummaryWidget->setAppointments(
+      pcm::recurrence::lastAndNextAppointment(events, nowMs));
 }
