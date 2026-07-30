@@ -337,6 +337,46 @@ TEST(DatabaseTest, ClientNoteRoundTripsLinkedSeriesOccurrence) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, GetEventBySeriesOccurrenceFindsMaterializedRow) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_event_by_series_occurrence")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEvent materialized;
+  materialized.name = std::string{"Weekly (materialized)"};
+  materialized.start_date = 1730600000000;
+  materialized.end_date = 1730603600000;
+  materialized.series_id = seriesId;
+  materialized.original_occurrence_start = 1730600000000;
+  const auto materializedId = db.add_event(materialized);
+  ASSERT_GT(materializedId, 0);
+
+  const auto found = db.get_event_by_series_occurrence(seriesId, 1730600000000);
+  ASSERT_NE(found, nullptr);
+  EXPECT_EQ(found->id, materializedId);
+
+  const auto notFound = db.get_event_by_series_occurrence(seriesId, 1731200000000);
+  EXPECT_EQ(notFound, nullptr);
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, DashboardIncomeCountsOnlyPaidEvents) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

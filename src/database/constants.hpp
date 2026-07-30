@@ -339,6 +339,12 @@ FROM Event
 WHERE series_id = $1 AND original_occurrence_start IS NOT NULL
 )duckdb";
 
+constexpr auto kSelectEventBySeriesOccurrenceQuery = R"duckdb(
+SELECT * FROM Event
+WHERE series_id = $1 AND original_occurrence_start = $2
+LIMIT 1
+)duckdb";
+
 constexpr auto kDeleteEventClientByEventIdQuery =
     "DELETE FROM EventClient WHERE event_id = $1";
 constexpr auto kDeleteEventByIdQuery = "DELETE FROM Event WHERE id = $1";

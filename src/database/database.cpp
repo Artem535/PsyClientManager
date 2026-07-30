@@ -1092,6 +1092,31 @@ std::set<int64_t> Database::get_materialized_occurrence_starts_for_series(
   return starts;
 }
 
+std::unique_ptr<DuckEvent> Database::get_event_by_series_occurrence(
+    const int64_t series_id, const int64_t occurrence_start_ms) {
+  if (series_id <= 0) {
+    return nullptr;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventBySeriesOccurrenceQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000))});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to query event by series occurrence (series_id=" << series_id
+               << "): " << (result ? result->GetError() : "prepare failed");
+    return nullptr;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    return nullptr;
+  }
+
+  return std::make_unique<DuckEvent>(*chunk, 0);
+}
+
 std::vector<ClientMonthlyStats>
 Database::get_client_monthly_stats(const int64_t &client_id, const int months_back) {
   if (client_id <= 0 || months_back <= 0) {

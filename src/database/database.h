@@ -102,6 +102,8 @@ public:
                                                 const int64_t &notified_at_ms);
   std::set<int64_t>
   get_materialized_occurrence_starts_for_series(const int64_t &series_id);
+  std::unique_ptr<DuckEvent> get_event_by_series_occurrence(int64_t series_id,
+                                                             int64_t occurrence_start_ms);
   std::vector<ClientMonthlyStats> get_client_monthly_stats(const int64_t &client_id,
                                                            int months_back = 6);
   DashboardSummary get_dashboard_summary();
