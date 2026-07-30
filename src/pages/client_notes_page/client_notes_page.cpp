@@ -261,6 +261,11 @@ void ClientNotesPage::buildUi() {
 
   mScrollArea->setWidget(mFeedWidget);
   feedSurfaceLayout->addWidget(mScrollArea);
+
+  mJumpToLatestButton = new QPushButton(tr("Jump to latest"), feedSurface);
+  mJumpToLatestButton->setCursor(Qt::PointingHandCursor);
+  mJumpToLatestButton->setVisible(false);
+  feedSurfaceLayout->addWidget(mJumpToLatestButton);
   rootLayout->addWidget(feedSurface, 1);
 
   auto *composerSurface = makeSurface(this);
@@ -335,6 +340,17 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onFeedFilterChanged);
   connect(mLinkSessionButton, &QPushButton::clicked, this,
           &ClientNotesPage::onLinkSessionButtonClicked);
+  connect(mScrollArea->verticalScrollBar(), &QScrollBar::valueChanged, this,
+          [this](const int value) {
+            mJumpToLatestButton->setVisible(value < mScrollArea->verticalScrollBar()->maximum());
+          });
+  connect(mScrollArea->verticalScrollBar(), &QScrollBar::rangeChanged, this,
+          [this](int, const int max) {
+            mJumpToLatestButton->setVisible(mScrollArea->verticalScrollBar()->value() < max);
+          });
+  connect(mJumpToLatestButton, &QPushButton::clicked, this, [this]() {
+    mScrollArea->verticalScrollBar()->setValue(mScrollArea->verticalScrollBar()->maximum());
+  });
 }
 
 void ClientNotesPage::reloadNotes() {

@@ -88,6 +88,7 @@ private:
   QPushButton *mOpenClientCardButton = nullptr;
   oclero::qlementine::SegmentedControl *mFeedFilterControl = nullptr;
   QScrollArea *mScrollArea = nullptr;
+  QPushButton *mJumpToLatestButton = nullptr;
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
