@@ -358,13 +358,9 @@ void ClientNotesPage::buildUi() {
   connect(mLinkSessionButton, &QPushButton::clicked, this,
           &ClientNotesPage::onLinkSessionButtonClicked);
   connect(mScrollArea->verticalScrollBar(), &QScrollBar::valueChanged, this,
-          [this](const int value) {
-            mJumpToLatestButton->setVisible(value < mScrollArea->verticalScrollBar()->maximum());
-          });
+          &ClientNotesPage::updateJumpButtonsVisibility);
   connect(mScrollArea->verticalScrollBar(), &QScrollBar::rangeChanged, this,
-          [this](int, const int max) {
-            mJumpToLatestButton->setVisible(mScrollArea->verticalScrollBar()->value() < max);
-          });
+          &ClientNotesPage::updateJumpButtonsVisibility);
   connect(mJumpToLatestButton, &QPushButton::clicked, this, [this]() {
     mScrollArea->verticalScrollBar()->setValue(mScrollArea->verticalScrollBar()->maximum());
   });
@@ -484,7 +480,7 @@ void ClientNotesPage::reloadNotes() {
         item);
   }
 
-  mJumpToTodayButton->setVisible(mTodayAnchorWidget != nullptr);
+  updateJumpButtonsVisibility();
 
   QMetaObject::invokeMethod(
       mScrollArea->verticalScrollBar(), "setValue", Qt::QueuedConnection,
@@ -533,6 +529,25 @@ std::optional<DuckEvent> ClientNotesPage::nearestPastEvent(const QVector<DuckEve
     }
   }
   return best;
+}
+
+void ClientNotesPage::updateJumpButtonsVisibility() {
+  if (!mScrollArea || !mJumpToLatestButton || !mJumpToTodayButton) {
+    return;
+  }
+  auto *scrollBar = mScrollArea->verticalScrollBar();
+  mJumpToLatestButton->setVisible(scrollBar->value() < scrollBar->maximum());
+
+  if (!mTodayAnchorWidget) {
+    mJumpToTodayButton->setVisible(false);
+    return;
+  }
+  const auto viewTop = scrollBar->value();
+  const auto viewBottom = viewTop + mScrollArea->viewport()->height();
+  const auto anchorTop = mTodayAnchorWidget->y();
+  const auto anchorBottom = anchorTop + mTodayAnchorWidget->height();
+  const bool anchorVisible = anchorBottom > viewTop && anchorTop < viewBottom;
+  mJumpToTodayButton->setVisible(!anchorVisible);
 }
 
 void ClientNotesPage::updateLinkButtonText() {

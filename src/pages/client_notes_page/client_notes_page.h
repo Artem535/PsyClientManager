@@ -68,6 +68,7 @@ private:
   void updateAppointmentSummary(const QVector<DuckEvent> &events);
   void onLinkSessionButtonClicked();
   void updateLinkButtonText();
+  void updateJumpButtonsVisibility();
   [[nodiscard]] std::optional<DuckEvent> nearestPastEvent(const QVector<DuckEvent> &events) const;
   [[nodiscard]] QString relativeNoteAttachmentPath(int64_t clientId,
                                                    int64_t noteId,
