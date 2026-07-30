@@ -31,6 +31,7 @@
 #include <QUrl>
 
 #include <algorithm>
+#include <limits>
 #include <variant>
 
 namespace {
@@ -271,10 +272,17 @@ void ClientNotesPage::buildUi() {
   mScrollArea->setWidget(mFeedWidget);
   feedSurfaceLayout->addWidget(mScrollArea);
 
+  mJumpToTodayButton = new QPushButton(tr("Jump to today"), feedSurface);
+  mJumpToTodayButton->setCursor(Qt::PointingHandCursor);
+  mJumpToTodayButton->setVisible(false);
   mJumpToLatestButton = new QPushButton(tr("Jump to latest"), feedSurface);
   mJumpToLatestButton->setCursor(Qt::PointingHandCursor);
   mJumpToLatestButton->setVisible(false);
-  feedSurfaceLayout->addWidget(mJumpToLatestButton);
+  auto *jumpButtonsLayout = new QHBoxLayout();
+  jumpButtonsLayout->setContentsMargins(0, 0, 0, 0);
+  jumpButtonsLayout->addWidget(mJumpToTodayButton);
+  jumpButtonsLayout->addWidget(mJumpToLatestButton);
+  feedSurfaceLayout->addLayout(jumpButtonsLayout);
   rootLayout->addWidget(feedSurface, 1);
 
   auto *composerSurface = makeSurface(this);
@@ -360,6 +368,11 @@ void ClientNotesPage::buildUi() {
   connect(mJumpToLatestButton, &QPushButton::clicked, this, [this]() {
     mScrollArea->verticalScrollBar()->setValue(mScrollArea->verticalScrollBar()->maximum());
   });
+  connect(mJumpToTodayButton, &QPushButton::clicked, this, [this]() {
+    if (mTodayAnchorWidget) {
+      mScrollArea->ensureWidgetVisible(mTodayAnchorWidget);
+    }
+  });
 }
 
 void ClientNotesPage::reloadNotes() {
@@ -374,6 +387,8 @@ void ClientNotesPage::reloadNotes() {
     mAddNoteButton->setEnabled(false);
     mPendingAttachmentsList->setEnabled(false);
     mAppointmentSummaryLabel->setVisible(false);
+    mJumpToTodayButton->setVisible(false);
+    mJumpToLatestButton->setVisible(false);
     return;
   }
 
@@ -416,6 +431,8 @@ void ClientNotesPage::reloadNotes() {
   if (items.empty()) {
     mEmptyLabel->setText(tr("No entries yet"));
     mEmptyLabel->setVisible(true);
+    mJumpToTodayButton->setVisible(false);
+    mJumpToLatestButton->setVisible(false);
     return;
   }
 
@@ -437,6 +454,8 @@ void ClientNotesPage::reloadNotes() {
 
   mEmptyLabel->setVisible(false);
   QDate previousDate;
+  const auto today = QDate::currentDate();
+  qint64 bestDayDiff = std::numeric_limits<qint64>::max();
   for (const auto &item : items) {
     const auto timestampMs = timestampOf(item);
     const auto itemDate =
@@ -444,8 +463,14 @@ void ClientNotesPage::reloadNotes() {
             ? QDateTime::fromMSecsSinceEpoch(timestampMs, QTimeZone::systemTimeZone()).date()
             : QDate();
     if (itemDate.isValid() && itemDate != previousDate) {
-      addDateDivider(itemDate);
+      auto *divider = addDateDivider(itemDate);
       previousDate = itemDate;
+
+      const auto dayDiff = std::abs(itemDate.daysTo(today));
+      if (dayDiff < bestDayDiff) {
+        bestDayDiff = dayDiff;
+        mTodayAnchorWidget = divider;
+      }
     }
     std::visit(
         [this](const auto &value) {
@@ -458,6 +483,8 @@ void ClientNotesPage::reloadNotes() {
         },
         item);
   }
+
+  mJumpToTodayButton->setVisible(mTodayAnchorWidget != nullptr);
 
   QMetaObject::invokeMethod(
       mScrollArea->verticalScrollBar(), "setValue", Qt::QueuedConnection,
@@ -563,6 +590,7 @@ void ClientNotesPage::onLinkSessionButtonClicked() {
 }
 
 void ClientNotesPage::clearNotes() {
+  mTodayAnchorWidget = nullptr;
   while (mFeedLayout->count() > 0) {
     auto *item = mFeedLayout->takeAt(0);
     if (item->widget()) {
@@ -747,13 +775,14 @@ void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, card, 0, Qt::AlignLeft);
 }
 
-void ClientNotesPage::addDateDivider(const QDate &date) {
+QLabel *ClientNotesPage::addDateDivider(const QDate &date) {
   auto *divider = new QLabel(mFeedWidget);
   divider->setAlignment(Qt::AlignCenter);
   divider->setText(QStringLiteral("— %1 —").arg(
       QLocale().toString(date, QLocale::LongFormat)));
   divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
+  return divider;
 }
 
 void ClientNotesPage::addAttachmentWidgets(

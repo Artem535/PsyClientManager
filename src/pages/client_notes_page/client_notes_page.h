@@ -61,7 +61,7 @@ private:
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
   void addSessionEntry(const DuckEvent &event);
-  void addDateDivider(const QDate &date);
+  QLabel *addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
@@ -89,6 +89,8 @@ private:
   oclero::qlementine::SegmentedControl *mFeedFilterControl = nullptr;
   QScrollArea *mScrollArea = nullptr;
   QPushButton *mJumpToLatestButton = nullptr;
+  QPushButton *mJumpToTodayButton = nullptr;
+  QWidget *mTodayAnchorWidget = nullptr;
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
