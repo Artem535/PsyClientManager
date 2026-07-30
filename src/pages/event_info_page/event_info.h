@@ -35,6 +35,7 @@ signals:
 public slots:
   void onClientResolved(int64_t clientId);
   void refreshAppearance();
+  void openEventOnDay(int64_t eventId, qint64 dayMs);
 
 private slots:
   void onCalendarClicked(const QDate &date);

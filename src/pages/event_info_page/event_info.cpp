@@ -151,6 +151,15 @@ void QEventInfoPage::onCalendarClicked(const QDate &date) {
   refreshQuickSlots();
 }
 
+void QEventInfoPage::openEventOnDay(const int64_t eventId, const qint64 dayMs) {
+  const auto date =
+      QDateTime::fromMSecsSinceEpoch(dayMs, QTimeZone::systemTimeZone()).date();
+  mCalendarWidget->setSelectedDate(date);
+  mTimelineWidget->onSelectedDayChanged(date);
+  onCalendarClicked(date);
+  editEventWithDialog(eventId);
+}
+
 void QEventInfoPage::updateCalendarHighlights() const {
   QTextCharFormat currentDayFormat;
   currentDayFormat.setFontWeight(QFont::DemiBold);
