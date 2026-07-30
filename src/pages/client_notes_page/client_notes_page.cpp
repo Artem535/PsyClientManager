@@ -49,7 +49,10 @@ void ClientNotesPage::setClientInfo(const std::optional<DuckClient> &client) {
   mCurrentClient = client;
   mPendingAttachments.clear();
   refreshPendingAttachments();
-  mClientNameLabel->setText(currentClientTitle());
+  mClientNameLabel->setText(client.has_value()
+                                ? tr("%1 → Notes").arg(currentClientTitle())
+                                : currentClientTitle());
+  mOpenClientCardButton->setEnabled(client.has_value());
   reloadNotes();
 }
 
@@ -124,6 +127,14 @@ void ClientNotesPage::onPendingAttachmentActivated(QListWidgetItem *item) {
   refreshPendingAttachments();
 }
 
+void ClientNotesPage::onOpenClientCardClicked() {
+  if (!mCurrentClient.has_value()) {
+    return;
+  }
+
+  emit openClientCardRequested(mCurrentClient);
+}
+
 void ClientNotesPage::buildUi() {
   auto *rootLayout = new QVBoxLayout(this);
   rootLayout->setContentsMargins(pcm::widgets::constants::kPanelPadding,
@@ -133,26 +144,29 @@ void ClientNotesPage::buildUi() {
   rootLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
   auto *headerSurface = makeSurface(this);
-  auto *headerLayout = new QVBoxLayout(headerSurface);
+  auto *headerLayout = new QHBoxLayout(headerSurface);
   headerLayout->setContentsMargins(
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
       pcm::widgets::constants::kNotesHeaderVerticalPadding,
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
       pcm::widgets::constants::kNotesHeaderVerticalPadding);
-  headerLayout->setSpacing(4);
-
-  mTitleLabel = new QLabel(tr("Notes"), headerSurface);
-  auto titleFont = mTitleLabel->font();
-  titleFont.setPointSize(titleFont.pointSize() + 3);
-  titleFont.setBold(true);
-  mTitleLabel->setFont(titleFont);
-  mTitleLabel->setStyleSheet("color: rgba(255, 255, 255, 0.92);");
+  headerLayout->setSpacing(10);
 
   mClientNameLabel = new QLabel(tr("No client selected"), headerSurface);
-  mClientNameLabel->setStyleSheet("color: rgba(255, 255, 255, 0.60);");
+  auto clientNameFont = mClientNameLabel->font();
+  clientNameFont.setPointSize(clientNameFont.pointSize() + 2);
+  clientNameFont.setBold(true);
+  mClientNameLabel->setFont(clientNameFont);
+  mClientNameLabel->setStyleSheet("color: rgba(255, 255, 255, 0.92);");
 
-  headerLayout->addWidget(mTitleLabel);
+  mOpenClientCardButton = new QPushButton(tr("Open client card"), headerSurface);
+  mOpenClientCardButton->setCursor(Qt::PointingHandCursor);
+  mOpenClientCardButton->setFlat(true);
+  mOpenClientCardButton->setEnabled(false);
+
   headerLayout->addWidget(mClientNameLabel);
+  headerLayout->addStretch();
+  headerLayout->addWidget(mOpenClientCardButton);
   rootLayout->addWidget(headerSurface);
 
   auto *feedSurface = makeSurface(this);
@@ -237,6 +251,8 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onAddNoteClicked);
   connect(mPendingAttachmentsList, &QListWidget::itemDoubleClicked, this,
           &ClientNotesPage::onPendingAttachmentActivated);
+  connect(mOpenClientCardButton, &QPushButton::clicked, this,
+          &ClientNotesPage::onOpenClientCardClicked);
 }
 
 void ClientNotesPage::reloadNotes() {
