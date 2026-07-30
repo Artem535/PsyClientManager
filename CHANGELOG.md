@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.17] - 2026-07-30
+
+### Added
+
+- Notes journal: date-grouped feed, a client-card breadcrumb link, compact
+  attachments that expand on click, a Ctrl+Enter composer shortcut with a
+  save confirmation, and an attachments-only feed filter.
+
 ## [0.1.16] - 2026-07-29
 
 ### Added
