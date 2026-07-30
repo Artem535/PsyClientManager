@@ -732,7 +732,12 @@ int64_t Database::add_client_note(const DuckClientNote &note) {
           duckdb::Value::BIGINT(note.client_id),
           db_utils::toDuckValue(note.body_markdown),
           db_utils::toDuckTimestamp(createdAtMs * 1000),
-          db_utils::toDuckTimestamp(updatedAtMs * 1000)});
+          db_utils::toDuckTimestamp(updatedAtMs * 1000),
+          db_utils::toDuckValue(note.linked_event_id),
+          db_utils::toDuckValue(note.linked_series_id),
+          note.linked_occurrence_start_ms.has_value()
+              ? db_utils::toDuckTimestamp(std::make_optional(*note.linked_occurrence_start_ms * 1000))
+              : db_utils::toDuckTimestamp(std::nullopt)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert client note: " << result->GetError();
