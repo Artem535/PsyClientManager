@@ -25,6 +25,7 @@ signals:
   void eventSelected(int64_t eventId);
   void eventEditRequested(int64_t eventId);
   void eventDeleteRequested(int64_t eventId);
+  void eventConfirmToggleRequested(int64_t eventId);
   void createEventRequested(const QTime &startTime, int durationMinutes);
 
 public slots:
@@ -43,6 +44,7 @@ private slots:
   void onEventSelected();
   void onEventEditRequested();
   void onEventDeleteRequested();
+  void onEventConfirmToggleRequested();
 
 private:
   QTimelineModel *mModel{};
