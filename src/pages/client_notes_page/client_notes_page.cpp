@@ -142,6 +142,11 @@ void ClientNotesPage::onOpenClientCardClicked() {
   emit openClientCardRequested(mCurrentClient);
 }
 
+void ClientNotesPage::onFeedFilterChanged(const int index) {
+  mAttachmentsOnlyFilter = mFeedFilterCombo->itemData(index).toBool();
+  reloadNotes();
+}
+
 bool ClientNotesPage::eventFilter(QObject *watched, QEvent *event) {
   if (watched == mComposer && event->type() == QEvent::KeyPress) {
     auto *keyEvent = static_cast<QKeyEvent *>(event);
@@ -193,6 +198,17 @@ void ClientNotesPage::buildUi() {
   auto *feedSurfaceLayout = new QVBoxLayout(feedSurface);
   feedSurfaceLayout->setContentsMargins(0, 0, 0, 0);
   feedSurfaceLayout->setSpacing(0);
+
+  auto *filterRow = new QWidget(feedSurface);
+  auto *filterRowLayout = new QHBoxLayout(filterRow);
+  filterRowLayout->setContentsMargins(16, 10, 16, 10);
+  filterRowLayout->setSpacing(8);
+  mFeedFilterCombo = new QComboBox(filterRow);
+  mFeedFilterCombo->addItem(tr("All"), false);
+  mFeedFilterCombo->addItem(tr("With attachments"), true);
+  filterRowLayout->addWidget(mFeedFilterCombo);
+  filterRowLayout->addStretch();
+  feedSurfaceLayout->addWidget(filterRow);
 
   mScrollArea = new QScrollArea(feedSurface);
   mScrollArea->setFrameShape(QFrame::NoFrame);
@@ -279,6 +295,8 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onPendingAttachmentActivated);
   connect(mOpenClientCardButton, &QPushButton::clicked, this,
           &ClientNotesPage::onOpenClientCardClicked);
+  connect(mFeedFilterCombo, &QComboBox::currentIndexChanged, this,
+          &ClientNotesPage::onFeedFilterChanged);
 }
 
 void ClientNotesPage::reloadNotes() {
@@ -309,7 +327,14 @@ void ClientNotesPage::reloadNotes() {
 
   mEmptyLabel->setVisible(false);
   QDate previousDate;
+  bool anyRendered = false;
   for (const auto &note : notes) {
+    const auto attachments = mDb ? mDb->get_note_attachments(note.id)
+                                 : std::vector<DuckClientNoteAttachment>{};
+    if (mAttachmentsOnlyFilter && attachments.empty()) {
+      continue;
+    }
+
     const auto createdAt =
         note.created_at.has_value()
             ? QDateTime::fromMSecsSinceEpoch(*note.created_at, QTimeZone::systemTimeZone())
@@ -319,7 +344,13 @@ void ClientNotesPage::reloadNotes() {
       addDateDivider(noteDate);
       previousDate = noteDate;
     }
-    addNoteBubble(note);
+    addNoteBubble(note, attachments);
+    anyRendered = true;
+  }
+
+  if (!anyRendered) {
+    mEmptyLabel->setText(tr("No notes match this filter"));
+    mEmptyLabel->setVisible(true);
   }
 
   QMetaObject::invokeMethod(
@@ -343,7 +374,9 @@ void ClientNotesPage::clearNotes() {
   mFeedLayout->addStretch();
 }
 
-void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
+void ClientNotesPage::addNoteBubble(
+    const DuckClientNote &note,
+    const std::vector<DuckClientNoteAttachment> &attachments) {
   auto *bubble = new QFrame(mFeedWidget);
   bubble->setObjectName("noteBubble");
   bubble->setMaximumWidth(pcm::widgets::constants::kNotesBubbleMaxWidth);
@@ -414,9 +447,7 @@ void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
     bodyView->deleteLater();
   }
 
-  if (mDb) {
-    addAttachmentWidgets(layout, mDb->get_note_attachments(note.id));
-  }
+  addAttachmentWidgets(layout, attachments);
 
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, bubble, 0, Qt::AlignLeft);
 }

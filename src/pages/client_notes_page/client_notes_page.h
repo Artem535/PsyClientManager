@@ -2,6 +2,7 @@
 
 #include "database.h"
 
+#include <QComboBox>
 #include <QDateTime>
 #include <QLabel>
 #include <QListWidget>
@@ -33,6 +34,7 @@ private slots:
   void onAttachFilesClicked();
   void onPendingAttachmentActivated(QListWidgetItem *item);
   void onOpenClientCardClicked();
+  void onFeedFilterChanged(int index);
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
@@ -48,7 +50,8 @@ private:
   void buildUi();
   void reloadNotes();
   void clearNotes();
-  void addNoteBubble(const DuckClientNote &note);
+  void addNoteBubble(const DuckClientNote &note,
+                     const std::vector<DuckClientNoteAttachment> &attachments);
   void addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
@@ -69,6 +72,8 @@ private:
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
+  QComboBox *mFeedFilterCombo = nullptr;
+  bool mAttachmentsOnlyFilter = false;
   QPlainTextEdit *mComposer = nullptr;
   QLabel *mSaveStatusLabel = nullptr;
   QListWidget *mPendingAttachmentsList = nullptr;
