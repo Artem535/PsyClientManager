@@ -1,5 +1,6 @@
 #include "event_item.h"
 #include "../widgets/app_settings.h"
+#include "../widgets/confirmation_utils.h"
 #include "../widgets/meeting_utils.h"
 #include <QIcon>
 #include <QLocale>
@@ -102,6 +103,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
+  mConfirmedAt = event.confirmed_at;
   setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
@@ -139,6 +141,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
+  mConfirmedAt = event.confirmed_at;
   setBufferMinutes(event, mBufferBeforeMinutes, mBufferAfterMinutes);
   const auto startUtc =
       QDateTime::fromMSecsSinceEpoch(event.start_date.value_or(0), QTimeZone::UTC);
@@ -182,6 +185,7 @@ DuckEvent QEventItem::toEvent() const {
   event.series_id = mSeriesId;
   event.original_occurrence_start = mOriginalOccurrenceStart;
   event.is_virtual_occurrence = mIsVirtualOccurrence;
+  event.confirmed_at = mConfirmedAt;
   event.buffer_before_minutes = mBufferBeforeMinutes;
   event.buffer_after_minutes = mBufferAfterMinutes;
   return event;
@@ -224,6 +228,7 @@ bool QEventItem::isOnline() const { return mIsOnline; }
 QString QEventItem::meetingUrl() const { return mMeetingUrl; }
 int64_t QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
+bool QEventItem::isConfirmed() const { return mConfirmedAt.has_value(); }
 
 void QEventItem::setTitle(const QString &title) {
   if (mTitle == title)
@@ -432,6 +437,18 @@ void QEventItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
     });
     menu.addSeparator();
   }
+  if (mIsWorkItem) {
+    auto *toggleConfirmAction = menu.addAction(
+        mConfirmedAt.has_value() ? tr("Mark unconfirmed") : tr("Mark confirmed"));
+    connect(toggleConfirmAction, &QAction::triggered, this,
+            [this]() { emit confirmToggleRequested(); });
+    auto *copyConfirmationRequestAction = menu.addAction(tr("Copy confirmation request"));
+    connect(copyConfirmationRequestAction, &QAction::triggered, this, [this]() {
+      pcm::confirmation::copyConfirmationRequest(
+          mClientName, mStartTime.toUTC().toMSecsSinceEpoch());
+    });
+    menu.addSeparator();
+  }
   auto *editAction = menu.addAction(tr(": EVENT_CONTEXT_EDIT"));
   auto *deleteAction = menu.addAction(tr(": EVENT_CONTEXT_DELETE"));
   connect(editAction, &QAction::triggered, this,
@@ -474,6 +491,14 @@ void QEventItem::paint(QPainter *painter,
   const int x = mIsWorkItem ? xOffset : xOffset + mSize.width();
 
   painter->drawRoundedRect(x, 0, mSize.width(), mSize.height(), 5, 5);
+
+  if (mConfirmedAt.has_value()) {
+    painter->save();
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(46, 204, 113));
+    painter->drawEllipse(QPointF(x + mSize.width() - 8.0, 8.0), 4.0, 4.0);
+    painter->restore();
+  }
 
   painter->setPen(Qt::white);
   const qreal margin_y = 0.12 * mSize.height();
