@@ -52,6 +52,8 @@ public:
                                           int64_t occurrenceStartMs);
   std::optional<DuckEventSeries> eventSeriesById(int64_t seriesId) const;
   void removeEvent(int64_t id);
+  void toggleEventConfirmed(int64_t id);
+  void setUnconfirmedOnlyFilter(bool enabled);
   void updateEvent(const DuckEvent &event, bool allowOverlap = true);
   bool hasConflict(const DuckEvent &event) const;
   const QVector<DuckEvent> &events() const;
@@ -65,4 +67,5 @@ private:
   std::shared_ptr<pcm::database::Database> mDb;
   QVector<DuckEvent> mEvents;
   QDate mCurrentDate;
+  bool mUnconfirmedOnlyFilter = false;
 };

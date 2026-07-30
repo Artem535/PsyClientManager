@@ -126,6 +126,14 @@ void QTimelineModel::loadEventsForDay(const QDate &date) {
     }
   }
 
+  if (mUnconfirmedOnlyFilter) {
+    mEvents.erase(std::remove_if(mEvents.begin(), mEvents.end(),
+                                 [](const DuckEvent &event) {
+                                   return event.confirmed_at.has_value();
+                                 }),
+                 mEvents.end());
+  }
+
   std::sort(mEvents.begin(), mEvents.end(), [](const DuckEvent &left, const DuckEvent &right) {
     return left.start_date.value_or(0) < right.start_date.value_or(0);
   });
@@ -295,6 +303,49 @@ void QTimelineModel::removeEvent(int64_t id) {
       break;
     }
   }
+}
+
+void QTimelineModel::toggleEventConfirmed(const int64_t id) {
+  for (int i = 0; i < mEvents.size(); ++i) {
+    if (mEvents[i].id != id) {
+      continue;
+    }
+
+    DuckEvent updated = mEvents[i];
+    updated.confirmed_at = updated.confirmed_at.has_value()
+                               ? std::nullopt
+                               : std::make_optional(
+                                     QDateTime::currentMSecsSinceEpoch());
+
+    if (updated.is_virtual_occurrence) {
+      updated.id = -1;
+      const auto newId = mDb->add_event(updated, true);
+      if (newId <= 0) {
+        qWarning() << "QTimelineModel::toggleEventConfirmed failed to "
+                      "materialize occurrence for id="
+                   << id;
+        return;
+      }
+      updated.id = newId;
+      updated.is_virtual_occurrence = false;
+    } else if (!mDb->update_event(updated, true)) {
+      qWarning() << "QTimelineModel::toggleEventConfirmed failed for id=" << id;
+      return;
+    }
+
+    mEvents[i] = updated;
+    emit dataChanged(index(i, 0, QModelIndex()), index(i, 0, QModelIndex()),
+                     {EventDataRole});
+    return;
+  }
+}
+
+void QTimelineModel::setUnconfirmedOnlyFilter(const bool enabled) {
+  if (mUnconfirmedOnlyFilter == enabled) {
+    return;
+  }
+  mUnconfirmedOnlyFilter = enabled;
+  loadEventsForDay(mCurrentDate);
 }
 
 void QTimelineModel::updateEvent(const DuckEvent &event, const bool allowOverlap) {
