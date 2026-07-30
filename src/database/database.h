@@ -62,6 +62,8 @@ public:
   std::unique_ptr<DuckEventSeries> get_event_series(int64_t series_id);
   std::vector<DuckEventSeries> get_event_series_for_range(const int64_t &start_ms,
                                                           const int64_t &end_ms);
+  std::vector<DuckEventSeries> get_event_series_for_client_and_range(
+      int64_t client_id, int64_t range_start_ms, int64_t range_end_ms);
   std::set<std::pair<int64_t, int64_t>>
   get_event_series_exceptions_for_range(const int64_t &start_ms,
                                         const int64_t &end_ms);
@@ -77,6 +79,7 @@ public:
   std::vector<int64_t> get_client_ids();
 
   int64_t add_event_client(const int64_t &event_id, const int64_t &client_id);
+  std::vector<DuckEvent> get_events_for_client(int64_t client_id);
   int64_t add_client_note(const DuckClientNote &note);
   std::vector<DuckClientNote> get_client_notes(int64_t client_id);
   int64_t add_client_note_attachment(const DuckClientNoteAttachment &attachment);

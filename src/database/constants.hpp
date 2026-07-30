@@ -247,6 +247,14 @@ WHERE active = TRUE
   AND (recurrence_until IS NULL OR recurrence_until >= $2)
 )duckdb";
 
+constexpr auto kSelectEventSeriesForClientAndRangeQuery = R"duckdb(
+SELECT * FROM EventSeries
+WHERE client_id = $1
+  AND active = TRUE
+  AND start_date <= $2
+  AND (recurrence_until IS NULL OR recurrence_until >= $3)
+)duckdb";
+
 constexpr auto kSelectEventSeriesByIdQuery = R"duckdb(
 SELECT * FROM EventSeries
 WHERE id = $1
@@ -394,6 +402,13 @@ SELECT id, client_id, body_markdown, created_at, updated_at
 FROM ClientNote
 WHERE client_id = $1
 ORDER BY created_at ASC, id ASC
+)duckdb";
+
+constexpr auto kSelectEventsForClientQuery = R"duckdb(
+SELECT e.* FROM Event e
+JOIN EventClient ec ON ec.event_id = e.id
+WHERE ec.client_id = $1
+ORDER BY e.start_date ASC
 )duckdb";
 
 constexpr auto kInsertClientNoteAttachmentQuery = R"duckdb(

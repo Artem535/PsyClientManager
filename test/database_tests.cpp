@@ -140,6 +140,114 @@ TEST(DatabaseTest, AddClientAndEvent) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, GetEventsForClientReturnsOnlyLinkedEvents) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_events_for_client")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient clientA;
+  clientA.name = std::string{"Alice"};
+  clientA.last_name = std::string{"A"};
+  const auto clientAId = db.add_client(clientA);
+  ASSERT_GT(clientAId, 0);
+
+  DuckClient clientB;
+  clientB.name = std::string{"Bob"};
+  clientB.last_name = std::string{"B"};
+  const auto clientBId = db.add_client(clientB);
+  ASSERT_GT(clientBId, 0);
+
+  DuckEvent eventForA;
+  eventForA.name = std::string{"Session with Alice"};
+  eventForA.start_date = 1730000000000;
+  eventForA.end_date = 1730003600000;
+  const auto eventForAId = db.add_event(eventForA);
+  ASSERT_GT(eventForAId, 0);
+  ASSERT_GT(db.add_event_client(eventForAId, clientAId), 0);
+
+  DuckEvent eventForB;
+  eventForB.name = std::string{"Session with Bob"};
+  eventForB.start_date = 1730100000000;
+  eventForB.end_date = 1730103600000;
+  const auto eventForBId = db.add_event(eventForB);
+  ASSERT_GT(eventForBId, 0);
+  ASSERT_GT(db.add_event_client(eventForBId, clientBId), 0);
+
+  const auto eventsForA = db.get_events_for_client(clientAId);
+  ASSERT_EQ(eventsForA.size(), 1);
+  EXPECT_EQ(eventsForA.front().id, eventForAId);
+  EXPECT_EQ(eventsForA.front().name.value_or(""), "Session with Alice");
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, GetEventSeriesForClientAndRangeFiltersByClientAndRange) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_series_for_client")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Carol"};
+  client.last_name = std::string{"C"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckClient otherClient;
+  otherClient.name = std::string{"Dave"};
+  otherClient.last_name = std::string{"D"};
+  const auto otherClientId = db.add_client(otherClient);
+  ASSERT_GT(otherClientId, 0);
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly with Carol"};
+  series.client_id = clientId;
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEventSeries otherSeries;
+  otherSeries.name = std::string{"Weekly with Dave"};
+  otherSeries.client_id = otherClientId;
+  otherSeries.start_date = 1730000000000;
+  otherSeries.end_date = 1730003600000;
+  otherSeries.duration = 3600;
+  otherSeries.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  ASSERT_GT(db.add_event_series(otherSeries), 0);
+
+  const auto inRange =
+      db.get_event_series_for_client_and_range(clientId, 1729000000000, 1731000000000);
+  ASSERT_EQ(inRange.size(), 1);
+  EXPECT_EQ(inRange.front().id, seriesId);
+
+  const auto outOfRange =
+      db.get_event_series_for_client_and_range(clientId, 1600000000000, 1700000000000);
+  EXPECT_TRUE(outOfRange.empty());
+
+  const auto forOtherClient =
+      db.get_event_series_for_client_and_range(otherClientId, 1729000000000, 1731000000000);
+  ASSERT_EQ(forOtherClient.size(), 1);
+  EXPECT_NE(forOtherClient.front().id, seriesId);
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, DashboardIncomeCountsOnlyPaidEvents) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{
