@@ -34,4 +34,6 @@ struct LastNextAppointment {
 
 LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, qint64 nowMs);
 
+std::optional<DuckEvent> resolveNoteLink(pcm::database::Database &db, const DuckClientNote &note);
+
 } // namespace pcm::recurrence

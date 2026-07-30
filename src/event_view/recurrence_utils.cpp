@@ -236,4 +236,36 @@ LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, con
   return result;
 }
 
+std::optional<DuckEvent> resolveNoteLink(pcm::database::Database &db, const DuckClientNote &note) {
+  if (note.linked_event_id.has_value()) {
+    auto event = db.get_event(*note.linked_event_id);
+    if (!event) {
+      return std::nullopt;
+    }
+    return *event;
+  }
+
+  if (!note.linked_series_id.has_value() || !note.linked_occurrence_start_ms.has_value()) {
+    return std::nullopt;
+  }
+
+  auto materialized =
+      db.get_event_by_series_occurrence(*note.linked_series_id, *note.linked_occurrence_start_ms);
+  if (materialized) {
+    return *materialized;
+  }
+
+  auto series = db.get_event_series(*note.linked_series_id);
+  if (!series) {
+    return std::nullopt;
+  }
+
+  const auto occurrenceStart =
+      QDateTime::fromMSecsSinceEpoch(*note.linked_occurrence_start_ms, QTimeZone::UTC)
+          .toTimeZone(QTimeZone::systemTimeZone());
+  const auto virtualId =
+      -(series->id * 1'000'000LL + static_cast<int64_t>(occurrenceStart.date().toJulianDay()));
+  return buildVirtualOccurrence(*series, occurrenceStart, virtualId);
+}
+
 } // namespace pcm::recurrence
