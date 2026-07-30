@@ -3,6 +3,7 @@
 #include "qcustomplot.h"
 #include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
+#include "../../widgets/surface_paint_filter.h"
 
 #include <oclero/qlementine/style/QlementineStyle.hpp>
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
@@ -41,31 +42,6 @@ QFrame *makeSurface(QWidget *parent = nullptr) {
       "}");
   return frame;
 }
-
-// Event filter that paints the analyticsSurface appearance without using
-// setStyleSheet(). This avoids Qt's QStyleSheetStyle proxy cascade, which
-// breaks SegmentedControl's qobject_cast<QlementineStyle*>(style()).
-class SurfacePaintFilter : public QObject {
-public:
-  using QObject::QObject;
-
-protected:
-  bool eventFilter(QObject *obj, QEvent *event) override {
-    if (event->type() == QEvent::Paint) {
-      auto *frame = qobject_cast<QFrame *>(obj);
-      if (!frame)
-        return false;
-      QPainter p(frame);
-      p.setRenderHint(QPainter::Antialiasing);
-      p.setPen(QPen(QColor(255, 255, 255, 20), 1));
-      p.setBrush(QColor(255, 255, 255, 13));
-      const auto r = frame->rect();
-      p.drawRoundedRect(r.adjusted(0, 0, -1, -1), 14, 14);
-      return true; // fully handled
-    }
-    return QObject::eventFilter(obj, event);
-  }
-};
 
 QString formatCurrency(const double value) {
   const auto rounded = qRound64(value);
@@ -180,7 +156,7 @@ void AnalyticsPage::buildUi() {
   // which fails against that proxy and falls back to flat QPalette colors.
   // Paint the background via event filter to avoid any stylesheet on the parent.
   auto *periodSurface = new QFrame(content);
-  periodSurface->installEventFilter(new SurfacePaintFilter(periodSurface));
+  periodSurface->installEventFilter(new pcm::widgets::SurfacePaintFilter(periodSurface));
   auto *periodLayout = new QHBoxLayout(periodSurface);
   periodLayout->setContentsMargins(16, 12, 16, 12);
   periodLayout->setSpacing(12);

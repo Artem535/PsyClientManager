@@ -2,6 +2,7 @@
 
 #include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
+#include "../../widgets/surface_paint_filter.h"
 
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
 
@@ -195,7 +196,15 @@ void ClientNotesPage::buildUi() {
                                  pcm::widgets::constants::kPanelPadding);
   rootLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
-  auto *headerSurface = makeSurface(this);
+  // DO NOT use makeSurface() (stylesheet) here — this surface hosts
+  // mFeedFilterControl (SegmentedControl), and setStyleSheet() cascades
+  // through Qt's QObject parent/child tree, wrapping style() in a
+  // QStyleSheetStyle proxy. SegmentedControl paints via
+  // qobject_cast<QlementineStyle*>(style()), which fails against that
+  // proxy and falls back to flat QPalette colors. Paint the background via
+  // an event filter instead (see analytics_page.cpp for the same pattern).
+  auto *headerSurface = new QFrame(this);
+  headerSurface->installEventFilter(new pcm::widgets::SurfacePaintFilter(headerSurface));
   auto *headerLayout = new QHBoxLayout(headerSurface);
   headerLayout->setContentsMargins(
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
