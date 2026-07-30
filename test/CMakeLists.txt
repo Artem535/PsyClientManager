@@ -39,6 +39,18 @@ target_link_libraries(PsyClientManager_schedule_conflict_tests PRIVATE
 )
 gtest_discover_tests(PsyClientManager_schedule_conflict_tests)
 
+# Recurrence utils tests
+add_executable(PsyClientManager_recurrence_tests recurrence_utils_tests.cpp)
+target_link_libraries(PsyClientManager_recurrence_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    PsyClientManager_config
+    PsyClientManager_database
+    PsyClientManager_event_view
+    Poco::Foundation
+)
+gtest_discover_tests(PsyClientManager_recurrence_tests)
+
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 add_executable(PsyClientManager_backup_tests backup_tests.cpp)
