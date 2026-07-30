@@ -13,10 +13,6 @@
 #include <memory>
 #include <optional>
 
-namespace oclero::qlementine {
-class SegmentedControl;
-}
-
 class ClientNotesPage final : public QWidget {
   Q_OBJECT
 
@@ -37,7 +33,6 @@ private slots:
   void onAttachFilesClicked();
   void onPendingAttachmentActivated(QListWidgetItem *item);
   void onOpenClientCardClicked();
-  void onFeedFilterChanged();
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
@@ -53,8 +48,7 @@ private:
   void buildUi();
   void reloadNotes();
   void clearNotes();
-  void addNoteBubble(const DuckClientNote &note,
-                     const std::vector<DuckClientNoteAttachment> &attachments);
+  void addNoteBubble(const DuckClientNote &note);
   void addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
@@ -75,8 +69,6 @@ private:
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
-  oclero::qlementine::SegmentedControl *mFeedFilterCombo = nullptr;
-  bool mAttachmentsOnlyFilter = false;
   QPlainTextEdit *mComposer = nullptr;
   QLabel *mSaveStatusLabel = nullptr;
   QListWidget *mPendingAttachmentsList = nullptr;
