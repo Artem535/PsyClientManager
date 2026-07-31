@@ -94,6 +94,7 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
 
   mQuickSlotsWidget = new QuickSlotsWidget(this);
   mUi->verticalLayout->addWidget(mQuickSlotsWidget);
+  mUi->verticalLayout->addStretch(1);
 
   mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_layout->addWidget(mTimelineWidget, 0, 0, 2, 1);

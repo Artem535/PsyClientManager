@@ -43,6 +43,7 @@ DaySummaryWidget::DaySummaryWidget(QWidget *parent) : QWidget(parent) {
   mMiniListLayout->setContentsMargins(0, 6, 0, 0);
   mMiniListLayout->setSpacing(4);
   layout->addLayout(mMiniListLayout);
+  layout->addStretch(1);
 }
 
 void DaySummaryWidget::clearMiniList() {

@@ -482,6 +482,23 @@ void QEventItem::paint(QPainter *painter,
   constexpr int xOffset = pcm::widgets::constants::kWidthLabel;
   const int x = mIsWorkItem ? xOffset : xOffset + mSize.width();
 
+  // Must run on every return path of paint(), including the compact-card early
+  // returns below, otherwise short sessions get highlighted with no visible
+  // border. The 1px overflow outside boundingRect() is intentional (the accent
+  // border hugs the card edge) and safe because QEventView uses
+  // QGraphicsView::FullViewportUpdate, so no stale pixels are left behind.
+  const auto drawHighlightIfNeeded = [&]() {
+    if (!mIsHighlighted) {
+      return;
+    }
+    const QPen highlightPen(
+        pcm::widgets::constants::kCalendarCurrentDayUnderlineColor, 3);
+    painter->setPen(highlightPen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(x - 1, -1, mSize.width() + 2, mSize.height() + 2, 6,
+                             6);
+  };
+
   painter->drawRoundedRect(x, 0, mSize.width(), mSize.height(), 5, 5);
 
   painter->setPen(Qt::white);
@@ -524,6 +541,7 @@ void QEventItem::paint(QPainter *painter,
       const QRectF textRect(textLeft, contentRect.top(),
                             availableWidth, contentRect.height());
       painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedTitle);
+      drawHighlightIfNeeded();
       painter->restore();
       return;
     }
@@ -566,6 +584,7 @@ void QEventItem::paint(QPainter *painter,
                               textWidth, contentRect.height());
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, elidedText);
       }
+      drawHighlightIfNeeded();
       painter->restore();
       return;
     }
@@ -629,12 +648,7 @@ void QEventItem::paint(QPainter *painter,
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
   }
 
-  if (mIsHighlighted) {
-    QPen highlightPen(pcm::widgets::constants::kCalendarCurrentDayUnderlineColor, 3);
-    painter->setPen(highlightPen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(x - 1, -1, mSize.width() + 2, mSize.height() + 2, 6, 6);
-  }
+  drawHighlightIfNeeded();
 
   painter->restore();
 }

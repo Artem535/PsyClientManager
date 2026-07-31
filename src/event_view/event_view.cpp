@@ -180,15 +180,15 @@ void QEventView::onModelReset() {
 }
 
 void QEventView::highlightEvent(const int64_t eventId) {
-  if (mHighlightedEventId >= 0) {
-    if (auto *previous = mSceneItems.value(mHighlightedEventId)) {
+  if (mHighlightedEventId.has_value()) {
+    if (auto *previous = mSceneItems.value(*mHighlightedEventId)) {
       previous->setHighlighted(false);
     }
   }
 
   auto *item = mSceneItems.value(eventId);
   if (!item) {
-    mHighlightedEventId = -1;
+    mHighlightedEventId = std::nullopt;
     return;
   }
 
