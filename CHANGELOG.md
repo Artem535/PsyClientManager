@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.18] - 2026-07-30
+
+### Added
+
+- Unified client timeline: the Notes screen now interleaves session
+  entries with notes in one chronological feed, with an All/Sessions/Notes
+  filter and a last/next-appointment summary. The same summary now also
+  appears on the client card.
+
 ## [0.1.17] - 2026-07-30
 
 ### Added

@@ -5,6 +5,8 @@
 #include <QDateTime>
 #include <QVector>
 
+#include <optional>
+
 namespace pcm::database {
 class Database;
 }
@@ -20,5 +22,16 @@ QVector<QDateTime> occurrences(const DuckEventSeries &series,
 DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
                                  const QDateTime &occurrenceStart,
                                  int64_t virtualId);
+
+QVector<DuckEvent> eventsForClient(pcm::database::Database &db, int64_t clientId,
+                                   const QDateTime &virtualWindowStart,
+                                   const QDateTime &virtualWindowEnd);
+
+struct LastNextAppointment {
+  std::optional<DuckEvent> last;
+  std::optional<DuckEvent> next;
+};
+
+LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, qint64 nowMs);
 
 } // namespace pcm::recurrence

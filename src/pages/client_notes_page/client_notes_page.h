@@ -1,6 +1,7 @@
 #pragma once
 
 #include "database.h"
+#include "recurrence_utils.h"
 
 #include <QDateTime>
 #include <QLabel>
@@ -9,9 +10,15 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QVariant>
+#include <QVector>
 #include <QWidget>
 #include <memory>
 #include <optional>
+
+namespace oclero::qlementine {
+class SegmentedControl;
+}
 
 class ClientNotesPage final : public QWidget {
   Q_OBJECT
@@ -33,11 +40,14 @@ private slots:
   void onAttachFilesClicked();
   void onPendingAttachmentActivated(QListWidgetItem *item);
   void onOpenClientCardClicked();
+  void onFeedFilterChanged();
 
 protected:
   bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
+  enum class FeedFilter { All, Sessions, Notes };
+
   struct PendingAttachment {
     QString sourcePath;
     QString fileName;
@@ -49,10 +59,12 @@ private:
   void reloadNotes();
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
+  void addSessionEntry(const DuckEvent &event);
   void addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
+  void updateAppointmentSummary(const QVector<DuckEvent> &events);
   [[nodiscard]] QString relativeNoteAttachmentPath(int64_t clientId,
                                                    int64_t noteId,
                                                    const QString &fileName) const;
@@ -62,9 +74,12 @@ private:
   std::shared_ptr<pcm::database::Database> mDb;
   std::optional<DuckClient> mCurrentClient;
   QList<PendingAttachment> mPendingAttachments;
+  FeedFilter mFeedFilter = FeedFilter::All;
 
   QLabel *mClientNameLabel = nullptr;
+  QLabel *mAppointmentSummaryLabel = nullptr;
   QPushButton *mOpenClientCardButton = nullptr;
+  oclero::qlementine::SegmentedControl *mFeedFilterControl = nullptr;
   QScrollArea *mScrollArea = nullptr;
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;

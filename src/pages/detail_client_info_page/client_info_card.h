@@ -17,6 +17,7 @@
 // === Local ===
 #include "database.h"
 #include "client_charts_widget.h"
+#include "appointment_summary_widget.h"
 #include "qclient.h"
 
 namespace oclero::qlementine {
@@ -75,6 +76,7 @@ private:
   std::shared_ptr<pcm::database::Database> mDb;
   oclero::qlementine::Switch *mIsActiveSwitch = nullptr;
   ClientChartsWidget *mChartsWidget = nullptr;
+  AppointmentSummaryWidget *mAppointmentSummaryWidget = nullptr;
   QClient mClientInfo;
 
   static int countAge(const QDate &birthDate);
@@ -85,4 +87,5 @@ private:
 
   void setReadOnly(bool readOnly) const;
   void refreshCharts() const;
+  void refreshAppointmentSummary() const;
 };

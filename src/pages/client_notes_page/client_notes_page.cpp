@@ -3,6 +3,8 @@
 #include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
 
+#include <oclero/qlementine/widgets/SegmentedControl.hpp>
+
 #include <QDesktopServices>
 #include <QDateTime>
 #include <QDir>
@@ -24,6 +26,9 @@
 #include <QTimer>
 #include <QTimeZone>
 #include <QUrl>
+
+#include <algorithm>
+#include <variant>
 
 namespace {
 QFrame *makeSurface(QWidget *parent = nullptr) {
@@ -142,6 +147,22 @@ void ClientNotesPage::onOpenClientCardClicked() {
   emit openClientCardRequested(mCurrentClient);
 }
 
+void ClientNotesPage::onFeedFilterChanged() {
+  const auto index = mFeedFilterControl->currentIndex();
+  switch (index) {
+  case 1:
+    mFeedFilter = FeedFilter::Sessions;
+    break;
+  case 2:
+    mFeedFilter = FeedFilter::Notes;
+    break;
+  default:
+    mFeedFilter = FeedFilter::All;
+    break;
+  }
+  reloadNotes();
+}
+
 bool ClientNotesPage::eventFilter(QObject *watched, QEvent *event) {
   if (watched == mComposer && event->type() == QEvent::KeyPress) {
     auto *keyEvent = static_cast<QKeyEvent *>(event);
@@ -179,13 +200,30 @@ void ClientNotesPage::buildUi() {
   mClientNameLabel->setFont(clientNameFont);
   mClientNameLabel->setStyleSheet("color: rgba(255, 255, 255, 0.92);");
 
+  mAppointmentSummaryLabel = new QLabel(headerSurface);
+  mAppointmentSummaryLabel->setStyleSheet("color: rgba(255, 255, 255, 0.65);");
+  mAppointmentSummaryLabel->setVisible(false);
+
   mOpenClientCardButton = new QPushButton(tr("Open client card"), headerSurface);
   mOpenClientCardButton->setCursor(Qt::PointingHandCursor);
   mOpenClientCardButton->setFlat(true);
   mOpenClientCardButton->setEnabled(false);
 
-  headerLayout->addWidget(mClientNameLabel);
+  auto *titleColumn = new QVBoxLayout();
+  titleColumn->setContentsMargins(0, 0, 0, 0);
+  titleColumn->setSpacing(2);
+  titleColumn->addWidget(mClientNameLabel);
+  titleColumn->addWidget(mAppointmentSummaryLabel);
+
+  mFeedFilterControl = new oclero::qlementine::SegmentedControl(headerSurface);
+  mFeedFilterControl->addItem(tr("All"), {}, {}, QStringLiteral("all"));
+  mFeedFilterControl->addItem(tr("Sessions"), {}, {}, QStringLiteral("sessions"));
+  mFeedFilterControl->addItem(tr("Notes"), {}, {}, QStringLiteral("notes"));
+  mFeedFilterControl->setCurrentIndex(0);
+
+  headerLayout->addLayout(titleColumn);
   headerLayout->addStretch();
+  headerLayout->addWidget(mFeedFilterControl);
   headerLayout->addWidget(mOpenClientCardButton);
   rootLayout->addWidget(headerSurface);
 
@@ -279,6 +317,8 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onPendingAttachmentActivated);
   connect(mOpenClientCardButton, &QPushButton::clicked, this,
           &ClientNotesPage::onOpenClientCardClicked);
+  connect(mFeedFilterControl, &oclero::qlementine::SegmentedControl::currentIndexChanged, this,
+          &ClientNotesPage::onFeedFilterChanged);
 }
 
 void ClientNotesPage::reloadNotes() {
@@ -291,6 +331,7 @@ void ClientNotesPage::reloadNotes() {
     mAttachFilesButton->setEnabled(false);
     mAddNoteButton->setEnabled(false);
     mPendingAttachmentsList->setEnabled(false);
+    mAppointmentSummaryLabel->setVisible(false);
     return;
   }
 
@@ -301,30 +342,107 @@ void ClientNotesPage::reloadNotes() {
 
   const auto notes = mDb ? mDb->get_client_notes(mCurrentClient->id)
                          : std::vector<DuckClientNote>{};
-  if (notes.empty()) {
-    mEmptyLabel->setText(tr("No notes yet"));
+
+  QVector<DuckEvent> events;
+  if (mDb) {
+    const auto windowStart = QDateTime::currentDateTime().addMonths(-3);
+    const auto windowEnd = QDateTime::currentDateTime().addMonths(3);
+    events = pcm::recurrence::eventsForClient(*mDb, mCurrentClient->id, windowStart, windowEnd);
+  }
+  updateAppointmentSummary(events);
+
+  using FeedItem = std::variant<DuckClientNote, DuckEvent>;
+  std::vector<FeedItem> items;
+  if (mFeedFilter != FeedFilter::Sessions) {
+    for (const auto &note : notes) {
+      items.emplace_back(note);
+    }
+  }
+  if (mFeedFilter != FeedFilter::Notes) {
+    for (const auto &event : events) {
+      items.emplace_back(event);
+    }
+  }
+
+  if (items.empty()) {
+    mEmptyLabel->setText(tr("No entries yet"));
     mEmptyLabel->setVisible(true);
     return;
   }
 
+  const auto timestampOf = [](const FeedItem &item) -> qint64 {
+    return std::visit(
+        [](const auto &value) -> qint64 {
+          using T = std::decay_t<decltype(value)>;
+          if constexpr (std::is_same_v<T, DuckClientNote>) {
+            return value.created_at.value_or(0);
+          } else {
+            return value.start_date.value_or(0);
+          }
+        },
+        item);
+  };
+  std::sort(items.begin(), items.end(), [&](const FeedItem &left, const FeedItem &right) {
+    return timestampOf(left) < timestampOf(right);
+  });
+
   mEmptyLabel->setVisible(false);
   QDate previousDate;
-  for (const auto &note : notes) {
-    const auto createdAt =
-        note.created_at.has_value()
-            ? QDateTime::fromMSecsSinceEpoch(*note.created_at, QTimeZone::systemTimeZone())
-            : QDateTime{};
-    const auto noteDate = createdAt.isValid() ? createdAt.date() : QDate();
-    if (noteDate.isValid() && noteDate != previousDate) {
-      addDateDivider(noteDate);
-      previousDate = noteDate;
+  for (const auto &item : items) {
+    const auto timestampMs = timestampOf(item);
+    const auto itemDate =
+        timestampMs > 0
+            ? QDateTime::fromMSecsSinceEpoch(timestampMs, QTimeZone::systemTimeZone()).date()
+            : QDate();
+    if (itemDate.isValid() && itemDate != previousDate) {
+      addDateDivider(itemDate);
+      previousDate = itemDate;
     }
-    addNoteBubble(note);
+    std::visit(
+        [this](const auto &value) {
+          using T = std::decay_t<decltype(value)>;
+          if constexpr (std::is_same_v<T, DuckClientNote>) {
+            addNoteBubble(value);
+          } else {
+            addSessionEntry(value);
+          }
+        },
+        item);
   }
 
   QMetaObject::invokeMethod(
       mScrollArea->verticalScrollBar(), "setValue", Qt::QueuedConnection,
       Q_ARG(int, mScrollArea->verticalScrollBar()->maximum()));
+}
+
+void ClientNotesPage::updateAppointmentSummary(const QVector<DuckEvent> &events) {
+  const auto nowMs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+  const auto summary = pcm::recurrence::lastAndNextAppointment(events, nowMs);
+
+  const auto describe = [](const std::optional<DuckEvent> &event) -> QString {
+    if (!event.has_value() || !event->start_date.has_value()) {
+      return {};
+    }
+    return QDateTime::fromMSecsSinceEpoch(*event->start_date, QTimeZone::systemTimeZone())
+        .toString("dd.MM.yyyy HH:mm");
+  };
+
+  const auto lastText = describe(summary.last);
+  const auto nextText = describe(summary.next);
+  if (lastText.isEmpty() && nextText.isEmpty()) {
+    mAppointmentSummaryLabel->setVisible(false);
+    return;
+  }
+
+  QStringList parts;
+  if (!lastText.isEmpty()) {
+    parts << tr("Last: %1").arg(lastText);
+  }
+  if (!nextText.isEmpty()) {
+    parts << tr("Next: %1").arg(nextText);
+  }
+  mAppointmentSummaryLabel->setText(parts.join(QStringLiteral("  ·  ")));
+  mAppointmentSummaryLabel->setVisible(true);
 }
 
 void ClientNotesPage::clearNotes() {
@@ -419,6 +537,61 @@ void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
   }
 
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, bubble, 0, Qt::AlignLeft);
+}
+
+void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
+  auto *card = new QFrame(mFeedWidget);
+  card->setObjectName("sessionEntry");
+  card->setMaximumWidth(pcm::widgets::constants::kNotesBubbleMaxWidth);
+  card->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+  card->setStyleSheet(
+      "#sessionEntry {"
+      " background: rgba(120, 170, 255, 0.08);"
+      " border: 1px solid rgba(120, 170, 255, 0.18);"
+      " border-radius: 12px;"
+      "}");
+
+  auto *layout = new QVBoxLayout(card);
+  layout->setContentsMargins(
+      pcm::widgets::constants::kNotesBubbleHorizontalPadding,
+      pcm::widgets::constants::kNotesBubbleVerticalPadding,
+      pcm::widgets::constants::kNotesBubbleHorizontalPadding,
+      pcm::widgets::constants::kNotesBubbleVerticalPadding);
+  layout->setSpacing(4);
+
+  auto *timeLabel = new QLabel(card);
+  const auto startAt =
+      event.start_date.has_value()
+          ? QDateTime::fromMSecsSinceEpoch(*event.start_date, QTimeZone::systemTimeZone())
+          : QDateTime{};
+  const auto title = QString::fromStdString(event.name.value_or(tr("Session").toStdString()));
+  timeLabel->setText(QString("%1 · %2")
+                         .arg(startAt.isValid() ? startAt.toString("dd.MM.yyyy HH:mm")
+                                                : tr("Unknown time"),
+                              title));
+  timeLabel->setStyleSheet("color: rgba(255, 255, 255, 0.90); font-weight: 600;");
+
+  auto *detailLabel = new QLabel(card);
+  QString detailText;
+  if (event.event_stat_id == 3 || event.event_stat_id == 6) {
+    detailText = event.cancellation_reason.has_value()
+                     ? QString::fromStdString(*event.cancellation_reason)
+                     : tr("Canceled");
+  } else if (event.cost.has_value()) {
+    detailText = tr("Cost: %1").arg(QLocale().toCurrencyString(*event.cost));
+  }
+  detailLabel->setText(detailText);
+  detailLabel->setStyleSheet("color: rgba(255, 255, 255, 0.55);");
+  detailLabel->setVisible(!detailText.isEmpty());
+
+  layout->addWidget(timeLabel);
+  if (!detailText.isEmpty()) {
+    layout->addWidget(detailLabel);
+  } else {
+    detailLabel->deleteLater();
+  }
+
+  mFeedLayout->insertWidget(mFeedLayout->count() - 1, card, 0, Qt::AlignLeft);
 }
 
 void ClientNotesPage::addDateDivider(const QDate &date) {

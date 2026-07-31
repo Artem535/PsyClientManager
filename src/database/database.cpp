@@ -417,6 +417,35 @@ Database::get_event_series_for_range(const int64_t &start_ms,
   return series;
 }
 
+std::vector<DuckEventSeries> Database::get_event_series_for_client_and_range(
+    const int64_t client_id, const int64_t range_start_ms, const int64_t range_end_ms) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventSeriesForClientAndRangeQuery,
+      {duckdb::Value::BIGINT(client_id),
+       db_utils::toDuckTimestamp(std::make_optional(range_end_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(range_start_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch event series for client_id=" << client_id << ": "
+               << (result ? result->GetError() : "prepare failed");
+    return {};
+  }
+
+  std::vector<DuckEventSeries> series;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      series.emplace_back(*chunk, i);
+    }
+  }
+
+  return series;
+}
+
 std::set<std::pair<int64_t, int64_t>>
 Database::get_event_series_exceptions_for_range(const int64_t &start_ms,
                                                 const int64_t &end_ms) {
@@ -717,6 +746,30 @@ int64_t Database::add_client_note(const DuckClientNote &note) {
   }
 
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+std::vector<DuckEvent> Database::get_events_for_client(const int64_t client_id) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventsForClientQuery, {duckdb::Value::BIGINT(client_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch events for client_id=" << client_id << ": "
+               << (result ? result->GetError() : "prepare failed");
+    return {};
+  }
+
+  std::vector<DuckEvent> events;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      events.emplace_back(*chunk, i);
+    }
+  }
+
+  return events;
 }
 
 std::vector<DuckClientNote> Database::get_client_notes(const int64_t client_id) {

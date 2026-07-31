@@ -167,4 +167,73 @@ DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
   return event;
 }
 
+QVector<DuckEvent> eventsForClient(pcm::database::Database &db, const int64_t clientId,
+                                   const QDateTime &virtualWindowStart,
+                                   const QDateTime &virtualWindowEnd) {
+  QVector<DuckEvent> result;
+
+  const auto materialized = db.get_events_for_client(clientId);
+  for (const auto &event : materialized) {
+    result.append(event);
+  }
+
+  if (!virtualWindowStart.isValid() || !virtualWindowEnd.isValid()) {
+    std::sort(result.begin(), result.end(), [](const DuckEvent &left, const DuckEvent &right) {
+      return left.start_date.value_or(0) < right.start_date.value_or(0);
+    });
+    return result;
+  }
+
+  const auto windowStartMs = virtualWindowStart.toUTC().toMSecsSinceEpoch();
+  const auto windowEndMs = virtualWindowEnd.toUTC().toMSecsSinceEpoch();
+  const auto exceptions = db.get_event_series_exceptions_for_range(windowStartMs, windowEndMs);
+  auto seriesList =
+      db.get_event_series_for_client_and_range(clientId, windowStartMs, windowEndMs);
+  for (const auto &series : seriesList) {
+    const auto materializedStarts = db.get_materialized_occurrence_starts_for_series(series.id);
+    const auto occurrenceList = occurrences(series, virtualWindowStart, virtualWindowEnd);
+    for (const auto &occurrence : occurrenceList) {
+      const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
+      if (exceptions.contains({series.id, occurrenceStartMs}) ||
+          materializedStarts.contains(occurrenceStartMs)) {
+        continue;
+      }
+      const auto virtualId =
+          -(series.id * 1'000'000LL + static_cast<int64_t>(occurrence.date().toJulianDay()));
+      result.append(buildVirtualOccurrence(series, occurrence, virtualId));
+    }
+  }
+
+  std::sort(result.begin(), result.end(), [](const DuckEvent &left, const DuckEvent &right) {
+    return left.start_date.value_or(0) < right.start_date.value_or(0);
+  });
+
+  return result;
+}
+
+LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, const qint64 nowMs) {
+  LastNextAppointment result;
+
+  for (const auto &event : events) {
+    if (event.event_stat_id != 1 && event.event_stat_id != 2 && event.event_stat_id != 4) {
+      continue; // only Scheduled/Completed/Confirmed count as "the appointment"
+    }
+    if (!event.start_date.has_value()) {
+      continue;
+    }
+
+    if (*event.start_date < nowMs) {
+      if (!result.last.has_value() || *event.start_date > *result.last->start_date) {
+        result.last = event;
+      }
+    } else {
+      if (!result.next.has_value() || *event.start_date < *result.next->start_date) {
+        result.next = event;
+      }
+    }
+  }
+
+  return result;
+}
+
 } // namespace pcm::recurrence
