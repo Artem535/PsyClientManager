@@ -179,6 +179,10 @@ UPDATE EventSeries SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NU
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS reason TEXT;
+
+ALTER TABLE ClientNote ADD COLUMN IF NOT EXISTS linked_event_id INTEGER;
+ALTER TABLE ClientNote ADD COLUMN IF NOT EXISTS linked_series_id INTEGER;
+ALTER TABLE ClientNote ADD COLUMN IF NOT EXISTS linked_occurrence_start TIMESTAMP;
 )duckdb";
 
 constexpr auto kInsertEventQuery = R"duckdb(
@@ -335,6 +339,12 @@ FROM Event
 WHERE series_id = $1 AND original_occurrence_start IS NOT NULL
 )duckdb";
 
+constexpr auto kSelectEventBySeriesOccurrenceQuery = R"duckdb(
+SELECT * FROM Event
+WHERE series_id = $1 AND original_occurrence_start = $2
+LIMIT 1
+)duckdb";
+
 constexpr auto kDeleteEventClientByEventIdQuery =
     "DELETE FROM EventClient WHERE event_id = $1";
 constexpr auto kDeleteEventByIdQuery = "DELETE FROM Event WHERE id = $1";
@@ -391,14 +401,18 @@ RETURNING id
 )duckdb";
 
 constexpr auto kInsertClientNoteQuery = R"duckdb(
-INSERT INTO ClientNote (id, client_id, body_markdown, created_at, updated_at)
-SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, $4
+INSERT INTO ClientNote (
+    id, client_id, body_markdown, created_at, updated_at,
+    linked_event_id, linked_series_id, linked_occurrence_start
+)
+SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, $4, $5, $6, $7
 FROM ClientNote
 RETURNING id
 )duckdb";
 
 constexpr auto kSelectClientNotesQuery = R"duckdb(
-SELECT id, client_id, body_markdown, created_at, updated_at
+SELECT id, client_id, body_markdown, created_at, updated_at,
+       linked_event_id, linked_series_id, linked_occurrence_start
 FROM ClientNote
 WHERE client_id = $1
 ORDER BY created_at ASC, id ASC

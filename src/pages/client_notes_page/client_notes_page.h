@@ -30,6 +30,7 @@ public:
 
 signals:
   void openClientCardRequested(const std::optional<DuckClient> &client);
+  void openEventRequested(int64_t eventId, qint64 dayMs);
 
 public slots:
   void setClientInfo(const std::optional<DuckClient> &client);
@@ -60,11 +61,15 @@ private:
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
   void addSessionEntry(const DuckEvent &event);
-  void addDateDivider(const QDate &date);
+  QLabel *addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
   void updateAppointmentSummary(const QVector<DuckEvent> &events);
+  void onLinkSessionButtonClicked();
+  void updateLinkButtonText();
+  void updateJumpButtonsVisibility();
+  [[nodiscard]] std::optional<DuckEvent> nearestPastEvent(const QVector<DuckEvent> &events) const;
   [[nodiscard]] QString relativeNoteAttachmentPath(int64_t clientId,
                                                    int64_t noteId,
                                                    const QString &fileName) const;
@@ -75,12 +80,18 @@ private:
   std::optional<DuckClient> mCurrentClient;
   QList<PendingAttachment> mPendingAttachments;
   FeedFilter mFeedFilter = FeedFilter::All;
+  QVector<DuckEvent> mCachedFeedEvents;
+  std::optional<DuckEvent> mPendingLinkedEvent;
+  bool mLinkManuallySet = false;
 
   QLabel *mClientNameLabel = nullptr;
   QLabel *mAppointmentSummaryLabel = nullptr;
   QPushButton *mOpenClientCardButton = nullptr;
   oclero::qlementine::SegmentedControl *mFeedFilterControl = nullptr;
   QScrollArea *mScrollArea = nullptr;
+  QPushButton *mJumpToLatestButton = nullptr;
+  QPushButton *mJumpToTodayButton = nullptr;
+  QWidget *mTodayAnchorWidget = nullptr;
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
@@ -88,5 +99,6 @@ private:
   QLabel *mSaveStatusLabel = nullptr;
   QListWidget *mPendingAttachmentsList = nullptr;
   QPushButton *mAttachFilesButton = nullptr;
+  QPushButton *mLinkSessionButton = nullptr;
   QPushButton *mAddNoteButton = nullptr;
 };

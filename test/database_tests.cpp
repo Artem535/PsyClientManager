@@ -248,6 +248,135 @@ TEST(DatabaseTest, GetEventSeriesForClientAndRangeFiltersByClientAndRange) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, ClientNoteRoundTripsLinkedEventId) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_note_linked_event")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Gina"};
+  client.last_name = std::string{"G"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  DuckClientNote note;
+  note.client_id = clientId;
+  note.body_markdown = std::string{"Linked to a real session"};
+  note.linked_event_id = eventId;
+  const auto noteId = db.add_client_note(note);
+  ASSERT_GT(noteId, 0);
+
+  const auto notes = db.get_client_notes(clientId);
+  ASSERT_EQ(notes.size(), 1);
+  ASSERT_TRUE(notes.front().linked_event_id.has_value());
+  EXPECT_EQ(*notes.front().linked_event_id, eventId);
+  EXPECT_FALSE(notes.front().linked_series_id.has_value());
+  EXPECT_FALSE(notes.front().linked_occurrence_start_ms.has_value());
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, ClientNoteRoundTripsLinkedSeriesOccurrence) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_note_linked_series")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Hank"};
+  client.last_name = std::string{"H"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.client_id = clientId;
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckClientNote note;
+  note.client_id = clientId;
+  note.body_markdown = std::string{"Linked to a virtual occurrence"};
+  note.linked_series_id = seriesId;
+  note.linked_occurrence_start_ms = 1730600000000;
+  const auto noteId = db.add_client_note(note);
+  ASSERT_GT(noteId, 0);
+
+  const auto notes = db.get_client_notes(clientId);
+  ASSERT_EQ(notes.size(), 1);
+  EXPECT_FALSE(notes.front().linked_event_id.has_value());
+  ASSERT_TRUE(notes.front().linked_series_id.has_value());
+  EXPECT_EQ(*notes.front().linked_series_id, seriesId);
+  ASSERT_TRUE(notes.front().linked_occurrence_start_ms.has_value());
+  EXPECT_EQ(*notes.front().linked_occurrence_start_ms, 1730600000000);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, GetEventBySeriesOccurrenceFindsMaterializedRow) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_event_by_series_occurrence")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEvent materialized;
+  materialized.name = std::string{"Weekly (materialized)"};
+  materialized.start_date = 1730600000000;
+  materialized.end_date = 1730603600000;
+  materialized.series_id = seriesId;
+  materialized.original_occurrence_start = 1730600000000;
+  const auto materializedId = db.add_event(materialized);
+  ASSERT_GT(materializedId, 0);
+
+  const auto found = db.get_event_by_series_occurrence(seriesId, 1730600000000);
+  ASSERT_NE(found, nullptr);
+  EXPECT_EQ(found->id, materializedId);
+
+  const auto notFound = db.get_event_by_series_occurrence(seriesId, 1731200000000);
+  EXPECT_EQ(notFound, nullptr);
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, DashboardIncomeCountsOnlyPaidEvents) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

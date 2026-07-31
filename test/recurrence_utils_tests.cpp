@@ -158,3 +158,110 @@ TEST(RecurrenceUtilsTest, LastAndNextAppointmentSkipsCanceledEvents) {
   ASSERT_TRUE(result.next.has_value());
   EXPECT_EQ(result.next->id, 2);
 }
+
+TEST(RecurrenceUtilsTest, ResolveNoteLinkFindsMaterializedEventById) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_resolve_link_by_id")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  DuckClientNote note;
+  note.linked_event_id = eventId;
+
+  const auto resolved = pcm::recurrence::resolveNoteLink(db, note);
+  ASSERT_TRUE(resolved.has_value());
+  EXPECT_EQ(resolved->id, eventId);
+
+  db_dir.remove(true);
+}
+
+TEST(RecurrenceUtilsTest, ResolveNoteLinkRebuildsUnmaterializedVirtualOccurrence) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_resolve_link_virtual")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  const auto seriesStartLocal = QDateTime(QDate::currentDate().addDays(1), QTime(10, 0, 0));
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.start_date = seriesStartLocal.toUTC().toMSecsSinceEpoch();
+  series.end_date = *series.start_date + 3'600'000;
+  series.duration = 3600;
+  series.recurrence_rule = pcm::recurrence::weeklyRuleForDate(seriesStartLocal.date()).toStdString();
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckClientNote note;
+  note.linked_series_id = seriesId;
+  note.linked_occurrence_start_ms = *series.start_date;
+
+  const auto resolved = pcm::recurrence::resolveNoteLink(db, note);
+  ASSERT_TRUE(resolved.has_value());
+  EXPECT_TRUE(resolved->is_virtual_occurrence);
+  EXPECT_EQ(resolved->series_id, seriesId);
+  EXPECT_EQ(*resolved->start_date, *series.start_date);
+
+  db_dir.remove(true);
+}
+
+TEST(RecurrenceUtilsTest, ResolveNoteLinkFindsMaterializedRowForSinceMaterializedOccurrence) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_resolve_link_graduated")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  const auto seriesStartLocal = QDateTime(QDate::currentDate().addDays(1), QTime(10, 0, 0));
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.start_date = seriesStartLocal.toUTC().toMSecsSinceEpoch();
+  series.end_date = *series.start_date + 3'600'000;
+  series.duration = 3600;
+  series.recurrence_rule = pcm::recurrence::weeklyRuleForDate(seriesStartLocal.date()).toStdString();
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEvent materialized;
+  materialized.name = std::string{"Weekly (materialized)"};
+  materialized.start_date = *series.start_date;
+  materialized.end_date = *materialized.start_date + 3'600'000;
+  materialized.series_id = seriesId;
+  materialized.original_occurrence_start = materialized.start_date;
+  const auto materializedId = db.add_event(materialized);
+  ASSERT_GT(materializedId, 0);
+
+  DuckClientNote note;
+  note.linked_series_id = seriesId;
+  note.linked_occurrence_start_ms = *series.start_date;
+
+  const auto resolved = pcm::recurrence::resolveNoteLink(db, note);
+  ASSERT_TRUE(resolved.has_value());
+  EXPECT_FALSE(resolved->is_virtual_occurrence);
+  EXPECT_EQ(resolved->id, materializedId);
+
+  db_dir.remove(true);
+}

@@ -326,6 +326,9 @@ struct DuckClientNote {
   std::optional<std::string> body_markdown = std::nullopt;
   std::optional<std::int64_t> created_at = std::nullopt;
   std::optional<std::int64_t> updated_at = std::nullopt;
+  std::optional<std::int64_t> linked_event_id = std::nullopt;
+  std::optional<std::int64_t> linked_series_id = std::nullopt;
+  std::optional<std::int64_t> linked_occurrence_start_ms = std::nullopt;
 
   DuckClientNote() = default;
   DuckClientNote(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -334,6 +337,16 @@ struct DuckClientNote {
     body_markdown = db_utils::toOptionalString(chunk.GetValue(2, index));
     created_at = db_utils::toOptionalTimestampMs(chunk.GetValue(3, index));
     updated_at = db_utils::toOptionalTimestampMs(chunk.GetValue(4, index));
+    if (chunk.ColumnCount() > 5) {
+      linked_event_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(5, index));
+    }
+    if (chunk.ColumnCount() > 6) {
+      linked_series_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(6, index));
+    }
+    if (chunk.ColumnCount() > 7) {
+      linked_occurrence_start_ms =
+          db_utils::toOptionalTimestampMs(chunk.GetValue(7, index));
+    }
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckClientNote &note) {
@@ -341,7 +354,10 @@ inline std::ostream &operator<<(std::ostream &os, const DuckClientNote &note) {
      << ", body_markdown=";
   print_optional(os, note.body_markdown) << ", created_at=";
   print_optional(os, note.created_at) << ", updated_at=";
-  print_optional(os, note.updated_at) << "}";
+  print_optional(os, note.updated_at) << ", linked_event_id=";
+  print_optional(os, note.linked_event_id) << ", linked_series_id=";
+  print_optional(os, note.linked_series_id) << ", linked_occurrence_start_ms=";
+  print_optional(os, note.linked_occurrence_start_ms) << "}";
   return os;
 }
 

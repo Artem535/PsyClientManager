@@ -756,6 +756,62 @@ TEST(RestoreServiceTest, RestoresSeriesOccurrenceReminderState) {
       .remove(true);
 }
 
+TEST(RestoreServiceTest, RestoresLinkedNoteFields) {
+  auto sourceDb = makeTestDatabase("tmp_restore_note_link_source");
+
+  DuckClient client;
+  client.name = std::string{"Ivy"};
+  client.last_name = std::string{"I"};
+  const auto clientId = sourceDb.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = sourceDb.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  DuckClientNote note;
+  note.client_id = clientId;
+  note.body_markdown = std::string{"Linked note"};
+  note.linked_event_id = eventId;
+  const auto noteId = sourceDb.add_client_note(note);
+  ASSERT_GT(noteId, 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_note_link.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_note_link_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto notes = restoredDb.get_client_notes(clientId);
+  ASSERT_EQ(notes.size(), 1);
+  ASSERT_TRUE(notes.front().linked_event_id.has_value());
+  EXPECT_EQ(*notes.front().linked_event_id, eventId);
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_note_link_source"))
+      .remove(true);
+}
+
 TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
   const auto dir =
       Poco::Path(Poco::Path::current()).append("tmp_rotation_dir").toString();

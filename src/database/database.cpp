@@ -732,7 +732,12 @@ int64_t Database::add_client_note(const DuckClientNote &note) {
           duckdb::Value::BIGINT(note.client_id),
           db_utils::toDuckValue(note.body_markdown),
           db_utils::toDuckTimestamp(createdAtMs * 1000),
-          db_utils::toDuckTimestamp(updatedAtMs * 1000)});
+          db_utils::toDuckTimestamp(updatedAtMs * 1000),
+          db_utils::toDuckValue(note.linked_event_id),
+          db_utils::toDuckValue(note.linked_series_id),
+          note.linked_occurrence_start_ms.has_value()
+              ? db_utils::toDuckTimestamp(std::make_optional(*note.linked_occurrence_start_ms * 1000))
+              : db_utils::toDuckTimestamp(std::nullopt)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert client note: " << result->GetError();
@@ -1085,6 +1090,31 @@ std::set<int64_t> Database::get_materialized_occurrence_starts_for_series(
     }
   }
   return starts;
+}
+
+std::unique_ptr<DuckEvent> Database::get_event_by_series_occurrence(
+    const int64_t series_id, const int64_t occurrence_start_ms) {
+  if (series_id <= 0) {
+    return nullptr;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventBySeriesOccurrenceQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000))});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to query event by series occurrence (series_id=" << series_id
+               << "): " << (result ? result->GetError() : "prepare failed");
+    return nullptr;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    return nullptr;
+  }
+
+  return std::make_unique<DuckEvent>(*chunk, 0);
 }
 
 std::vector<ClientMonthlyStats>

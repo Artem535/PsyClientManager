@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.19] - 2026-07-30
+
+### Added
+
+- Notes can now be linked to the session they're about, with a clickable
+  badge that jumps to that event on the Calendar. Session entries in the
+  timeline are clickable the same way. The feed also gained a
+  jump-to-latest button.
+
 ## [0.1.18] - 2026-07-30
 
 ### Added

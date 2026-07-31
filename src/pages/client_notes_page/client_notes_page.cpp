@@ -2,6 +2,7 @@
 
 #include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
+#include "../../widgets/surface_paint_filter.h"
 
 #include <oclero/qlementine/widgets/SegmentedControl.hpp>
 
@@ -12,11 +13,13 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
+#include <QHash>
 #include <QHBoxLayout>
 #include <QImageReader>
 #include <QKeyEvent>
 #include <QListWidgetItem>
 #include <QLocale>
+#include <QMenu>
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QScrollBar>
@@ -28,6 +31,7 @@
 #include <QUrl>
 
 #include <algorithm>
+#include <limits>
 #include <variant>
 
 namespace {
@@ -81,6 +85,14 @@ void ClientNotesPage::onAddNoteClicked() {
   note.body_markdown = markdown.toStdString();
   note.created_at = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
   note.updated_at = note.created_at;
+  if (mPendingLinkedEvent.has_value()) {
+    if (mPendingLinkedEvent->is_virtual_occurrence) {
+      note.linked_series_id = mPendingLinkedEvent->series_id;
+      note.linked_occurrence_start_ms = mPendingLinkedEvent->original_occurrence_start;
+    } else {
+      note.linked_event_id = mPendingLinkedEvent->id;
+    }
+  }
 
   const auto newNoteId = mDb->add_client_note(note);
   if (newNoteId <= 0) {
@@ -91,6 +103,7 @@ void ClientNotesPage::onAddNoteClicked() {
   mComposer->clear();
   mPendingAttachments.clear();
   refreshPendingAttachments();
+  mLinkManuallySet = false;
   reloadNotes();
 
   mSaveStatusLabel->setText(tr("Note saved"));
@@ -184,7 +197,15 @@ void ClientNotesPage::buildUi() {
                                  pcm::widgets::constants::kPanelPadding);
   rootLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
-  auto *headerSurface = makeSurface(this);
+  // DO NOT use makeSurface() (stylesheet) here — this surface hosts
+  // mFeedFilterControl (SegmentedControl), and setStyleSheet() cascades
+  // through Qt's QObject parent/child tree, wrapping style() in a
+  // QStyleSheetStyle proxy. SegmentedControl paints via
+  // qobject_cast<QlementineStyle*>(style()), which fails against that
+  // proxy and falls back to flat QPalette colors. Paint the background via
+  // an event filter instead (see analytics_page.cpp for the same pattern).
+  auto *headerSurface = new QFrame(this);
+  headerSurface->installEventFilter(new pcm::widgets::SurfacePaintFilter(headerSurface));
   auto *headerLayout = new QHBoxLayout(headerSurface);
   headerLayout->setContentsMargins(
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
@@ -250,6 +271,18 @@ void ClientNotesPage::buildUi() {
 
   mScrollArea->setWidget(mFeedWidget);
   feedSurfaceLayout->addWidget(mScrollArea);
+
+  mJumpToTodayButton = new QPushButton(tr("Jump to today"), feedSurface);
+  mJumpToTodayButton->setCursor(Qt::PointingHandCursor);
+  mJumpToTodayButton->setVisible(false);
+  mJumpToLatestButton = new QPushButton(tr("Jump to latest"), feedSurface);
+  mJumpToLatestButton->setCursor(Qt::PointingHandCursor);
+  mJumpToLatestButton->setVisible(false);
+  auto *jumpButtonsLayout = new QHBoxLayout();
+  jumpButtonsLayout->setContentsMargins(0, 0, 0, 0);
+  jumpButtonsLayout->addWidget(mJumpToTodayButton);
+  jumpButtonsLayout->addWidget(mJumpToLatestButton);
+  feedSurfaceLayout->addLayout(jumpButtonsLayout);
   rootLayout->addWidget(feedSurface, 1);
 
   auto *composerSurface = makeSurface(this);
@@ -294,6 +327,8 @@ void ClientNotesPage::buildUi() {
 
   mAttachFilesButton = new QPushButton(tr("Attach files"), composerSurface);
   mAttachFilesButton->setCursor(Qt::PointingHandCursor);
+  mLinkSessionButton = new QPushButton(tr("Link to a session"), composerSurface);
+  mLinkSessionButton->setCursor(Qt::PointingHandCursor);
   mAddNoteButton = new QPushButton(tr("Add note"), composerSurface);
   mAddNoteButton->setCursor(Qt::PointingHandCursor);
 
@@ -304,6 +339,7 @@ void ClientNotesPage::buildUi() {
   actionsLayout->setContentsMargins(0, 0, 0, 0);
   actionsLayout->setSpacing(pcm::widgets::constants::kNotesComposerSpacing);
   actionsLayout->addWidget(mAttachFilesButton, 0);
+  actionsLayout->addWidget(mLinkSessionButton, 0);
   actionsLayout->addStretch();
   actionsLayout->addWidget(mAddNoteButton, 0);
   composerLayout->addLayout(actionsLayout);
@@ -319,6 +355,20 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onOpenClientCardClicked);
   connect(mFeedFilterControl, &oclero::qlementine::SegmentedControl::currentIndexChanged, this,
           &ClientNotesPage::onFeedFilterChanged);
+  connect(mLinkSessionButton, &QPushButton::clicked, this,
+          &ClientNotesPage::onLinkSessionButtonClicked);
+  connect(mScrollArea->verticalScrollBar(), &QScrollBar::valueChanged, this,
+          &ClientNotesPage::updateJumpButtonsVisibility);
+  connect(mScrollArea->verticalScrollBar(), &QScrollBar::rangeChanged, this,
+          &ClientNotesPage::updateJumpButtonsVisibility);
+  connect(mJumpToLatestButton, &QPushButton::clicked, this, [this]() {
+    mScrollArea->verticalScrollBar()->setValue(mScrollArea->verticalScrollBar()->maximum());
+  });
+  connect(mJumpToTodayButton, &QPushButton::clicked, this, [this]() {
+    if (mTodayAnchorWidget) {
+      mScrollArea->ensureWidgetVisible(mTodayAnchorWidget);
+    }
+  });
 }
 
 void ClientNotesPage::reloadNotes() {
@@ -329,14 +379,18 @@ void ClientNotesPage::reloadNotes() {
     mEmptyLabel->setVisible(true);
     mComposer->setEnabled(false);
     mAttachFilesButton->setEnabled(false);
+    mLinkSessionButton->setEnabled(false);
     mAddNoteButton->setEnabled(false);
     mPendingAttachmentsList->setEnabled(false);
     mAppointmentSummaryLabel->setVisible(false);
+    mJumpToTodayButton->setVisible(false);
+    mJumpToLatestButton->setVisible(false);
     return;
   }
 
   mComposer->setEnabled(true);
   mAttachFilesButton->setEnabled(true);
+  mLinkSessionButton->setEnabled(true);
   mAddNoteButton->setEnabled(true);
   mPendingAttachmentsList->setEnabled(true);
 
@@ -350,6 +404,12 @@ void ClientNotesPage::reloadNotes() {
     events = pcm::recurrence::eventsForClient(*mDb, mCurrentClient->id, windowStart, windowEnd);
   }
   updateAppointmentSummary(events);
+
+  mCachedFeedEvents = events;
+  if (!mLinkManuallySet) {
+    mPendingLinkedEvent = nearestPastEvent(events);
+  }
+  updateLinkButtonText();
 
   using FeedItem = std::variant<DuckClientNote, DuckEvent>;
   std::vector<FeedItem> items;
@@ -367,6 +427,8 @@ void ClientNotesPage::reloadNotes() {
   if (items.empty()) {
     mEmptyLabel->setText(tr("No entries yet"));
     mEmptyLabel->setVisible(true);
+    mJumpToTodayButton->setVisible(false);
+    mJumpToLatestButton->setVisible(false);
     return;
   }
 
@@ -388,6 +450,8 @@ void ClientNotesPage::reloadNotes() {
 
   mEmptyLabel->setVisible(false);
   QDate previousDate;
+  const auto today = QDate::currentDate();
+  qint64 bestDayDiff = std::numeric_limits<qint64>::max();
   for (const auto &item : items) {
     const auto timestampMs = timestampOf(item);
     const auto itemDate =
@@ -395,8 +459,14 @@ void ClientNotesPage::reloadNotes() {
             ? QDateTime::fromMSecsSinceEpoch(timestampMs, QTimeZone::systemTimeZone()).date()
             : QDate();
     if (itemDate.isValid() && itemDate != previousDate) {
-      addDateDivider(itemDate);
+      auto *divider = addDateDivider(itemDate);
       previousDate = itemDate;
+
+      const auto dayDiff = std::abs(itemDate.daysTo(today));
+      if (dayDiff < bestDayDiff) {
+        bestDayDiff = dayDiff;
+        mTodayAnchorWidget = divider;
+      }
     }
     std::visit(
         [this](const auto &value) {
@@ -409,6 +479,8 @@ void ClientNotesPage::reloadNotes() {
         },
         item);
   }
+
+  updateJumpButtonsVisibility();
 
   QMetaObject::invokeMethod(
       mScrollArea->verticalScrollBar(), "setValue", Qt::QueuedConnection,
@@ -445,7 +517,95 @@ void ClientNotesPage::updateAppointmentSummary(const QVector<DuckEvent> &events)
   mAppointmentSummaryLabel->setVisible(true);
 }
 
+std::optional<DuckEvent> ClientNotesPage::nearestPastEvent(const QVector<DuckEvent> &events) const {
+  const auto nowMs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+  std::optional<DuckEvent> best;
+  for (const auto &event : events) {
+    if (!event.start_date.has_value() || *event.start_date > nowMs) {
+      continue;
+    }
+    if (!best.has_value() || *event.start_date > *best->start_date) {
+      best = event;
+    }
+  }
+  return best;
+}
+
+void ClientNotesPage::updateJumpButtonsVisibility() {
+  if (!mScrollArea || !mJumpToLatestButton || !mJumpToTodayButton) {
+    return;
+  }
+  auto *scrollBar = mScrollArea->verticalScrollBar();
+  mJumpToLatestButton->setVisible(scrollBar->value() < scrollBar->maximum());
+
+  if (!mTodayAnchorWidget) {
+    mJumpToTodayButton->setVisible(false);
+    return;
+  }
+  const auto viewTop = scrollBar->value();
+  const auto viewBottom = viewTop + mScrollArea->viewport()->height();
+  const auto anchorTop = mTodayAnchorWidget->y();
+  const auto anchorBottom = anchorTop + mTodayAnchorWidget->height();
+  const bool anchorVisible = anchorBottom > viewTop && anchorTop < viewBottom;
+  mJumpToTodayButton->setVisible(!anchorVisible);
+}
+
+void ClientNotesPage::updateLinkButtonText() {
+  if (!mLinkSessionButton) {
+    return;
+  }
+  if (!mPendingLinkedEvent.has_value() || !mPendingLinkedEvent->start_date.has_value()) {
+    mLinkSessionButton->setText(tr("Link to a session"));
+    return;
+  }
+  const auto startAt = QDateTime::fromMSecsSinceEpoch(*mPendingLinkedEvent->start_date,
+                                                       QTimeZone::systemTimeZone());
+  mLinkSessionButton->setText(tr("Linked: %1").arg(startAt.toString("dd.MM HH:mm")));
+}
+
+void ClientNotesPage::onLinkSessionButtonClicked() {
+  auto sortedEvents = mCachedFeedEvents;
+  const auto nowMs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+  std::sort(sortedEvents.begin(), sortedEvents.end(),
+            [nowMs](const DuckEvent &left, const DuckEvent &right) {
+              return std::abs(left.start_date.value_or(0) - nowMs) <
+                     std::abs(right.start_date.value_or(0) - nowMs);
+            });
+
+  QMenu menu(this);
+  auto *clearAction = menu.addAction(tr("Don't link"));
+  menu.addSeparator();
+  QHash<QAction *, DuckEvent> actionToEvent;
+  const auto count = std::min<qsizetype>(sortedEvents.size(), 8);
+  for (qsizetype i = 0; i < count; ++i) {
+    const auto &event = sortedEvents.at(i);
+    const auto startAt = event.start_date.has_value()
+                             ? QDateTime::fromMSecsSinceEpoch(*event.start_date,
+                                                              QTimeZone::systemTimeZone())
+                             : QDateTime{};
+    const auto title = QString::fromStdString(event.name.value_or(tr("Session").toStdString()));
+    auto *action = menu.addAction(QString("%1 · %2").arg(
+        startAt.isValid() ? startAt.toString("dd.MM.yyyy HH:mm") : tr("Unknown time"), title));
+    actionToEvent.insert(action, event);
+  }
+
+  const auto chosen = menu.exec(mLinkSessionButton->mapToGlobal(
+      QPoint(0, mLinkSessionButton->height())));
+  if (!chosen) {
+    return;
+  }
+
+  mLinkManuallySet = true;
+  if (chosen == clearAction) {
+    mPendingLinkedEvent = std::nullopt;
+  } else {
+    mPendingLinkedEvent = actionToEvent.value(chosen);
+  }
+  updateLinkButtonText();
+}
+
 void ClientNotesPage::clearNotes() {
+  mTodayAnchorWidget = nullptr;
   while (mFeedLayout->count() > 0) {
     auto *item = mFeedLayout->takeAt(0);
     if (item->widget()) {
@@ -526,6 +686,29 @@ void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
       pcm::widgets::constants::kNotesBodyHeightExtra);
 
   layout->addWidget(timestampLabel);
+
+  if (mDb) {
+    const auto linkedEvent = pcm::recurrence::resolveNoteLink(*mDb, note);
+    if (linkedEvent.has_value() && linkedEvent->start_date.has_value()) {
+      auto *linkLabel = new QPushButton(bubble);
+      linkLabel->setFlat(true);
+      linkLabel->setCursor(Qt::PointingHandCursor);
+      const auto startAt = QDateTime::fromMSecsSinceEpoch(*linkedEvent->start_date,
+                                                           QTimeZone::systemTimeZone());
+      linkLabel->setText(QStringLiteral("🔗 %1").arg(startAt.toString("dd.MM.yyyy HH:mm")));
+      linkLabel->setStyleSheet(
+          "QPushButton { text-align: left; color: rgba(120, 170, 255, 0.9); "
+          "background: transparent; border: none; padding: 0px; }");
+      const auto linkedId = linkedEvent->id;
+      const auto dayStartMs =
+          QDateTime(startAt.date(), QTime(0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+      connect(linkLabel, &QPushButton::clicked, this, [this, linkedId, dayStartMs]() {
+        emit openEventRequested(linkedId, dayStartMs);
+      });
+      layout->addWidget(linkLabel);
+    }
+  }
+
   if (!markdown.trimmed().isEmpty()) {
     layout->addWidget(bodyView);
   } else {
@@ -559,7 +742,9 @@ void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
       pcm::widgets::constants::kNotesBubbleVerticalPadding);
   layout->setSpacing(4);
 
-  auto *timeLabel = new QLabel(card);
+  auto *timeLabel = new QPushButton(card);
+  timeLabel->setFlat(true);
+  timeLabel->setCursor(Qt::PointingHandCursor);
   const auto startAt =
       event.start_date.has_value()
           ? QDateTime::fromMSecsSinceEpoch(*event.start_date, QTimeZone::systemTimeZone())
@@ -569,7 +754,9 @@ void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
                          .arg(startAt.isValid() ? startAt.toString("dd.MM.yyyy HH:mm")
                                                 : tr("Unknown time"),
                               title));
-  timeLabel->setStyleSheet("color: rgba(255, 255, 255, 0.90); font-weight: 600;");
+  timeLabel->setStyleSheet(
+      "QPushButton { text-align: left; color: rgba(255, 255, 255, 0.90); "
+      "font-weight: 600; background: transparent; border: none; padding: 0px; }");
 
   auto *detailLabel = new QLabel(card);
   QString detailText;
@@ -591,16 +778,26 @@ void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
     detailLabel->deleteLater();
   }
 
+  const auto eventId = event.id;
+  const auto dayStartMs =
+      startAt.isValid()
+          ? QDateTime(startAt.date(), QTime(0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch()
+          : 0;
+  connect(timeLabel, &QPushButton::clicked, this, [this, eventId, dayStartMs]() {
+    emit openEventRequested(eventId, dayStartMs);
+  });
+
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, card, 0, Qt::AlignLeft);
 }
 
-void ClientNotesPage::addDateDivider(const QDate &date) {
+QLabel *ClientNotesPage::addDateDivider(const QDate &date) {
   auto *divider = new QLabel(mFeedWidget);
   divider->setAlignment(Qt::AlignCenter);
   divider->setText(QStringLiteral("— %1 —").arg(
       QLocale().toString(date, QLocale::LongFormat)));
   divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
+  return divider;
 }
 
 void ClientNotesPage::addAttachmentWidgets(
