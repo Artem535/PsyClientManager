@@ -189,6 +189,14 @@ void MainWindow::connectSignals() {
     showPage(Pages::clientNotes, mBtnNotes);
   });
 
+  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
+          clientCardPage, &QClientInfoCardPage::setClientInfo);
+  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
+          [this]() {
+            setClientNavigationVisible(Pages::clientCard, true);
+            showPage(Pages::clientCard, mBtnProfile);
+          });
+
   connect(clientInfoPage, &ClientInfo::removeButtonClicked, this,
           [this](const int64_t clientId) { emit provideRemoveClient(clientId); });
 

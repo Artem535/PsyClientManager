@@ -21,6 +21,9 @@ public:
                            QWidget *parent = nullptr);
   ~ClientNotesPage() override = default;
 
+signals:
+  void openClientCardRequested(const std::optional<DuckClient> &client);
+
 public slots:
   void setClientInfo(const std::optional<DuckClient> &client);
   void refresh();
@@ -29,6 +32,10 @@ private slots:
   void onAddNoteClicked();
   void onAttachFilesClicked();
   void onPendingAttachmentActivated(QListWidgetItem *item);
+  void onOpenClientCardClicked();
+
+protected:
+  bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
   struct PendingAttachment {
@@ -42,6 +49,7 @@ private:
   void reloadNotes();
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
+  void addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
   void refreshPendingAttachments();
@@ -55,13 +63,14 @@ private:
   std::optional<DuckClient> mCurrentClient;
   QList<PendingAttachment> mPendingAttachments;
 
-  QLabel *mTitleLabel = nullptr;
   QLabel *mClientNameLabel = nullptr;
+  QPushButton *mOpenClientCardButton = nullptr;
   QScrollArea *mScrollArea = nullptr;
   QWidget *mFeedWidget = nullptr;
   QVBoxLayout *mFeedLayout = nullptr;
   QLabel *mEmptyLabel = nullptr;
   QPlainTextEdit *mComposer = nullptr;
+  QLabel *mSaveStatusLabel = nullptr;
   QListWidget *mPendingAttachmentsList = nullptr;
   QPushButton *mAttachFilesButton = nullptr;
   QPushButton *mAddNoteButton = nullptr;

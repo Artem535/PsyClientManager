@@ -12,13 +12,16 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QImageReader>
+#include <QKeyEvent>
 #include <QListWidgetItem>
+#include <QLocale>
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QScrollBar>
 #include <QStandardPaths>
 #include <QTextBrowser>
 #include <QTextDocument>
+#include <QTimer>
 #include <QTimeZone>
 #include <QUrl>
 
@@ -49,7 +52,10 @@ void ClientNotesPage::setClientInfo(const std::optional<DuckClient> &client) {
   mCurrentClient = client;
   mPendingAttachments.clear();
   refreshPendingAttachments();
-  mClientNameLabel->setText(currentClientTitle());
+  mClientNameLabel->setText(client.has_value()
+                                ? tr("%1 → Notes").arg(currentClientTitle())
+                                : currentClientTitle());
+  mOpenClientCardButton->setEnabled(client.has_value());
   reloadNotes();
 }
 
@@ -81,6 +87,10 @@ void ClientNotesPage::onAddNoteClicked() {
   mPendingAttachments.clear();
   refreshPendingAttachments();
   reloadNotes();
+
+  mSaveStatusLabel->setText(tr("Note saved"));
+  mSaveStatusLabel->setVisible(true);
+  QTimer::singleShot(2000, this, [this]() { mSaveStatusLabel->setVisible(false); });
 }
 
 void ClientNotesPage::onAttachFilesClicked() {
@@ -124,6 +134,27 @@ void ClientNotesPage::onPendingAttachmentActivated(QListWidgetItem *item) {
   refreshPendingAttachments();
 }
 
+void ClientNotesPage::onOpenClientCardClicked() {
+  if (!mCurrentClient.has_value()) {
+    return;
+  }
+
+  emit openClientCardRequested(mCurrentClient);
+}
+
+bool ClientNotesPage::eventFilter(QObject *watched, QEvent *event) {
+  if (watched == mComposer && event->type() == QEvent::KeyPress) {
+    auto *keyEvent = static_cast<QKeyEvent *>(event);
+    if ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) &&
+        keyEvent->modifiers().testFlag(Qt::ControlModifier)) {
+      onAddNoteClicked();
+      return true;
+    }
+  }
+
+  return QWidget::eventFilter(watched, event);
+}
+
 void ClientNotesPage::buildUi() {
   auto *rootLayout = new QVBoxLayout(this);
   rootLayout->setContentsMargins(pcm::widgets::constants::kPanelPadding,
@@ -133,26 +164,29 @@ void ClientNotesPage::buildUi() {
   rootLayout->setSpacing(pcm::widgets::constants::kPanelPadding);
 
   auto *headerSurface = makeSurface(this);
-  auto *headerLayout = new QVBoxLayout(headerSurface);
+  auto *headerLayout = new QHBoxLayout(headerSurface);
   headerLayout->setContentsMargins(
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
       pcm::widgets::constants::kNotesHeaderVerticalPadding,
       pcm::widgets::constants::kNotesHeaderHorizontalPadding,
       pcm::widgets::constants::kNotesHeaderVerticalPadding);
-  headerLayout->setSpacing(4);
-
-  mTitleLabel = new QLabel(tr("Notes"), headerSurface);
-  auto titleFont = mTitleLabel->font();
-  titleFont.setPointSize(titleFont.pointSize() + 3);
-  titleFont.setBold(true);
-  mTitleLabel->setFont(titleFont);
-  mTitleLabel->setStyleSheet("color: rgba(255, 255, 255, 0.92);");
+  headerLayout->setSpacing(10);
 
   mClientNameLabel = new QLabel(tr("No client selected"), headerSurface);
-  mClientNameLabel->setStyleSheet("color: rgba(255, 255, 255, 0.60);");
+  auto clientNameFont = mClientNameLabel->font();
+  clientNameFont.setPointSize(clientNameFont.pointSize() + 2);
+  clientNameFont.setBold(true);
+  mClientNameLabel->setFont(clientNameFont);
+  mClientNameLabel->setStyleSheet("color: rgba(255, 255, 255, 0.92);");
 
-  headerLayout->addWidget(mTitleLabel);
+  mOpenClientCardButton = new QPushButton(tr("Open client card"), headerSurface);
+  mOpenClientCardButton->setCursor(Qt::PointingHandCursor);
+  mOpenClientCardButton->setFlat(true);
+  mOpenClientCardButton->setEnabled(false);
+
   headerLayout->addWidget(mClientNameLabel);
+  headerLayout->addStretch();
+  headerLayout->addWidget(mOpenClientCardButton);
   rootLayout->addWidget(headerSurface);
 
   auto *feedSurface = makeSurface(this);
@@ -192,6 +226,11 @@ void ClientNotesPage::buildUi() {
   mComposer = new QPlainTextEdit(composerSurface);
   mComposer->setPlaceholderText(tr("Write a note in Markdown..."));
   mComposer->setMinimumHeight(120);
+  mComposer->installEventFilter(this);
+
+  mSaveStatusLabel = new QLabel(composerSurface);
+  mSaveStatusLabel->setStyleSheet("color: rgba(120, 220, 150, 0.9);");
+  mSaveStatusLabel->setVisible(false);
 
   mPendingAttachmentsList = new QListWidget(composerSurface);
   mPendingAttachmentsList->setVisible(false);
@@ -221,6 +260,7 @@ void ClientNotesPage::buildUi() {
   mAddNoteButton->setCursor(Qt::PointingHandCursor);
 
   composerLayout->addWidget(mComposer);
+  composerLayout->addWidget(mSaveStatusLabel);
   composerLayout->addWidget(mPendingAttachmentsList);
   auto *actionsLayout = new QHBoxLayout();
   actionsLayout->setContentsMargins(0, 0, 0, 0);
@@ -237,6 +277,8 @@ void ClientNotesPage::buildUi() {
           &ClientNotesPage::onAddNoteClicked);
   connect(mPendingAttachmentsList, &QListWidget::itemDoubleClicked, this,
           &ClientNotesPage::onPendingAttachmentActivated);
+  connect(mOpenClientCardButton, &QPushButton::clicked, this,
+          &ClientNotesPage::onOpenClientCardClicked);
 }
 
 void ClientNotesPage::reloadNotes() {
@@ -266,7 +308,17 @@ void ClientNotesPage::reloadNotes() {
   }
 
   mEmptyLabel->setVisible(false);
+  QDate previousDate;
   for (const auto &note : notes) {
+    const auto createdAt =
+        note.created_at.has_value()
+            ? QDateTime::fromMSecsSinceEpoch(*note.created_at, QTimeZone::systemTimeZone())
+            : QDateTime{};
+    const auto noteDate = createdAt.isValid() ? createdAt.date() : QDate();
+    if (noteDate.isValid() && noteDate != previousDate) {
+      addDateDivider(noteDate);
+      previousDate = noteDate;
+    }
     addNoteBubble(note);
   }
 
@@ -369,6 +421,15 @@ void ClientNotesPage::addNoteBubble(const DuckClientNote &note) {
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, bubble, 0, Qt::AlignLeft);
 }
 
+void ClientNotesPage::addDateDivider(const QDate &date) {
+  auto *divider = new QLabel(mFeedWidget);
+  divider->setAlignment(Qt::AlignCenter);
+  divider->setText(QStringLiteral("— %1 —").arg(
+      QLocale().toString(date, QLocale::LongFormat)));
+  divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
+  mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
+}
+
 void ClientNotesPage::addAttachmentWidgets(
     QVBoxLayout *layout, const std::vector<DuckClientNoteAttachment> &attachments) {
   for (const auto &attachment : attachments) {
@@ -385,33 +446,20 @@ void ClientNotesPage::addAttachmentWidgets(
     const auto mimeType =
         QString::fromStdString(attachment.mime_type.value_or(""));
     const auto isImage = mimeType.startsWith("image/");
+    const auto sizeText =
+        QLocale().formattedDataSize(attachment.size_bytes.value_or(0));
 
-    if (isImage) {
-      QImageReader imageReader(absolutePath);
-      imageReader.setAutoTransform(true);
-      const auto image = imageReader.read();
-      if (!image.isNull()) {
-        auto *imageLabel = new QLabel();
-        imageLabel->setPixmap(QPixmap::fromImage(image).scaled(
-            pcm::widgets::constants::kNotesAttachmentPreviewMaxWidth,
-            pcm::widgets::constants::kNotesAttachmentPreviewMaxHeight,
-            Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        imageLabel->setAlignment(Qt::AlignLeft);
-        imageLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-        imageLabel->setStyleSheet(
-            "background: rgba(255, 255, 255, 0.02);"
-            "border-radius: 10px;");
-        layout->addWidget(imageLabel);
-      }
-    }
+    auto *row = new QWidget();
+    auto *rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(8);
 
-    auto *button = new QPushButton(
-        isImage ? tr("Open image: %1").arg(fileName)
-                : tr("Open file: %1").arg(fileName));
-    button->setCursor(Qt::PointingHandCursor);
-    button->setFlat(true);
-    button->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    button->setStyleSheet(
+    auto *nameButton = new QPushButton(
+        QString("%1 · %2 · %3")
+            .arg(isImage ? tr("Image") : tr("File"), fileName, sizeText));
+    nameButton->setFlat(true);
+    nameButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    nameButton->setStyleSheet(
         "QPushButton {"
         " text-align: left;"
         " color: rgba(255, 255, 255, 0.84);"
@@ -423,10 +471,49 @@ void ClientNotesPage::addAttachmentWidgets(
         "QPushButton:hover {"
         " background: rgba(255, 255, 255, 0.07);"
         "}");
-    connect(button, &QPushButton::clicked, this, [absolutePath]() {
+
+    auto *openButton = new QPushButton(tr("Open"));
+    openButton->setCursor(Qt::PointingHandCursor);
+    openButton->setFlat(true);
+    openButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    connect(openButton, &QPushButton::clicked, this, [absolutePath]() {
       QDesktopServices::openUrl(QUrl::fromLocalFile(absolutePath));
     });
-    layout->addWidget(button, 0, Qt::AlignLeft);
+
+    rowLayout->addWidget(nameButton, 0, Qt::AlignLeft);
+    rowLayout->addWidget(openButton, 0, Qt::AlignLeft);
+    rowLayout->addStretch();
+    layout->addWidget(row);
+
+    if (isImage) {
+      nameButton->setCursor(Qt::PointingHandCursor);
+      auto *previewLabel = new QLabel();
+      previewLabel->setVisible(false);
+      previewLabel->setAlignment(Qt::AlignLeft);
+      previewLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+      previewLabel->setStyleSheet(
+          "background: rgba(255, 255, 255, 0.02);"
+          "border-radius: 10px;");
+      layout->addWidget(previewLabel);
+
+      connect(nameButton, &QPushButton::clicked, this,
+              [previewLabel, absolutePath]() {
+                if (previewLabel->pixmap().isNull()) {
+                  QImageReader imageReader(absolutePath);
+                  imageReader.setAutoTransform(true);
+                  const auto image = imageReader.read();
+                  if (!image.isNull()) {
+                    previewLabel->setPixmap(QPixmap::fromImage(image).scaled(
+                        pcm::widgets::constants::kNotesAttachmentPreviewMaxWidth,
+                        pcm::widgets::constants::kNotesAttachmentPreviewMaxHeight,
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                  }
+                }
+                previewLabel->setVisible(!previewLabel->isVisible());
+              });
+    } else {
+      nameButton->setEnabled(false);
+    }
   }
 }
 
