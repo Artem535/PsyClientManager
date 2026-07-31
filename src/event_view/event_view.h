@@ -59,4 +59,5 @@ private:
   void updateSceneSize();
   void updateItemsSize() const;
   void updateItemsCords() const;
+  void clearHighlight();
 };
