@@ -179,6 +179,24 @@ void QEventView::onModelReset() {
   viewport()->update();
 }
 
+void QEventView::highlightEvent(const int64_t eventId) {
+  if (mHighlightedEventId >= 0) {
+    if (auto *previous = mSceneItems.value(mHighlightedEventId)) {
+      previous->setHighlighted(false);
+    }
+  }
+
+  auto *item = mSceneItems.value(eventId);
+  if (!item) {
+    mHighlightedEventId = -1;
+    return;
+  }
+
+  item->setHighlighted(true);
+  mHighlightedEventId = eventId;
+  centerOn(item);
+}
+
 void QEventView::drawBackground(QPainter *painter, const QRectF &rect) {
   QGraphicsView::drawBackground(painter, rect);
 

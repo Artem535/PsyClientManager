@@ -34,6 +34,7 @@ public slots:
   void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
                      const QList<int> &roles);
   void onModelReset();
+  void highlightEvent(int64_t eventId);
 
 protected:
   void contextMenuEvent(QContextMenuEvent *event) override;
@@ -48,6 +49,7 @@ private:
   QTimelineModel *mModel{};
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
+  int64_t mHighlightedEventId = -1;
   qreal mPixelPerMin = pcm::widgets::constants::kPixelPerMin;
   QMap<int64_t, QEventItem *> mSceneItems;
 

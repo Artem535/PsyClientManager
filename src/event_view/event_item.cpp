@@ -1,6 +1,7 @@
 #include "event_item.h"
 #include "../widgets/app_settings.h"
 #include "../widgets/meeting_utils.h"
+#include "../widgets/constants.hpp"
 #include <QIcon>
 #include <QLocale>
 #include <QMenu>
@@ -286,6 +287,14 @@ void QEventItem::setOnline(const bool online) {
   if (mIsOnline == online)
     return;
   mIsOnline = online;
+  update();
+}
+
+void QEventItem::setHighlighted(const bool highlighted) {
+  if (mIsHighlighted == highlighted) {
+    return;
+  }
+  mIsHighlighted = highlighted;
   update();
 }
 
@@ -618,6 +627,13 @@ void QEventItem::paint(QPainter *painter,
     const auto text = mIsOnline ? QStringLiteral("%1 · %2").arg(mTitle, tr("Online"))
                                 : mTitle;
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
+  }
+
+  if (mIsHighlighted) {
+    QPen highlightPen(pcm::widgets::constants::kCalendarCurrentDayUnderlineColor, 3);
+    painter->setPen(highlightPen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(x - 1, -1, mSize.width() + 2, mSize.height() + 2, 6, 6);
   }
 
   painter->restore();
