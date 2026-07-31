@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.20] - 2026-07-31
+
+### Added
+
+- Day summary panel on the Calendar page: session/client counts, busy
+  time, next session, and the nearest free window for the selected day,
+  plus a mini list of upcoming sessions that highlights the matching
+  card on the timeline when clicked. Closes the empty gap between the
+  calendar and Quick Slots.
+
 ## [0.1.19] - 2026-07-30
 
 ### Added
