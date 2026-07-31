@@ -478,3 +478,42 @@ TEST(RecurrenceUtilsTest, ComputeDaySummaryClientCountCountsDistinctClientsNotSe
   EXPECT_EQ(summary.sessionCount, 3);
   EXPECT_EQ(summary.clientCount, 2); // "Anna" once + 1 unnamed
 }
+
+TEST(RecurrenceUtilsTest, ComputeDaySummarySkipsTooSmallGapAndFindsLargerOneAfter) {
+  const auto date = QDate::currentDate();
+  const auto beforeMs =
+      QDateTime(date, QTime(8, 0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  const auto session1StartMs =
+      QDateTime(date, QTime(8, 0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  const auto session1EndMs =
+      QDateTime(date, QTime(9, 0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  const auto session2StartMs =
+      QDateTime(date, QTime(9, 15, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  const auto session2EndMs =
+      QDateTime(date, QTime(10, 0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+
+  const QVector<DuckEvent> events{
+      workSessionAt(1, session1StartMs, session1EndMs),
+      workSessionAt(2, session2StartMs, session2EndMs),
+  };
+  const QVector<QPair<QDateTime, QDateTime>> busy{
+      {QDateTime::fromMSecsSinceEpoch(session1StartMs, QTimeZone::systemTimeZone()),
+       QDateTime::fromMSecsSinceEpoch(session1EndMs, QTimeZone::systemTimeZone())},
+      {QDateTime::fromMSecsSinceEpoch(session2StartMs, QTimeZone::systemTimeZone()),
+       QDateTime::fromMSecsSinceEpoch(session2EndMs, QTimeZone::systemTimeZone())},
+  };
+
+  // minFreeWindowMinutes=50 means we need at least 50 minutes free.
+  // The 15-minute gap (9:00-9:15) is too small and should be skipped by the algorithm.
+  // The gap after 10:00 until work day ends (18:00) is 8 hours = 480 minutes, which qualifies.
+  // This test exercises the "skip too-small gap, keep scanning" path in the free-window search.
+  const auto summary = pcm::recurrence::computeDaySummary(
+      events, busy, QTime(8, 0), QTime(18, 0), date, beforeMs, 50);
+
+  ASSERT_TRUE(summary.freeWindowStart.has_value());
+  ASSERT_TRUE(summary.freeWindowEnd.has_value());
+  // The free window should start at or after 10:00, not in the small 9:00-9:15 gap
+  EXPECT_GE(summary.freeWindowStart->time(), QTime(10, 0, 0));
+  // And end at the work day's end
+  EXPECT_EQ(summary.freeWindowEnd->time(), QTime(18, 0, 0));
+}
