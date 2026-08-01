@@ -9,6 +9,7 @@
 #include <QWidget>
 
 #include <memory>
+#include <optional>
 
 #include "constants.hpp"
 #include "event_item.h"
@@ -34,6 +35,7 @@ public slots:
   void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
                      const QList<int> &roles);
   void onModelReset();
+  void highlightEvent(int64_t eventId);
 
 protected:
   void contextMenuEvent(QContextMenuEvent *event) override;
@@ -48,6 +50,7 @@ private:
   QTimelineModel *mModel{};
   QGraphicsScene *mScene;
   int64_t mSelectedDay = -1;
+  std::optional<int64_t> mHighlightedEventId;
   qreal mPixelPerMin = pcm::widgets::constants::kPixelPerMin;
   QMap<int64_t, QEventItem *> mSceneItems;
 
@@ -56,4 +59,5 @@ private:
   void updateSceneSize();
   void updateItemsSize() const;
   void updateItemsCords() const;
+  void clearHighlight();
 };

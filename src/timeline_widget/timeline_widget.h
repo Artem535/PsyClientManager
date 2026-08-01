@@ -25,6 +25,7 @@ public:
 
 public slots:
     void onSelectedDayChanged(const QDate &date) const;
+    void highlightEvent(int64_t eventId) const;
 
     [[nodiscard]] int64_t addEvent(const DuckEvent &event, bool allowOverlap = true) const;
     [[nodiscard]] int64_t addEventSeries(const DuckEvent &event, int64_t clientId,

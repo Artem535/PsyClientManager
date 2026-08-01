@@ -125,6 +125,7 @@ public:
   void setMeetingUrl(const QString &meetingUrl);
   void setBufferBeforeMinutes(int64_t minutes);
   void setBufferAfterMinutes(int64_t minutes);
+  void setHighlighted(bool highlighted);
 
   /**
    * @brief Sets the start time of the event.
@@ -187,6 +188,7 @@ private:
   QString mCancellationReason;
   QString mCanceledBy;
   bool mIsOnline = false;
+  bool mIsHighlighted = false;
   QString mMeetingUrl;
   std::optional<int64_t> mSeriesId;
   std::optional<int64_t> mOriginalOccurrenceStart;

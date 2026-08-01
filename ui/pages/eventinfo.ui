@@ -93,26 +93,6 @@
         </layout>
        </widget>
       </item>
-      <item>
-       <spacer name="calendarBottomSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>12</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QLabel" name="label">
-       <property name="text">
-         <string>: FREE_SLOTS_PLACEHOLDER</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
