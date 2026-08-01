@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.22] - 2026-08-01
+
+### Added
+
+- The client Notes feed now shows a small history line whenever a session's
+  status, payment status, or scheduled time changes (e.g. "Status changed:
+  Scheduled → Completed"), interleaved chronologically with notes and
+  session cards. Click a line to jump to that session on the Calendar.
+
 ## [0.1.21] - 2026-07-31
 
 ### Fixed
