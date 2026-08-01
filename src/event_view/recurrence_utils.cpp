@@ -4,6 +4,7 @@
 
 #include <libical/ical.h>
 
+#include <QSet>
 #include <QTimeZone>
 #include <algorithm>
 #include <cstdlib>
@@ -231,6 +232,119 @@ LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, con
         result.next = event;
       }
     }
+  }
+
+  return result;
+}
+
+DaySummary computeDaySummary(const QVector<DuckEvent> &events,
+                             const QVector<QPair<QDateTime, QDateTime>> &busyIntervals,
+                             const QTime workDayStart, const QTime workDayEnd,
+                             const QDate &selectedDate, const qint64 nowMs,
+                             const int minFreeWindowMinutes) {
+  DaySummary result;
+  result.date = selectedDate;
+
+  QVector<DuckEvent> qualifying;
+  QSet<QString> namedClients;
+  int unnamedClientCount = 0;
+  for (const auto &event : events) {
+    if (!event.is_work_event) {
+      continue;
+    }
+    if (event.event_stat_id != 1 && event.event_stat_id != 2 && event.event_stat_id != 4) {
+      continue; // only Scheduled/Completed/Confirmed count, same as lastAndNextAppointment
+    }
+    qualifying.append(event);
+
+    const auto clientName = QString::fromStdString(event.client_name.value_or(""));
+    if (!clientName.isEmpty()) {
+      namedClients.insert(clientName);
+    } else {
+      ++unnamedClientCount;
+    }
+
+    if (event.start_date.has_value() && event.end_date.has_value() &&
+        *event.end_date > *event.start_date) {
+      result.busyMinutes += (*event.end_date - *event.start_date) / 60'000;
+    }
+  }
+
+  result.sessionCount = static_cast<int>(qualifying.size());
+  result.hasSessions = result.sessionCount > 0;
+  result.clientCount = static_cast<int>(namedClients.size()) + unnamedClientCount;
+
+  if (!result.hasSessions) {
+    return result;
+  }
+
+  std::sort(qualifying.begin(), qualifying.end(),
+            [](const DuckEvent &left, const DuckEvent &right) {
+              return left.start_date.value_or(0) < right.start_date.value_or(0);
+            });
+
+  const bool validWorkHours = workDayStart.isValid() && workDayEnd.isValid() &&
+                              workDayStart < workDayEnd;
+  const auto dayEnd = QDateTime(selectedDate, workDayEnd, QTimeZone::systemTimeZone());
+  const bool showFutureInfo = validWorkHours && nowMs < dayEnd.toMSecsSinceEpoch();
+
+  if (!showFutureInfo) {
+    for (const auto &event : qualifying) {
+      result.upcoming.append(event);
+      if (result.upcoming.size() >= 3) {
+        break;
+      }
+    }
+    return result;
+  }
+
+  for (const auto &event : qualifying) {
+    if (event.start_date.has_value() && *event.start_date > nowMs) {
+      result.upcoming.append(event);
+      if (result.upcoming.size() >= 3) {
+        break;
+      }
+    }
+  }
+
+  for (const auto &event : qualifying) {
+    if (event.start_date.has_value() && *event.start_date > nowMs) {
+      result.nextSession = event;
+      break;
+    }
+  }
+
+  const auto dayStart = QDateTime(selectedDate, workDayStart, QTimeZone::systemTimeZone());
+  const auto now = QDateTime::fromMSecsSinceEpoch(nowMs, QTimeZone::systemTimeZone());
+
+  auto sortedBusy = busyIntervals;
+  std::sort(sortedBusy.begin(), sortedBusy.end(),
+            [](const QPair<QDateTime, QDateTime> &left, const QPair<QDateTime, QDateTime> &right) {
+              return left.first < right.first;
+            });
+
+  auto cursor = std::max(dayStart, now);
+  for (const auto &interval : sortedBusy) {
+    if (cursor >= dayEnd) {
+      break;
+    }
+    if (interval.second <= cursor) {
+      continue;
+    }
+    if (interval.first > cursor) {
+      const auto gapEnd = std::min(interval.first, dayEnd);
+      if (cursor.secsTo(gapEnd) / 60 >= minFreeWindowMinutes) {
+        result.freeWindowStart = cursor;
+        result.freeWindowEnd = gapEnd;
+        break;
+      }
+    }
+    cursor = std::max(cursor, interval.second);
+  }
+  if (!result.freeWindowStart.has_value() && cursor < dayEnd &&
+      cursor.secsTo(dayEnd) / 60 >= minFreeWindowMinutes) {
+    result.freeWindowStart = cursor;
+    result.freeWindowEnd = dayEnd;
   }
 
   return result;

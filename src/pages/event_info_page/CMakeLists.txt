@@ -13,6 +13,8 @@ qt_add_library(${TARGET_NAME} STATIC
         event_info.cpp
         qevent_details_widget.cpp
         qevent_details_widget.h
+        day_summary_widget.cpp
+        day_summary_widget.h
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE

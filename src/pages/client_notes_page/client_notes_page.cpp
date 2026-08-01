@@ -765,7 +765,9 @@ void ClientNotesPage::addSessionEntry(const DuckEvent &event) {
                      ? QString::fromStdString(*event.cancellation_reason)
                      : tr("Canceled");
   } else if (event.cost.has_value()) {
-    detailText = tr("Cost: %1").arg(QLocale().toCurrencyString(*event.cost));
+    detailText = tr("Cost: %1")
+                     .arg(QLocale(QLocale::Russian).toString(*event.cost, 'f', 0) +
+                          QStringLiteral(" ") + pcm::app_settings::currencySymbol());
   }
   detailLabel->setText(detailText);
   detailLabel->setStyleSheet("color: rgba(255, 255, 255, 0.55);");
