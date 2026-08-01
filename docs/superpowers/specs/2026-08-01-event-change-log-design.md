@@ -33,6 +33,14 @@ current snapshot.
 - Any kind of undo, audit trail beyond display, or edit/delete of a log line.
 - Changes to newly created events (`add_event`) — there is no prior state to
   diff against, so no log line is produced on creation.
+- The first reschedule of a virtual (not-yet-materialized) recurring
+  occurrence — the save path materializes it via `add_event`, not
+  `update_event`, so no prior row exists to diff against. Only the
+  *second* edit of that now-materialized occurrence produces a log
+  line. Fixing this requires extending `add_event`'s diff-and-log
+  scope carefully (it's used by many callers, including genuinely new
+  events with no prior state) and deserves its own design pass —
+  tracked as a follow-up, not part of this feature.
 
 ## Where the log gets written
 

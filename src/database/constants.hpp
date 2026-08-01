@@ -381,7 +381,7 @@ FROM EventChangeLog ecl
 JOIN Event e ON e.id = ecl.event_id
 JOIN EventClient ec ON ec.event_id = ecl.event_id
 WHERE ec.client_id = $1
-ORDER BY ecl.occurred_at ASC
+ORDER BY ecl.occurred_at ASC, ecl.id ASC
 )duckdb";
 
 constexpr auto kDeleteEventClientByEventIdQuery =
