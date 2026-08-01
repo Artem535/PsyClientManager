@@ -345,6 +345,39 @@ TEST(DatabaseTest, UpdateEventStatusChangeToCanceledIncludesReason) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, UpdateEventStatusChangeToNoShowIncludesReason) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_noshow")}};
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+  pcm::database::Database db{conf};
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 5;
+  updated.payment_stat_id = 1;
+  updated.cancellation_reason = std::string{"Did not attend"};
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().new_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_event_stat_id, 5);
+  ASSERT_TRUE(entries.front().cancellation_reason.has_value());
+  EXPECT_EQ(*entries.front().cancellation_reason, "Did not attend");
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, UpdateEventNoOpProducesNoChangeLogRows) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

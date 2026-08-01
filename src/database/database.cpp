@@ -203,35 +203,51 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
         event.payment_stat_id > 0 ? event.payment_stat_id : existingEvent->payment_stat_id;
 
     if (effectiveNewEventStat != existingEvent->event_stat_id) {
-      const auto reasonValue = effectiveNewEventStat == 3
+      const auto reasonValue = (effectiveNewEventStat == 3 || effectiveNewEventStat == 5)
                                     ? db_utils::toDuckValue(event.cancellation_reason)
                                     : duckdb::Value();
-      executePrepared(
+      auto statusLogResult = executePrepared(
           conn, constance::kInsertEventChangeLogQuery,
           {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(1),
            duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->event_stat_id)),
            duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewEventStat)),
            duckdb::Value(), duckdb::Value(), duckdb::Value(), duckdb::Value(),
            reasonValue, occurredAt});
+      if (!statusLogResult || statusLogResult->HasError()) {
+        PLOG_ERROR << "Failed to write EventChangeLog status row for event (id="
+                   << event.id << "): "
+                   << (statusLogResult ? statusLogResult->GetError() : "prepare failed");
+      }
     }
 
     if (effectiveNewPaymentStat != existingEvent->payment_stat_id) {
-      executePrepared(
+      auto paymentLogResult = executePrepared(
           conn, constance::kInsertEventChangeLogQuery,
           {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(2), duckdb::Value(),
            duckdb::Value(),
            duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->payment_stat_id)),
            duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewPaymentStat)),
            duckdb::Value(), duckdb::Value(), duckdb::Value(), occurredAt});
+      if (!paymentLogResult || paymentLogResult->HasError()) {
+        PLOG_ERROR << "Failed to write EventChangeLog payment row for event (id="
+                   << event.id << "): "
+                   << (paymentLogResult ? paymentLogResult->GetError() : "prepare failed");
+      }
     }
 
     if (event.start_date.value_or(0) != existingEvent->start_date.value_or(0)) {
-      executePrepared(
+      auto rescheduleLogResult = executePrepared(
           conn, constance::kInsertEventChangeLogQuery,
           {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(3), duckdb::Value(),
            duckdb::Value(), duckdb::Value(), duckdb::Value(),
            timestampMsOrNull(existingEvent->start_date), timestampMsOrNull(event.start_date),
            duckdb::Value(), occurredAt});
+      if (!rescheduleLogResult || rescheduleLogResult->HasError()) {
+        PLOG_ERROR << "Failed to write EventChangeLog reschedule row for event (id="
+                   << event.id << "): "
+                   << (rescheduleLogResult ? rescheduleLogResult->GetError()
+                                            : "prepare failed");
+      }
     }
   }
 
