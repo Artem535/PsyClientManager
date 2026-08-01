@@ -80,6 +80,7 @@ public:
 
   int64_t add_event_client(const int64_t &event_id, const int64_t &client_id);
   std::vector<DuckEvent> get_events_for_client(int64_t client_id);
+  std::vector<DuckEventChangeLog> get_event_change_log_for_client(int64_t client_id);
   int64_t add_client_note(const DuckClientNote &note);
   std::vector<DuckClientNote> get_client_notes(int64_t client_id);
   int64_t add_client_note_attachment(const DuckClientNoteAttachment &attachment);

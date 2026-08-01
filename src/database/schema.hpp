@@ -319,6 +319,47 @@ inline std::ostream &operator<<(std::ostream &os, const DuckEventClient &ec) {
   return os;
 }
 
+// --- DuckEventChangeLog ---
+struct DuckEventChangeLog {
+  std::int64_t id = -1;
+  std::int64_t event_id = -1;
+  std::int64_t change_kind = 0; // 1=status, 2=payment, 3=reschedule
+  std::optional<std::int64_t> old_event_stat_id = std::nullopt;
+  std::optional<std::int64_t> new_event_stat_id = std::nullopt;
+  std::optional<std::int64_t> old_payment_stat_id = std::nullopt;
+  std::optional<std::int64_t> new_payment_stat_id = std::nullopt;
+  std::optional<std::int64_t> old_start_date = std::nullopt;
+  std::optional<std::int64_t> new_start_date = std::nullopt;
+  std::optional<std::string> cancellation_reason = std::nullopt;
+  std::int64_t occurred_at = 0;
+  std::optional<std::int64_t> event_current_start_date = std::nullopt;
+
+  DuckEventChangeLog() = default;
+  DuckEventChangeLog(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
+    id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
+    event_id = db_utils::toInt32AsInt64(chunk.GetValue(1, index));
+    change_kind = db_utils::toInt32AsInt64(chunk.GetValue(2, index));
+    old_event_stat_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(3, index));
+    new_event_stat_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(4, index));
+    old_payment_stat_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(5, index));
+    new_payment_stat_id = db_utils::toOptionalInt32AsInt64(chunk.GetValue(6, index));
+    old_start_date = db_utils::toOptionalTimestampMs(chunk.GetValue(7, index));
+    new_start_date = db_utils::toOptionalTimestampMs(chunk.GetValue(8, index));
+    cancellation_reason = db_utils::toOptionalString(chunk.GetValue(9, index));
+    occurred_at = db_utils::toOptionalTimestampMs(chunk.GetValue(10, index)).value_or(0);
+    if (chunk.ColumnCount() > 11) {
+      event_current_start_date =
+          db_utils::toOptionalTimestampMs(chunk.GetValue(11, index));
+    }
+  }
+};
+inline std::ostream &operator<<(std::ostream &os, const DuckEventChangeLog &entry) {
+  os << "DuckEventChangeLog{id=" << entry.id << ", event_id=" << entry.event_id
+     << ", change_kind=" << entry.change_kind << ", occurred_at=" << entry.occurred_at
+     << "}";
+  return os;
+}
+
 // --- DuckClientNote ---
 struct DuckClientNote {
   std::int64_t id = -1;
