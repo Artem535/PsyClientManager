@@ -812,6 +812,67 @@ TEST(RestoreServiceTest, RestoresLinkedNoteFields) {
       .remove(true);
 }
 
+TEST(RestoreServiceTest, RestoresEventChangeLogRows) {
+  auto sourceDb = makeTestDatabase("tmp_restore_changelog_source");
+
+  DuckClient client;
+  client.name = std::string{"Jack"};
+  client.last_name = std::string{"J"};
+  const auto clientId = sourceDb.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  event.event_stat_id = 1;
+  event.payment_stat_id = 1;
+  const auto eventId = sourceDb.add_event(event);
+  ASSERT_GT(eventId, 0);
+  ASSERT_GT(sourceDb.add_event_client(eventId, clientId), 0);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(sourceDb.update_event(updated));
+  // Re-establish client link after update (update_event unlinks clients)
+  ASSERT_GT(sourceDb.add_event_client(eventId, clientId), 0);
+  ASSERT_EQ(sourceDb.get_event_change_log_for_client(clientId).size(), 2);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_changelog.psybackup")
+                              .toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_changelog_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto entries = restoredDb.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 2);
+
+  Poco::File(backupPath).remove();
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog_source"))
+      .remove(true);
+}
+
 TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
   const auto dir =
       Poco::Path(Poco::Path::current()).append("tmp_rotation_dir").toString();
