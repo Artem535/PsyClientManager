@@ -854,8 +854,8 @@ void ClientNotesPage::addChangeLogEntry(const DuckEventChangeLog &entry) {
     text = tr("Status changed: %1 → %2")
                .arg(eventChangeStatusLabel(entry.old_event_stat_id.value_or(1)),
                     eventChangeStatusLabel(entry.new_event_stat_id.value_or(1)));
-    if (entry.new_event_stat_id.value_or(0) == 3 && entry.cancellation_reason.has_value() &&
-        !entry.cancellation_reason->empty()) {
+    if ((entry.new_event_stat_id.value_or(0) == 3 || entry.new_event_stat_id.value_or(0) == 5) &&
+        entry.cancellation_reason.has_value() && !entry.cancellation_reason->empty()) {
       text += QStringLiteral(" (%1)").arg(QString::fromStdString(*entry.cancellation_reason));
     }
     break;
