@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.21] - 2026-07-31
+
+### Fixed
+
+- Session cost in the Notes feed now uses the app's configured currency
+  (Settings → Currency) instead of the system locale's currency symbol.
+
 ## [0.1.20] - 2026-07-31
 
 ### Added
