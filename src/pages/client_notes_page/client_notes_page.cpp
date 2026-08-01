@@ -48,6 +48,40 @@ QFrame *makeSurface(QWidget *parent = nullptr) {
   frame->setStyleSheet(styleSheet);
   return frame;
 }
+
+QString eventChangeStatusLabel(const int64_t eventStatusId) {
+  switch (eventStatusId) {
+  case 2:
+    return ClientNotesPage::tr("Completed");
+  case 3:
+    return ClientNotesPage::tr("Canceled");
+  case 4:
+    return ClientNotesPage::tr("Confirmed");
+  case 5:
+    return ClientNotesPage::tr("No show");
+  case 6:
+    return ClientNotesPage::tr("Rescheduled");
+  case 1:
+  default:
+    return ClientNotesPage::tr("Scheduled");
+  }
+}
+
+QString eventChangePaymentLabel(const int64_t paymentStatusId) {
+  switch (paymentStatusId) {
+  case 2:
+    return ClientNotesPage::tr("Paid");
+  case 3:
+    return ClientNotesPage::tr("Canceled");
+  case 4:
+    return ClientNotesPage::tr("Refunded");
+  case 5:
+    return ClientNotesPage::tr("Skipped");
+  case 1:
+  default:
+    return ClientNotesPage::tr("Pending");
+  }
+}
 } // namespace
 
 ClientNotesPage::ClientNotesPage(std::shared_ptr<pcm::database::Database> db,
@@ -405,13 +439,17 @@ void ClientNotesPage::reloadNotes() {
   }
   updateAppointmentSummary(events);
 
+  const auto changeLogEntries =
+      mDb ? mDb->get_event_change_log_for_client(mCurrentClient->id)
+          : std::vector<DuckEventChangeLog>{};
+
   mCachedFeedEvents = events;
   if (!mLinkManuallySet) {
     mPendingLinkedEvent = nearestPastEvent(events);
   }
   updateLinkButtonText();
 
-  using FeedItem = std::variant<DuckClientNote, DuckEvent>;
+  using FeedItem = std::variant<DuckClientNote, DuckEvent, DuckEventChangeLog>;
   std::vector<FeedItem> items;
   if (mFeedFilter != FeedFilter::Sessions) {
     for (const auto &note : notes) {
@@ -421,6 +459,9 @@ void ClientNotesPage::reloadNotes() {
   if (mFeedFilter != FeedFilter::Notes) {
     for (const auto &event : events) {
       items.emplace_back(event);
+    }
+    for (const auto &entry : changeLogEntries) {
+      items.emplace_back(entry);
     }
   }
 
@@ -438,6 +479,8 @@ void ClientNotesPage::reloadNotes() {
           using T = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<T, DuckClientNote>) {
             return value.created_at.value_or(0);
+          } else if constexpr (std::is_same_v<T, DuckEventChangeLog>) {
+            return value.occurred_at;
           } else {
             return value.start_date.value_or(0);
           }
@@ -473,6 +516,8 @@ void ClientNotesPage::reloadNotes() {
           using T = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<T, DuckClientNote>) {
             addNoteBubble(value);
+          } else if constexpr (std::is_same_v<T, DuckEventChangeLog>) {
+            addChangeLogEntry(value);
           } else {
             addSessionEntry(value);
           }
@@ -800,6 +845,65 @@ QLabel *ClientNotesPage::addDateDivider(const QDate &date) {
   divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
   return divider;
+}
+
+void ClientNotesPage::addChangeLogEntry(const DuckEventChangeLog &entry) {
+  QString text;
+  switch (entry.change_kind) {
+  case 1: {
+    text = tr("Status changed: %1 → %2")
+               .arg(eventChangeStatusLabel(entry.old_event_stat_id.value_or(1)),
+                    eventChangeStatusLabel(entry.new_event_stat_id.value_or(1)));
+    if (entry.new_event_stat_id.value_or(0) == 3 && entry.cancellation_reason.has_value() &&
+        !entry.cancellation_reason->empty()) {
+      text += QStringLiteral(" (%1)").arg(QString::fromStdString(*entry.cancellation_reason));
+    }
+    break;
+  }
+  case 2:
+    text = tr("Payment status changed: %1 → %2")
+               .arg(eventChangePaymentLabel(entry.old_payment_stat_id.value_or(1)),
+                    eventChangePaymentLabel(entry.new_payment_stat_id.value_or(1)));
+    break;
+  case 3: {
+    const auto oldAt = entry.old_start_date.has_value()
+                            ? QDateTime::fromMSecsSinceEpoch(*entry.old_start_date,
+                                                             QTimeZone::systemTimeZone())
+                            : QDateTime{};
+    const auto newAt = entry.new_start_date.has_value()
+                            ? QDateTime::fromMSecsSinceEpoch(*entry.new_start_date,
+                                                             QTimeZone::systemTimeZone())
+                            : QDateTime{};
+    text = tr("Rescheduled from %1 to %2")
+               .arg(oldAt.isValid() ? oldAt.toString("dd.MM.yyyy HH:mm") : tr("Unknown time"),
+                    newAt.isValid() ? newAt.toString("dd.MM.yyyy HH:mm") : tr("Unknown time"));
+    break;
+  }
+  default:
+    return;
+  }
+
+  auto *line = new QPushButton(text, mFeedWidget);
+  line->setFlat(true);
+  line->setCursor(Qt::PointingHandCursor);
+  line->setStyleSheet(
+      "QPushButton { color: rgba(255, 255, 255, 0.45); background: transparent; "
+      "border: none; padding: 2px 0px; }"
+      "QPushButton:hover { color: rgba(255, 255, 255, 0.65); }");
+
+  const auto eventId = entry.event_id;
+  qint64 dayStartMs = 0;
+  if (entry.event_current_start_date.has_value()) {
+    const auto startAt = QDateTime::fromMSecsSinceEpoch(*entry.event_current_start_date,
+                                                         QTimeZone::systemTimeZone());
+    dayStartMs =
+        QDateTime(startAt.date(), QTime(0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  }
+  connect(line, &QPushButton::clicked, this, [this, eventId, dayStartMs]() {
+    emit openEventRequested(eventId, dayStartMs);
+  });
+
+  mFeedLayout->insertWidget(mFeedLayout->count() - 1, line, 0, Qt::AlignCenter);
 }
 
 void ClientNotesPage::addAttachmentWidgets(

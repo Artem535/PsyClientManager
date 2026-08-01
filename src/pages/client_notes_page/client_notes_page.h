@@ -61,6 +61,7 @@ private:
   void clearNotes();
   void addNoteBubble(const DuckClientNote &note);
   void addSessionEntry(const DuckEvent &event);
+  void addChangeLogEntry(const DuckEventChangeLog &entry);
   QLabel *addDateDivider(const QDate &date);
   void addAttachmentWidgets(QVBoxLayout *layout,
                             const std::vector<DuckClientNoteAttachment> &attachments);
