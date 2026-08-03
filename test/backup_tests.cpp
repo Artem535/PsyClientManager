@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <optional>
 #include <rfl/json.hpp>
 #include <vector>
 
@@ -90,6 +91,32 @@ pcm::database::Database makeTestDatabase(const std::string &dirName) {
     dbDir.remove(true);
   }
   return pcm::database::Database{conf};
+}
+
+std::optional<pcm::database::Database> backupAndRestore(pcm::database::Database &sourceDb,
+                                                         const std::string &tag) {
+  const auto backupPath =
+      Poco::Path(Poco::Path::current()).append(tag + ".psybackup").toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  if (!pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok) {
+    return std::nullopt;
+  }
+
+  const auto targetPath = Poco::Path(Poco::Path::current()).append(tag + "_target").toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  if (!restoreResult.ok) {
+    return std::nullopt;
+  }
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  return pcm::database::Database{targetConfig};
 }
 
 pcm::backup::BackupManifest extractManifest(const std::string &backupPath,
@@ -842,33 +869,15 @@ TEST(RestoreServiceTest, RestoresEventChangeLogRows) {
   ASSERT_GT(sourceDb.add_event_client(eventId, clientId), 0);
   ASSERT_EQ(sourceDb.get_event_change_log_for_client(clientId).size(), 2);
 
-  const auto backupPath = Poco::Path(Poco::Path::current())
-                              .append("tmp_restore_changelog.psybackup")
-                              .toString();
-  if (Poco::File(backupPath).exists()) {
-    Poco::File(backupPath).remove();
-  }
-  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
-
-  const auto targetPath = Poco::Path(Poco::Path::current())
-                              .append("tmp_restore_changelog_target")
-                              .toString();
-  if (Poco::File(targetPath).exists()) {
-    Poco::File(targetPath).remove(true);
-  }
-
-  const auto restoreResult =
-      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
-  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
-
-  pcm::config::Config targetConfig{
-      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
-  pcm::database::Database restoredDb{targetConfig};
-  const auto entries = restoredDb.get_event_change_log_for_client(clientId);
+  auto restoredDb = backupAndRestore(sourceDb, "tmp_restore_changelog");
+  ASSERT_TRUE(restoredDb.has_value());
+  const auto entries = restoredDb->get_event_change_log_for_client(clientId);
   ASSERT_EQ(entries.size(), 2);
 
-  Poco::File(backupPath).remove();
-  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog.psybackup"))
+      .remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog_target"))
+      .remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog_source"))
       .remove(true);
 }
