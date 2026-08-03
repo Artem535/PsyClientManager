@@ -202,52 +202,46 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
     const auto effectiveNewPaymentStat =
         event.payment_stat_id > 0 ? event.payment_stat_id : existingEvent->payment_stat_id;
 
+    const auto insertChangeLogRow =
+        [&](const int32_t changeKind, const char *label, const duckdb::Value &oldEventStat,
+            const duckdb::Value &newEventStat, const duckdb::Value &oldPaymentStat,
+            const duckdb::Value &newPaymentStat, const duckdb::Value &oldStart,
+            const duckdb::Value &newStart, const duckdb::Value &reason) {
+          auto logResult = executePrepared(
+              conn, constance::kInsertEventChangeLogQuery,
+              {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(changeKind), oldEventStat,
+               newEventStat, oldPaymentStat, newPaymentStat, oldStart, newStart, reason,
+               occurredAt});
+          if (!logResult || logResult->HasError()) {
+            PLOG_ERROR << "Failed to write EventChangeLog " << label
+                       << " row for event (id=" << event.id
+                       << "): " << (logResult ? logResult->GetError() : "prepare failed");
+          }
+        };
+
     if (effectiveNewEventStat != existingEvent->event_stat_id) {
       const auto reasonValue = (effectiveNewEventStat == 3 || effectiveNewEventStat == 5)
                                     ? db_utils::toDuckValue(event.cancellation_reason)
                                     : duckdb::Value();
-      auto statusLogResult = executePrepared(
-          conn, constance::kInsertEventChangeLogQuery,
-          {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(1),
-           duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->event_stat_id)),
-           duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewEventStat)),
-           duckdb::Value(), duckdb::Value(), duckdb::Value(), duckdb::Value(),
-           reasonValue, occurredAt});
-      if (!statusLogResult || statusLogResult->HasError()) {
-        PLOG_ERROR << "Failed to write EventChangeLog status row for event (id="
-                   << event.id << "): "
-                   << (statusLogResult ? statusLogResult->GetError() : "prepare failed");
-      }
+      insertChangeLogRow(
+          1, "status",
+          duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->event_stat_id)),
+          duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewEventStat)), duckdb::Value(),
+          duckdb::Value(), duckdb::Value(), duckdb::Value(), reasonValue);
     }
 
     if (effectiveNewPaymentStat != existingEvent->payment_stat_id) {
-      auto paymentLogResult = executePrepared(
-          conn, constance::kInsertEventChangeLogQuery,
-          {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(2), duckdb::Value(),
-           duckdb::Value(),
-           duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->payment_stat_id)),
-           duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewPaymentStat)),
-           duckdb::Value(), duckdb::Value(), duckdb::Value(), occurredAt});
-      if (!paymentLogResult || paymentLogResult->HasError()) {
-        PLOG_ERROR << "Failed to write EventChangeLog payment row for event (id="
-                   << event.id << "): "
-                   << (paymentLogResult ? paymentLogResult->GetError() : "prepare failed");
-      }
+      insertChangeLogRow(
+          2, "payment", duckdb::Value(), duckdb::Value(),
+          duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->payment_stat_id)),
+          duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewPaymentStat)), duckdb::Value(),
+          duckdb::Value(), duckdb::Value());
     }
 
     if (event.start_date.value_or(0) != existingEvent->start_date.value_or(0)) {
-      auto rescheduleLogResult = executePrepared(
-          conn, constance::kInsertEventChangeLogQuery,
-          {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(3), duckdb::Value(),
-           duckdb::Value(), duckdb::Value(), duckdb::Value(),
-           timestampMsOrNull(existingEvent->start_date), timestampMsOrNull(event.start_date),
-           duckdb::Value(), occurredAt});
-      if (!rescheduleLogResult || rescheduleLogResult->HasError()) {
-        PLOG_ERROR << "Failed to write EventChangeLog reschedule row for event (id="
-                   << event.id << "): "
-                   << (rescheduleLogResult ? rescheduleLogResult->GetError()
-                                            : "prepare failed");
-      }
+      insertChangeLogRow(3, "reschedule", duckdb::Value(), duckdb::Value(), duckdb::Value(),
+                          duckdb::Value(), timestampMsOrNull(existingEvent->start_date),
+                          timestampMsOrNull(event.start_date), duckdb::Value());
     }
   }
 

@@ -190,6 +190,21 @@ TEST(DatabaseTest, GetEventsForClientReturnsOnlyLinkedEvents) {
 }
 
 namespace {
+pcm::database::Database makeChangeLogTestDatabase(const std::string &dirName) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}};
+  Poco::File dbDir(conf.db_conf().db_pth);
+  if (dbDir.exists()) {
+    dbDir.remove(true);
+  }
+  return pcm::database::Database{conf};
+}
+
+void removeChangeLogTestDatabase(const std::string &dirName) {
+  Poco::File(Poco::Path(Poco::Path::current()).append(dirName)).remove(true);
+}
+
 std::pair<int64_t, int64_t> makeLinkedClientAndEvent(pcm::database::Database &db,
                                                       const int64_t startMs,
                                                       const int64_t endMs) {
@@ -211,14 +226,8 @@ std::pair<int64_t, int64_t> makeLinkedClientAndEvent(pcm::database::Database &db
 } // namespace
 
 TEST(DatabaseTest, UpdateEventLogsStatusChange) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_status")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_status";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -245,18 +254,12 @@ TEST(DatabaseTest, UpdateEventLogsStatusChange) {
   EXPECT_FALSE(entries.front().old_payment_stat_id.has_value());
   EXPECT_FALSE(entries.front().old_start_date.has_value());
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventLogsPaymentStatusChange) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_payment")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_payment";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -277,18 +280,12 @@ TEST(DatabaseTest, UpdateEventLogsPaymentStatusChange) {
   ASSERT_TRUE(entries.front().new_payment_stat_id.has_value());
   EXPECT_EQ(*entries.front().new_payment_stat_id, 2);
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventLogsReschedule) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_reschedule")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_reschedule";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -311,18 +308,12 @@ TEST(DatabaseTest, UpdateEventLogsReschedule) {
   ASSERT_TRUE(entries.front().event_current_start_date.has_value());
   EXPECT_EQ(*entries.front().event_current_start_date, 1730100000000);
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventStatusChangeToCanceledIncludesReason) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_cancel")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_cancel";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -342,18 +333,12 @@ TEST(DatabaseTest, UpdateEventStatusChangeToCanceledIncludesReason) {
   ASSERT_TRUE(entries.front().cancellation_reason.has_value());
   EXPECT_EQ(*entries.front().cancellation_reason, "Client request");
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventStatusChangeToNoShowIncludesReason) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_noshow")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_noshow";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -375,18 +360,12 @@ TEST(DatabaseTest, UpdateEventStatusChangeToNoShowIncludesReason) {
   ASSERT_TRUE(entries.front().cancellation_reason.has_value());
   EXPECT_EQ(*entries.front().cancellation_reason, "Did not attend");
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventNoOpProducesNoChangeLogRows) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_noop")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_noop";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -401,18 +380,12 @@ TEST(DatabaseTest, UpdateEventNoOpProducesNoChangeLogRows) {
 
   EXPECT_TRUE(db.get_event_change_log_for_client(clientId).empty());
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, UpdateEventCombinedChangeProducesOneRowPerAspect) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_combined")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_combined";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -433,18 +406,12 @@ TEST(DatabaseTest, UpdateEventCombinedChangeProducesOneRowPerAspect) {
   }
   EXPECT_EQ(kinds, (std::set<int64_t>{1, 2, 3}));
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, RemoveEventSucceedsAfterChangeLogRowsExist) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_changelog_remove")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-  pcm::database::Database db{conf};
+  const std::string dirName = "tmp_dir_changelog_remove";
+  auto db = makeChangeLogTestDatabase(dirName);
 
   const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
 
@@ -460,7 +427,7 @@ TEST(DatabaseTest, RemoveEventSucceedsAfterChangeLogRowsExist) {
 
   EXPECT_TRUE(db.remove_event(eventId));
 
-  db_dir.remove(true);
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, GetEventSeriesForClientAndRangeFiltersByClientAndRange) {
