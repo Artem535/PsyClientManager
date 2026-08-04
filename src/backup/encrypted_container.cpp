@@ -1,5 +1,7 @@
 #include "encrypted_container.h"
 
+#include <Poco/Exception.h>
+#include <Poco/File.h>
 #include <sodium.h>
 
 #include <array>
@@ -161,10 +163,14 @@ class TemporaryOutput {
   const std::string &path() const { return path_; }
 
   bool publish(const std::string &outputPath) {
-    std::error_code error;
-    std::filesystem::rename(path_, outputPath, error);
-    published_ = !error;
-    return published_;
+    try {
+      // Poco uses MoveFileExW with MOVEFILE_REPLACE_EXISTING on Windows.
+      Poco::File(path_).renameTo(outputPath);
+      published_ = true;
+      return true;
+    } catch (const Poco::Exception &) {
+      return false;
+    }
   }
 
  private:

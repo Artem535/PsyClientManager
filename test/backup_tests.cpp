@@ -35,6 +35,12 @@ std::string writeTempFile(const std::string &name, const std::string &content) {
   return path;
 }
 
+void overwriteFile(const std::string &path, const std::string &content) {
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  out << content;
+  out.close();
+}
+
 std::string tempPath(const std::string &name) {
   return Poco::Path(Poco::Path::current()).append(name).toString();
 }
@@ -159,6 +165,100 @@ TEST(EncryptedContainerTest, PreservesExistingOutputWhenPublishingFails) {
 
   Poco::File(plain).remove();
   output.remove(true);
+}
+
+TEST(EncryptedContainerTest, ReplacesExistingRegularOutputFile) {
+  const auto plain = writeTempFile("tmp_replace_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_replace.psybackup");
+  const auto restored = writeTempFile("tmp_replace_restored.zip", "old plaintext");
+  const auto key = fixedMasterKey();
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                "correct horse battery staple")
+                  .ok);
+  EXPECT_EQ(readFile(restored), readFile(plain));
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+  Poco::File(restored).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsOversizedHeaderWithoutWritingPlaintext) {
+  const auto encrypted = tempPath("tmp_oversized_header.psybackup");
+  const auto restored = tempPath("tmp_oversized_header_restored.zip");
+  removeIfExists(restored);
+  overwriteFile(encrypted, "PCMENC01\x01\x40\x00\x00");
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 "correct horse battery staple")
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsUnsupportedVersionWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_version_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_version.psybackup");
+  const auto restored = tempPath("tmp_version_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  auto contents = readFile(encrypted);
+  const auto version = contents.find("\"container_version\":1");
+  ASSERT_NE(version, std::string::npos);
+  contents[version + std::string{"\"container_version\":"}.size()] = '2';
+  overwriteFile(encrypted, contents);
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 "correct horse battery staple")
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsTruncatedFinalRecordWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_truncated_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_truncated.psybackup");
+  const auto restored = tempPath("tmp_truncated_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  auto contents = readFile(encrypted);
+  ASSERT_FALSE(contents.empty());
+  contents.pop_back();
+  overwriteFile(encrypted, contents);
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 "correct horse battery staple")
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsTooShortPasswordWithoutWritingOutput) {
+  const auto plain = writeTempFile("tmp_short_password_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_short_password.psybackup");
+  const auto key = fixedMasterKey();
+  removeIfExists(encrypted);
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, encrypted, "too short", key).ok);
+  EXPECT_FALSE(Poco::File(encrypted).exists());
+
+  Poco::File(plain).remove();
 }
 
 TEST(ChecksumUtilsTest, Sha256FileMatchesKnownVectors) {
