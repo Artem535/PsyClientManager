@@ -75,6 +75,7 @@ qt_add_translations(PsyClientManager
     TS_FILES
         translation/app_ru.ts
         translation/app_en.ts
+    LUPDATE_OPTIONS -locations none -no-obsolete
 )
 
 # Include subdirectories for modules
