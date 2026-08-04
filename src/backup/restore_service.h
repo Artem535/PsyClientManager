@@ -7,6 +7,7 @@ namespace pcm::backup {
 
 struct RestoreOptions {
   std::optional<std::string> attachments_root;
+  std::optional<std::string> recovery_password;
 };
 
 struct RestoreResult {

@@ -10,12 +10,31 @@
 #include <fstream>
 #include <rfl/json.hpp>
 #include <set>
+#include <utility>
 
 #include "backup_manifest.hpp"
 #include "checksum_utils.hpp"
+#include "encrypted_container.h"
+
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 
 namespace pcm::backup {
 namespace {
+
+void removeScratchPath(const std::string &path) {
+  if (path.empty()) {
+    return;
+  }
+  try {
+    Poco::File f(path);
+    if (f.exists()) {
+      f.remove(true);
+    }
+  } catch (...) {
+  }
+}
 
 struct ScratchGuard {
   std::string path;
@@ -41,13 +60,91 @@ std::string toRelative(const std::string &base, const std::string &full) {
 
 } // namespace
 
-ValidationResult BackupValidator::validate(const std::string &backup_path) {
+namespace detail {
+
+NormalizedBackupFile::NormalizedBackupFile(std::string zip_path,
+                                           std::string scratch_path)
+    : mZipPath(std::move(zip_path)), mScratchPath(std::move(scratch_path)) {}
+
+NormalizedBackupFile::~NormalizedBackupFile() { removeScratchPath(mScratchPath); }
+
+NormalizedBackupFile::NormalizedBackupFile(NormalizedBackupFile &&other) noexcept
+    : mZipPath(std::move(other.mZipPath)),
+      mScratchPath(std::move(other.mScratchPath)) {
+  other.mScratchPath.clear();
+}
+
+NormalizedBackupFile &NormalizedBackupFile::operator=(
+    NormalizedBackupFile &&other) noexcept {
+  if (this != &other) {
+    removeScratchPath(mScratchPath);
+    mZipPath = std::move(other.mZipPath);
+    mScratchPath = std::move(other.mScratchPath);
+    other.mScratchPath.clear();
+  }
+  return *this;
+}
+
+const std::string &NormalizedBackupFile::zip_path() const { return mZipPath; }
+
+std::optional<NormalizedBackupFile>
+normalize_backup_file(const std::string &backup_path,
+                      const std::optional<std::string> &recovery_password,
+                      std::string *error) {
+  const auto kind = detect_backup_container(backup_path);
+  if (kind == BackupContainerKind::PlainZip) {
+    return NormalizedBackupFile{backup_path};
+  }
+  if (kind != BackupContainerKind::Encrypted || !recovery_password.has_value()) {
+    *error = kind == BackupContainerKind::Encrypted ? "cannot decrypt backup"
+                                                     : "unsupported backup container";
+    return std::nullopt;
+  }
+
+  const auto uuid = Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
+  const auto scratch_path = Poco::Path(Poco::Path::temp())
+                                .append("psybackup-decrypt-" + uuid)
+                                .toString();
+  try {
+    Poco::File(scratch_path).createDirectories();
+#ifndef _WIN32
+    ::chmod(scratch_path.c_str(), S_IRWXU);
+#endif
+    const auto zip_path = Poco::Path(scratch_path).append("backup.zip").toString();
+    const auto decryption =
+        decrypt_backup_file(backup_path, zip_path, *recovery_password);
+    if (!decryption.ok) {
+      removeScratchPath(scratch_path);
+      *error = "cannot decrypt backup";
+      return std::nullopt;
+    }
+    return NormalizedBackupFile{zip_path, scratch_path};
+  } catch (...) {
+    removeScratchPath(scratch_path);
+    *error = "cannot decrypt backup";
+    return std::nullopt;
+  }
+}
+
+} // namespace detail
+
+ValidationResult BackupValidator::validate(
+    const std::string &backup_path,
+    const std::optional<std::string> &recovery_password) {
   ValidationResult result;
 
   try {
     Poco::File backupFile(backup_path);
     if (!backupFile.exists() || !backupFile.isFile()) {
       result.errors.push_back("backup file does not exist: " + backup_path);
+      return result;
+    }
+
+    std::string normalizationError;
+    auto normalized = detail::normalize_backup_file(backup_path, recovery_password,
+                                                    &normalizationError);
+    if (!normalized.has_value()) {
+      result.errors.push_back(std::move(normalizationError));
       return result;
     }
 
@@ -58,7 +155,7 @@ ValidationResult BackupValidator::validate(const std::string &backup_path) {
                                 .toString();
     ScratchGuard guard{extractDir};
 
-    std::ifstream zipIn(backup_path, std::ios::binary);
+    std::ifstream zipIn(normalized->zip_path(), std::ios::binary);
     if (!zipIn) {
       result.errors.push_back("cannot open backup file: " + backup_path);
       return result;

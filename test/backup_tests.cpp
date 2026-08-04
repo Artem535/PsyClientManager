@@ -415,6 +415,38 @@ TEST(BackupServiceTest, CreateBackupDatabaseOnlyProducesValidArchive) {
       .remove(true);
 }
 
+TEST(BackupServiceTest, EncryptedBackupHidesZipAndValidatesAfterDecryption) {
+  auto db = makeTestDatabase("tmp_encrypted_backup_source");
+  DuckClient client;
+  client.name = std::string{"Encrypted"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_encrypted_backup.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+
+  pcm::backup::BackupOptions options;
+  options.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = "correct horse battery staple"};
+  const auto backupResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, options);
+  ASSERT_TRUE(backupResult.ok) << backupResult.error;
+  EXPECT_EQ(pcm::backup::detect_backup_container(backupPath),
+            pcm::backup::BackupContainerKind::Encrypted);
+
+  const auto validation = pcm::backup::BackupValidator{}.validate(
+      backupPath, "correct horse battery staple");
+  EXPECT_TRUE(validation.ok);
+  EXPECT_TRUE(validation.errors.empty());
+
+  removeIfExists(backupPath);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_encrypted_backup_source"))
+      .remove(true);
+}
+
 TEST(BackupServiceTest, CreateBackupWithAttachmentsIncludesAttachmentTree) {
   auto db = makeTestDatabase("tmp_dir_backup_with_attachments");
 
@@ -762,6 +794,141 @@ TEST(RestoreServiceTest, RestoresDatabaseSnapshotIntoNewDirectory) {
   Poco::File(backupPath).remove();
   Poco::File(targetPath).remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
+  auto sourceDb = makeTestDatabase("tmp_restore_encrypted_source");
+  DuckClient client;
+  client.name = std::string{"Encrypted Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_encrypted.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  pcm::backup::BackupOptions backupOptions;
+  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = "correct horse battery staple"};
+  ASSERT_TRUE(pcm::backup::BackupService{}
+                  .create_backup(sourceDb, backupPath, backupOptions)
+                  .ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_encrypted_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.recovery_password = "correct horse battery staple";
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Encrypted Restore";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_encrypted_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
+  auto sourceDb = makeTestDatabase("tmp_restore_wrong_password_source");
+  DuckClient sourceClient;
+  sourceClient.name = std::string{"Replacement"};
+  ASSERT_GT(sourceDb.add_client(sourceClient), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_wrong_password.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  pcm::backup::BackupOptions backupOptions;
+  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = "correct horse battery staple"};
+  ASSERT_TRUE(pcm::backup::BackupService{}
+                  .create_backup(sourceDb, backupPath, backupOptions)
+                  .ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_wrong_password_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_wrong_password_target");
+    DuckClient existingClient;
+    existingClient.name = std::string{"Unchanged"};
+    ASSERT_GT(targetDb.add_client(existingClient), 0);
+  }
+
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.recovery_password = "wrong recovery password";
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  EXPECT_FALSE(restoreResult.ok);
+  EXPECT_EQ(restoreResult.error, "backup validation failed: cannot decrypt backup");
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database unchangedDb{targetConfig};
+  const auto clients = unchangedDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Unchanged";
+  }));
+  EXPECT_FALSE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Replacement";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_wrong_password_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresExistingUnencryptedBackupUnchanged) {
+  auto sourceDb = makeTestDatabase("tmp_restore_plain_source");
+  DuckClient client;
+  client.name = std::string{"Plain Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_plain.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  ASSERT_TRUE(
+      pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_plain_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Plain Restore";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_plain_source"))
       .remove(true);
 }
 

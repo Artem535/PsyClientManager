@@ -80,6 +80,12 @@ BackupResult BackupService::create_backup(const database::Database &db,
                                           const std::string &destination_path,
                                           const BackupOptions &options) {
   try {
+    if (options.encryption.has_value() &&
+        (!options.encryption->master_key.has_value() ||
+         !options.encryption->recovery_password.has_value())) {
+      return {false, "backup encryption requires a master key and recovery password"};
+    }
+
     const auto uuid =
         Poco::UUIDGenerator::defaultGenerator().createRandom().toString();
     const auto scratchDir =
@@ -93,8 +99,15 @@ BackupResult BackupService::create_backup(const database::Database &db,
     ::chmod(scratchDir.c_str(), S_IRWXU);
 #endif
 
+    const auto archiveRoot = options.encryption.has_value()
+                                 ? Poco::Path(scratchDir).append("contents").toString()
+                                 : scratchDir;
+    if (options.encryption.has_value()) {
+      Poco::File(archiveRoot).createDirectories();
+    }
+
     const auto databaseDir =
-        Poco::Path(scratchDir).append("database").toString();
+        Poco::Path(archiveRoot).append("database").toString();
     if (!db.export_snapshot(databaseDir)) {
       return {false, "failed to export a consistent database snapshot"};
     }
@@ -108,7 +121,7 @@ BackupResult BackupService::create_backup(const database::Database &db,
                     *options.attachments_root};
       }
       const auto attachmentsDir =
-          Poco::Path(scratchDir).append("attachments").toString();
+          Poco::Path(archiveRoot).append("attachments").toString();
       attachmentsRootFile.copyTo(attachmentsDir);
       kind = "database_and_attachments";
     }
@@ -121,10 +134,10 @@ BackupResult BackupService::create_backup(const database::Database &db,
     manifest.schema_version = metadata.schema_version;
     manifest.backup_format_version = metadata.backup_format_version;
     manifest.kind = kind;
-    manifest.entries = collectEntries(scratchDir);
+    manifest.entries = collectEntries(archiveRoot);
 
     const auto manifestPath =
-        Poco::Path(scratchDir).append("manifest.json").toString();
+        Poco::Path(archiveRoot).append("manifest.json").toString();
     const auto saveResult =
         rfl::json::save(manifestPath, manifest, rfl::json::pretty);
     if (!saveResult) {
@@ -132,7 +145,9 @@ BackupResult BackupService::create_backup(const database::Database &db,
                          saveResult.error().what()};
     }
 
-    const auto tempZipPath = destination_path + ".partial-" + uuid;
+    const auto tempZipPath = options.encryption.has_value()
+                                 ? Poco::Path(scratchDir).append("backup.zip").toString()
+                                 : destination_path + ".partial-" + uuid;
     TempFileGuard zipGuard{tempZipPath};
     {
       std::ofstream zipOut(tempZipPath, std::ios::binary | std::ios::trunc);
@@ -140,7 +155,7 @@ BackupResult BackupService::create_backup(const database::Database &db,
         return {false, "failed to open temporary archive for writing"};
       }
       Poco::Zip::Compress compress(zipOut, true);
-      compress.addRecursive(Poco::Path(scratchDir),
+      compress.addRecursive(Poco::Path(archiveRoot),
                             Poco::Zip::ZipCommon::CL_MAXIMUM, true);
       compress.close();
       zipOut.flush();
@@ -153,7 +168,16 @@ BackupResult BackupService::create_backup(const database::Database &db,
       }
     }
 
-    Poco::File(tempZipPath).renameTo(destination_path);
+    if (options.encryption.has_value()) {
+      const auto encryptionResult = encrypt_backup_file(
+          tempZipPath, destination_path, *options.encryption->recovery_password,
+          *options.encryption->master_key);
+      if (!encryptionResult.ok) {
+        return {false, "failed to encrypt backup: " + encryptionResult.error};
+      }
+    } else {
+      Poco::File(tempZipPath).renameTo(destination_path);
+    }
 
     return {true, {}};
   } catch (const Poco::Exception &ex) {
