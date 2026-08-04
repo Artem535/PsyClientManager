@@ -65,6 +65,7 @@ gtest_discover_tests(PsyClientManager_change_log_text_tests)
 
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
+find_package(unofficial-sodium CONFIG REQUIRED)
 add_executable(PsyClientManager_backup_tests backup_tests.cpp)
 target_link_libraries(PsyClientManager_backup_tests PRIVATE
     GTest::gtest
@@ -75,5 +76,6 @@ target_link_libraries(PsyClientManager_backup_tests PRIVATE
     Poco::Foundation
     Poco::Zip
     reflectcpp::reflectcpp
+    unofficial-sodium::sodium
 )
 gtest_discover_tests(PsyClientManager_backup_tests)

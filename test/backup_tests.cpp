@@ -6,10 +6,12 @@
 #include <Poco/Zip/Decompress.h>
 #include <Poco/Zip/ZipCommon.h>
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <optional>
 #include <rfl/json.hpp>
+#include <sstream>
 #include <vector>
 
 #include "auto_backup_due.h"
@@ -20,6 +22,7 @@
 #include "checksum_utils.hpp"
 #include "config.h"
 #include "database.h"
+#include "encrypted_container.h"
 #include "restore_service.h"
 
 namespace {
@@ -32,7 +35,131 @@ std::string writeTempFile(const std::string &name, const std::string &content) {
   return path;
 }
 
+std::string tempPath(const std::string &name) {
+  return Poco::Path(Poco::Path::current()).append(name).toString();
+}
+
+std::string readFile(const std::string &path) {
+  std::ifstream in(path, std::ios::binary);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  return contents.str();
+}
+
+void removeIfExists(const std::string &path) {
+  Poco::File file(path);
+  if (file.exists()) {
+    file.remove();
+  }
+}
+
+pcm::backup::MasterKey fixedMasterKey() {
+  pcm::backup::MasterKey key;
+  for (std::size_t index = 0; index < key.bytes.size(); ++index) {
+    key.bytes[index] = static_cast<unsigned char>(index);
+  }
+  return key;
+}
+
 } // namespace
+
+TEST(EncryptedContainerTest, RoundTripsZipWithRecoveryPassword) {
+  const auto plain = writeTempFile("tmp_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_encrypted.psybackup");
+  const auto restored = tempPath("tmp_restored.zip");
+  const auto key = fixedMasterKey();
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  EXPECT_EQ(pcm::backup::detect_backup_container(encrypted),
+            pcm::backup::BackupContainerKind::Encrypted);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                "correct horse battery staple")
+                  .ok);
+  EXPECT_EQ(readFile(restored), readFile(plain));
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+  Poco::File(restored).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsWrongPasswordWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_wrong_password_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_wrong_password.psybackup");
+  const auto restored = tempPath("tmp_wrong_password_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 "wrong recovery password")
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsCiphertextTampering) {
+  const auto plain = writeTempFile("tmp_tampered_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_tampered.psybackup");
+  const auto restored = tempPath("tmp_tampered_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                "correct horse battery staple", key)
+                  .ok);
+  std::fstream ciphertext(encrypted, std::ios::binary | std::ios::in | std::ios::out);
+  ASSERT_TRUE(ciphertext);
+  ciphertext.seekg(-1, std::ios::end);
+  char byte = 0;
+  ciphertext.read(&byte, 1);
+  ciphertext.seekp(-1, std::ios::end);
+  byte ^= 0x01;
+  ciphertext.write(&byte, 1);
+  ciphertext.close();
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 "correct horse battery staple")
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, KeepsPlainZipDetectionCompatible) {
+  const auto plain = writeTempFile("tmp_plain_detection.zip", "PK\x03\x04payload");
+
+  EXPECT_EQ(pcm::backup::detect_backup_container(plain),
+            pcm::backup::BackupContainerKind::PlainZip);
+
+  Poco::File(plain).remove();
+}
+
+TEST(EncryptedContainerTest, PreservesExistingOutputWhenPublishingFails) {
+  const auto plain = writeTempFile("tmp_publish_plain.zip", "PK\x03\x04payload");
+  const auto outputDirectory = tempPath("tmp_publish_output");
+  const auto key = fixedMasterKey();
+  Poco::File output(outputDirectory);
+  if (output.exists()) {
+    output.remove(true);
+  }
+  output.createDirectory();
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, outputDirectory,
+                                                 "correct horse battery staple", key)
+                   .ok);
+  EXPECT_TRUE(output.exists());
+  EXPECT_TRUE(output.isDirectory());
+
+  Poco::File(plain).remove();
+  output.remove(true);
+}
 
 TEST(ChecksumUtilsTest, Sha256FileMatchesKnownVectors) {
   const auto helloPath = writeTempFile("tmp_sha256_hello.txt", "hello world");

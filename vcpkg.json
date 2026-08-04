@@ -19,6 +19,7 @@
         "yaml"
       ]
     },
-    "duckdb"
+    "duckdb",
+    "libsodium"
   ]
 }
