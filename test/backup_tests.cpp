@@ -895,6 +895,95 @@ TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
       .remove(true);
 }
 
+TEST(RestoreServiceTest,
+     TamperedEncryptedBackupLeavesExistingDatabaseAndAttachmentsUntouched) {
+  auto sourceDb = makeTestDatabase("tmp_restore_tampered_source");
+  DuckClient sourceClient;
+  sourceClient.name = std::string{"Replacement"};
+  ASSERT_GT(sourceDb.add_client(sourceClient), 0);
+
+  const auto sourceAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_tampered_source_files")
+                                     .toString();
+  if (Poco::File(sourceAttachments).exists()) {
+    Poco::File(sourceAttachments).remove(true);
+  }
+  Poco::File(sourceAttachments).createDirectories();
+  std::ofstream(Poco::Path(sourceAttachments).append("note.txt").toString())
+      << "replacement attachment";
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_tampered.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  pcm::backup::BackupOptions backupOptions;
+  backupOptions.attachments_root = sourceAttachments;
+  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = "correct horse battery staple"};
+  ASSERT_TRUE(pcm::backup::BackupService{}
+                  .create_backup(sourceDb, backupPath, backupOptions)
+                  .ok);
+
+  {
+    std::fstream backup(backupPath, std::ios::binary | std::ios::in | std::ios::out);
+    ASSERT_TRUE(backup);
+    backup.seekg(-1, std::ios::end);
+    char byte = 0;
+    backup.read(&byte, 1);
+    backup.seekp(-1, std::ios::end);
+    byte ^= 0x01;
+    backup.write(&byte, 1);
+  }
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_tampered_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_tampered_target");
+    DuckClient existingClient;
+    existingClient.name = std::string{"Unchanged"};
+    ASSERT_GT(targetDb.add_client(existingClient), 0);
+  }
+  const auto targetAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_tampered_target_files")
+                                     .toString();
+  if (Poco::File(targetAttachments).exists()) {
+    Poco::File(targetAttachments).remove(true);
+  }
+  Poco::File(targetAttachments).createDirectories();
+  std::ofstream(Poco::Path(targetAttachments).append("note.txt").toString())
+      << "unchanged attachment";
+
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.attachments_root = targetAttachments;
+  restoreOptions.recovery_password = "correct horse battery staple";
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  EXPECT_FALSE(restoreResult.ok);
+  EXPECT_EQ(restoreResult.error, "backup validation failed: cannot decrypt backup");
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database unchangedDb{targetConfig};
+  const auto clients = unchangedDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Unchanged";
+  }));
+  EXPECT_FALSE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Replacement";
+  }));
+  EXPECT_EQ(readFile(Poco::Path(targetAttachments).append("note.txt").toString()),
+            "unchanged attachment");
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(targetAttachments).remove(true);
+  Poco::File(sourceAttachments).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_tampered_source"))
+      .remove(true);
+}
+
 TEST(RestoreServiceTest, RestoresExistingUnencryptedBackupUnchanged) {
   auto sourceDb = makeTestDatabase("tmp_restore_plain_source");
   DuckClient client;
