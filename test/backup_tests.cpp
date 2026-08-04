@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <optional>
 #include <rfl/json.hpp>
 #include <vector>
 
@@ -90,6 +91,32 @@ pcm::database::Database makeTestDatabase(const std::string &dirName) {
     dbDir.remove(true);
   }
   return pcm::database::Database{conf};
+}
+
+std::optional<pcm::database::Database> backupAndRestore(pcm::database::Database &sourceDb,
+                                                         const std::string &tag) {
+  const auto backupPath =
+      Poco::Path(Poco::Path::current()).append(tag + ".psybackup").toString();
+  if (Poco::File(backupPath).exists()) {
+    Poco::File(backupPath).remove();
+  }
+  if (!pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok) {
+    return std::nullopt;
+  }
+
+  const auto targetPath = Poco::Path(Poco::Path::current()).append(tag + "_target").toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  if (!restoreResult.ok) {
+    return std::nullopt;
+  }
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  return pcm::database::Database{targetConfig};
 }
 
 pcm::backup::BackupManifest extractManifest(const std::string &backupPath,
@@ -809,6 +836,49 @@ TEST(RestoreServiceTest, RestoresLinkedNoteFields) {
   Poco::File(backupPath).remove();
   Poco::File(targetPath).remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_note_link_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresEventChangeLogRows) {
+  auto sourceDb = makeTestDatabase("tmp_restore_changelog_source");
+
+  DuckClient client;
+  client.name = std::string{"Jack"};
+  client.last_name = std::string{"J"};
+  const auto clientId = sourceDb.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  event.event_stat_id = 1;
+  event.payment_stat_id = 1;
+  const auto eventId = sourceDb.add_event(event);
+  ASSERT_GT(eventId, 0);
+  ASSERT_GT(sourceDb.add_event_client(eventId, clientId), 0);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(sourceDb.update_event(updated));
+  // Re-establish client link after update (update_event unlinks clients)
+  ASSERT_GT(sourceDb.add_event_client(eventId, clientId), 0);
+  ASSERT_EQ(sourceDb.get_event_change_log_for_client(clientId).size(), 2);
+
+  auto restoredDb = backupAndRestore(sourceDb, "tmp_restore_changelog");
+  ASSERT_TRUE(restoredDb.has_value());
+  const auto entries = restoredDb->get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 2);
+
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog.psybackup"))
+      .remove();
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog_target"))
+      .remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_changelog_source"))
       .remove(true);
 }
 

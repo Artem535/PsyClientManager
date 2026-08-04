@@ -51,6 +51,18 @@ target_link_libraries(PsyClientManager_recurrence_tests PRIVATE
 )
 gtest_discover_tests(PsyClientManager_recurrence_tests)
 
+# Change-log line text tests
+add_executable(PsyClientManager_change_log_text_tests change_log_text_tests.cpp)
+target_link_libraries(PsyClientManager_change_log_text_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    PsyClientManager_config
+    PsyClientManager_database
+    PsyClientManager_client_notes_page
+    Poco::Foundation
+)
+gtest_discover_tests(PsyClientManager_change_log_text_tests)
+
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 add_executable(PsyClientManager_backup_tests backup_tests.cpp)

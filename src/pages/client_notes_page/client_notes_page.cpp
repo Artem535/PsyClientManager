@@ -1,5 +1,6 @@
 #include "client_notes_page.h"
 
+#include "change_log_text.h"
 #include "../../widgets/app_settings.h"
 #include "../../widgets/constants.hpp"
 #include "../../widgets/surface_paint_filter.h"
@@ -48,6 +49,7 @@ QFrame *makeSurface(QWidget *parent = nullptr) {
   frame->setStyleSheet(styleSheet);
   return frame;
 }
+
 } // namespace
 
 ClientNotesPage::ClientNotesPage(std::shared_ptr<pcm::database::Database> db,
@@ -405,13 +407,17 @@ void ClientNotesPage::reloadNotes() {
   }
   updateAppointmentSummary(events);
 
+  const auto changeLogEntries =
+      mDb ? mDb->get_event_change_log_for_client(mCurrentClient->id)
+          : std::vector<DuckEventChangeLog>{};
+
   mCachedFeedEvents = events;
   if (!mLinkManuallySet) {
     mPendingLinkedEvent = nearestPastEvent(events);
   }
   updateLinkButtonText();
 
-  using FeedItem = std::variant<DuckClientNote, DuckEvent>;
+  using FeedItem = std::variant<DuckClientNote, DuckEvent, DuckEventChangeLog>;
   std::vector<FeedItem> items;
   if (mFeedFilter != FeedFilter::Sessions) {
     for (const auto &note : notes) {
@@ -421,6 +427,9 @@ void ClientNotesPage::reloadNotes() {
   if (mFeedFilter != FeedFilter::Notes) {
     for (const auto &event : events) {
       items.emplace_back(event);
+    }
+    for (const auto &entry : changeLogEntries) {
+      items.emplace_back(entry);
     }
   }
 
@@ -438,13 +447,15 @@ void ClientNotesPage::reloadNotes() {
           using T = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<T, DuckClientNote>) {
             return value.created_at.value_or(0);
+          } else if constexpr (std::is_same_v<T, DuckEventChangeLog>) {
+            return value.occurred_at;
           } else {
             return value.start_date.value_or(0);
           }
         },
         item);
   };
-  std::sort(items.begin(), items.end(), [&](const FeedItem &left, const FeedItem &right) {
+  std::stable_sort(items.begin(), items.end(), [&](const FeedItem &left, const FeedItem &right) {
     return timestampOf(left) < timestampOf(right);
   });
 
@@ -473,6 +484,8 @@ void ClientNotesPage::reloadNotes() {
           using T = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<T, DuckClientNote>) {
             addNoteBubble(value);
+          } else if constexpr (std::is_same_v<T, DuckEventChangeLog>) {
+            addChangeLogEntry(value);
           } else {
             addSessionEntry(value);
           }
@@ -800,6 +813,41 @@ QLabel *ClientNotesPage::addDateDivider(const QDate &date) {
   divider->setStyleSheet("color: rgba(255, 255, 255, 0.45); background: transparent;");
   mFeedLayout->insertWidget(mFeedLayout->count() - 1, divider);
   return divider;
+}
+
+void ClientNotesPage::addChangeLogEntry(const DuckEventChangeLog &entry) {
+  const auto text = pcm::client_notes::changeLogLineText(entry);
+  if (text.isEmpty()) {
+    return;
+  }
+
+  auto *line = new QPushButton(text, mFeedWidget);
+  line->setFlat(true);
+  line->setCursor(Qt::PointingHandCursor);
+  line->setStyleSheet(
+      "QPushButton { color: rgba(255, 255, 255, 0.45); background: transparent; "
+      "border: none; padding: 2px 0px; }"
+      "QPushButton:hover { color: rgba(255, 255, 255, 0.65); }");
+
+  if (entry.event_current_start_date.has_value()) {
+    const auto sessionAt = QDateTime::fromMSecsSinceEpoch(*entry.event_current_start_date,
+                                                           QTimeZone::systemTimeZone());
+    line->setToolTip(tr("Session: %1").arg(sessionAt.toString("dd.MM.yyyy HH:mm")));
+  }
+
+  const auto eventId = entry.event_id;
+  qint64 dayStartMs = 0;
+  if (entry.event_current_start_date.has_value()) {
+    const auto startAt = QDateTime::fromMSecsSinceEpoch(*entry.event_current_start_date,
+                                                         QTimeZone::systemTimeZone());
+    dayStartMs =
+        QDateTime(startAt.date(), QTime(0, 0), QTimeZone::systemTimeZone()).toMSecsSinceEpoch();
+  }
+  connect(line, &QPushButton::clicked, this, [this, eventId, dayStartMs]() {
+    emit openEventRequested(eventId, dayStartMs);
+  });
+
+  mFeedLayout->insertWidget(mFeedLayout->count() - 1, line, 0, Qt::AlignCenter);
 }
 
 void ClientNotesPage::addAttachmentWidgets(

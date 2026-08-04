@@ -130,6 +130,20 @@ CREATE TABLE IF NOT EXISTS ClientNoteAttachment (
     size_bytes BIGINT,
     created_at TIMESTAMP NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS EventChangeLog (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL REFERENCES Event(id),
+    change_kind INTEGER NOT NULL, -- 1=status, 2=payment, 3=reschedule
+    old_event_stat_id INTEGER,
+    new_event_stat_id INTEGER,
+    old_payment_stat_id INTEGER,
+    new_payment_stat_id INTEGER,
+    old_start_date TIMESTAMP,
+    new_start_date TIMESTAMP,
+    cancellation_reason TEXT,
+    occurred_at TIMESTAMP NOT NULL
+);
 )duckdb";
 
 constexpr auto kSchemaMigrations = R"duckdb(
@@ -343,6 +357,31 @@ constexpr auto kSelectEventBySeriesOccurrenceQuery = R"duckdb(
 SELECT * FROM Event
 WHERE series_id = $1 AND original_occurrence_start = $2
 LIMIT 1
+)duckdb";
+
+constexpr auto kInsertEventChangeLogQuery = R"duckdb(
+INSERT INTO EventChangeLog (
+    id, event_id, change_kind,
+    old_event_stat_id, new_event_stat_id,
+    old_payment_stat_id, new_payment_stat_id,
+    old_start_date, new_start_date,
+    cancellation_reason, occurred_at
+)
+SELECT COALESCE(MAX(id), 0) + 1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+FROM EventChangeLog
+RETURNING id
+)duckdb";
+
+constexpr auto kDeleteEventChangeLogByEventIdQuery =
+    "DELETE FROM EventChangeLog WHERE event_id = $1";
+
+constexpr auto kSelectEventChangeLogForClientQuery = R"duckdb(
+SELECT ecl.*, e.start_date AS event_current_start_date
+FROM EventChangeLog ecl
+JOIN Event e ON e.id = ecl.event_id
+JOIN EventClient ec ON ec.event_id = ecl.event_id
+WHERE ec.client_id = $1
+ORDER BY ecl.occurred_at ASC, ecl.id ASC
 )duckdb";
 
 constexpr auto kDeleteEventClientByEventIdQuery =

@@ -4,6 +4,7 @@
 #include <duckdb.hpp>
 #include <gtest/gtest.h>
 #include <limits>
+#include <set>
 #include "config.h"
 #include "database.h"
 
@@ -186,6 +187,247 @@ TEST(DatabaseTest, GetEventsForClientReturnsOnlyLinkedEvents) {
   EXPECT_EQ(eventsForA.front().name.value_or(""), "Session with Alice");
 
   db_dir.remove(true);
+}
+
+namespace {
+pcm::database::Database makeChangeLogTestDatabase(const std::string &dirName) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}};
+  Poco::File dbDir(conf.db_conf().db_pth);
+  if (dbDir.exists()) {
+    dbDir.remove(true);
+  }
+  return pcm::database::Database{conf};
+}
+
+void removeChangeLogTestDatabase(const std::string &dirName) {
+  Poco::File(Poco::Path(Poco::Path::current()).append(dirName)).remove(true);
+}
+
+std::pair<int64_t, int64_t> makeLinkedClientAndEvent(pcm::database::Database &db,
+                                                      const int64_t startMs,
+                                                      const int64_t endMs) {
+  DuckClient client;
+  client.name = std::string{"Change"};
+  client.last_name = std::string{"Log"};
+  const auto clientId = db.add_client(client);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = startMs;
+  event.end_date = endMs;
+  event.event_stat_id = 1;
+  event.payment_stat_id = 1;
+  const auto eventId = db.add_event(event);
+  db.add_event_client(eventId, clientId);
+  return {clientId, eventId};
+}
+} // namespace
+
+TEST(DatabaseTest, UpdateEventLogsStatusChange) {
+  const std::string dirName = "tmp_dir_changelog_status";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  // update_event unlinks EventClient rows and only restores them on failure
+  // (mirrors production, where the UI always re-links via add_event_client
+  // after a successful save); redo the link so the change-log join can see it.
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().event_id, eventId);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().old_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().old_event_stat_id, 1);
+  ASSERT_TRUE(entries.front().new_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_event_stat_id, 2);
+  EXPECT_FALSE(entries.front().old_payment_stat_id.has_value());
+  EXPECT_FALSE(entries.front().old_start_date.has_value());
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventLogsPaymentStatusChange) {
+  const std::string dirName = "tmp_dir_changelog_payment";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 2);
+  ASSERT_TRUE(entries.front().old_payment_stat_id.has_value());
+  EXPECT_EQ(*entries.front().old_payment_stat_id, 1);
+  ASSERT_TRUE(entries.front().new_payment_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_payment_stat_id, 2);
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventLogsReschedule) {
+  const std::string dirName = "tmp_dir_changelog_reschedule";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730100000000;
+  updated.end_date = 1730103600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 3);
+  ASSERT_TRUE(entries.front().old_start_date.has_value());
+  EXPECT_EQ(*entries.front().old_start_date, 1730000000000);
+  ASSERT_TRUE(entries.front().new_start_date.has_value());
+  EXPECT_EQ(*entries.front().new_start_date, 1730100000000);
+  ASSERT_TRUE(entries.front().event_current_start_date.has_value());
+  EXPECT_EQ(*entries.front().event_current_start_date, 1730100000000);
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventStatusChangeToCanceledIncludesReason) {
+  const std::string dirName = "tmp_dir_changelog_cancel";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 3;
+  updated.payment_stat_id = 1;
+  updated.cancellation_reason = std::string{"Client request"};
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().cancellation_reason.has_value());
+  EXPECT_EQ(*entries.front().cancellation_reason, "Client request");
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventStatusChangeToNoShowIncludesReason) {
+  const std::string dirName = "tmp_dir_changelog_noshow";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 5;
+  updated.payment_stat_id = 1;
+  updated.cancellation_reason = std::string{"Did not attend"};
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().new_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_event_stat_id, 5);
+  ASSERT_TRUE(entries.front().cancellation_reason.has_value());
+  EXPECT_EQ(*entries.front().cancellation_reason, "Did not attend");
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventNoOpProducesNoChangeLogRows) {
+  const std::string dirName = "tmp_dir_changelog_noop";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  EXPECT_TRUE(db.get_event_change_log_for_client(clientId).empty());
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventCombinedChangeProducesOneRowPerAspect) {
+  const std::string dirName = "tmp_dir_changelog_combined";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730100000000;
+  updated.end_date = 1730103600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 3);
+  std::set<int64_t> kinds;
+  for (const auto &entry : entries) {
+    kinds.insert(entry.change_kind);
+  }
+  EXPECT_EQ(kinds, (std::set<int64_t>{1, 2, 3}));
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, RemoveEventSucceedsAfterChangeLogRowsExist) {
+  const std::string dirName = "tmp_dir_changelog_remove";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+  ASSERT_EQ(db.get_event_change_log_for_client(clientId).size(), 1);
+
+  EXPECT_TRUE(db.remove_event(eventId));
+
+  removeChangeLogTestDatabase(dirName);
 }
 
 TEST(DatabaseTest, GetEventSeriesForClientAndRangeFiltersByClientAndRange) {
