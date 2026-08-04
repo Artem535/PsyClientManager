@@ -189,6 +189,20 @@ void MainWindow::connectSignals() {
     showPage(Pages::clientNotes, mBtnNotes);
   });
 
+  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
+          clientCardPage, &QClientInfoCardPage::setClientInfo);
+  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
+          [this]() {
+            setClientNavigationVisible(Pages::clientCard, true);
+            showPage(Pages::clientCard, mBtnProfile);
+          });
+
+  connect(clientNotesPage, &ClientNotesPage::openEventRequested,
+          [this, eventInfoPage](const int64_t eventId, const qint64 dayMs) {
+            eventInfoPage->openEventOnDay(eventId, dayMs);
+            showPage(Pages::eventInfo, mBtnCalendar);
+          });
+
   connect(clientInfoPage, &ClientInfo::removeButtonClicked, this,
           [this](const int64_t clientId) { emit provideRemoveClient(clientId); });
 

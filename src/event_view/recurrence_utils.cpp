@@ -4,6 +4,7 @@
 
 #include <libical/ical.h>
 
+#include <QSet>
 #include <QTimeZone>
 #include <algorithm>
 #include <cstdlib>
@@ -165,6 +166,220 @@ DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
   event.original_occurrence_start = event.start_date;
   event.is_virtual_occurrence = true;
   return event;
+}
+
+QVector<DuckEvent> eventsForClient(pcm::database::Database &db, const int64_t clientId,
+                                   const QDateTime &virtualWindowStart,
+                                   const QDateTime &virtualWindowEnd) {
+  QVector<DuckEvent> result;
+
+  const auto materialized = db.get_events_for_client(clientId);
+  for (const auto &event : materialized) {
+    result.append(event);
+  }
+
+  if (!virtualWindowStart.isValid() || !virtualWindowEnd.isValid()) {
+    std::sort(result.begin(), result.end(), [](const DuckEvent &left, const DuckEvent &right) {
+      return left.start_date.value_or(0) < right.start_date.value_or(0);
+    });
+    return result;
+  }
+
+  const auto windowStartMs = virtualWindowStart.toUTC().toMSecsSinceEpoch();
+  const auto windowEndMs = virtualWindowEnd.toUTC().toMSecsSinceEpoch();
+  const auto exceptions = db.get_event_series_exceptions_for_range(windowStartMs, windowEndMs);
+  auto seriesList =
+      db.get_event_series_for_client_and_range(clientId, windowStartMs, windowEndMs);
+  for (const auto &series : seriesList) {
+    const auto materializedStarts = db.get_materialized_occurrence_starts_for_series(series.id);
+    const auto occurrenceList = occurrences(series, virtualWindowStart, virtualWindowEnd);
+    for (const auto &occurrence : occurrenceList) {
+      const auto occurrenceStartMs = occurrence.toUTC().toMSecsSinceEpoch();
+      if (exceptions.contains({series.id, occurrenceStartMs}) ||
+          materializedStarts.contains(occurrenceStartMs)) {
+        continue;
+      }
+      const auto virtualId =
+          -(series.id * 1'000'000LL + static_cast<int64_t>(occurrence.date().toJulianDay()));
+      result.append(buildVirtualOccurrence(series, occurrence, virtualId));
+    }
+  }
+
+  std::sort(result.begin(), result.end(), [](const DuckEvent &left, const DuckEvent &right) {
+    return left.start_date.value_or(0) < right.start_date.value_or(0);
+  });
+
+  return result;
+}
+
+LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, const qint64 nowMs) {
+  LastNextAppointment result;
+
+  for (const auto &event : events) {
+    if (event.event_stat_id != 1 && event.event_stat_id != 2 && event.event_stat_id != 4) {
+      continue; // only Scheduled/Completed/Confirmed count as "the appointment"
+    }
+    if (!event.start_date.has_value()) {
+      continue;
+    }
+
+    if (*event.start_date < nowMs) {
+      if (!result.last.has_value() || *event.start_date > *result.last->start_date) {
+        result.last = event;
+      }
+    } else {
+      if (!result.next.has_value() || *event.start_date < *result.next->start_date) {
+        result.next = event;
+      }
+    }
+  }
+
+  return result;
+}
+
+DaySummary computeDaySummary(const QVector<DuckEvent> &events,
+                             const QVector<QPair<QDateTime, QDateTime>> &busyIntervals,
+                             const QTime workDayStart, const QTime workDayEnd,
+                             const QDate &selectedDate, const qint64 nowMs,
+                             const int minFreeWindowMinutes) {
+  DaySummary result;
+  result.date = selectedDate;
+
+  QVector<DuckEvent> qualifying;
+  QSet<QString> namedClients;
+  int unnamedClientCount = 0;
+  for (const auto &event : events) {
+    if (!event.is_work_event) {
+      continue;
+    }
+    if (event.event_stat_id != 1 && event.event_stat_id != 2 && event.event_stat_id != 4) {
+      continue; // only Scheduled/Completed/Confirmed count, same as lastAndNextAppointment
+    }
+    qualifying.append(event);
+
+    const auto clientName = QString::fromStdString(event.client_name.value_or(""));
+    if (!clientName.isEmpty()) {
+      namedClients.insert(clientName);
+    } else {
+      ++unnamedClientCount;
+    }
+
+    if (event.start_date.has_value() && event.end_date.has_value() &&
+        *event.end_date > *event.start_date) {
+      result.busyMinutes += (*event.end_date - *event.start_date) / 60'000;
+    }
+  }
+
+  result.sessionCount = static_cast<int>(qualifying.size());
+  result.hasSessions = result.sessionCount > 0;
+  result.clientCount = static_cast<int>(namedClients.size()) + unnamedClientCount;
+
+  if (!result.hasSessions) {
+    return result;
+  }
+
+  std::sort(qualifying.begin(), qualifying.end(),
+            [](const DuckEvent &left, const DuckEvent &right) {
+              return left.start_date.value_or(0) < right.start_date.value_or(0);
+            });
+
+  const bool validWorkHours = workDayStart.isValid() && workDayEnd.isValid() &&
+                              workDayStart < workDayEnd;
+  const auto dayEnd = QDateTime(selectedDate, workDayEnd, QTimeZone::systemTimeZone());
+  const bool showFutureInfo = validWorkHours && nowMs < dayEnd.toMSecsSinceEpoch();
+
+  if (!showFutureInfo) {
+    for (const auto &event : qualifying) {
+      result.upcoming.append(event);
+      if (result.upcoming.size() >= 3) {
+        break;
+      }
+    }
+    return result;
+  }
+
+  for (const auto &event : qualifying) {
+    if (event.start_date.has_value() && *event.start_date > nowMs) {
+      result.upcoming.append(event);
+      if (result.upcoming.size() >= 3) {
+        break;
+      }
+    }
+  }
+
+  for (const auto &event : qualifying) {
+    if (event.start_date.has_value() && *event.start_date > nowMs) {
+      result.nextSession = event;
+      break;
+    }
+  }
+
+  const auto dayStart = QDateTime(selectedDate, workDayStart, QTimeZone::systemTimeZone());
+  const auto now = QDateTime::fromMSecsSinceEpoch(nowMs, QTimeZone::systemTimeZone());
+
+  auto sortedBusy = busyIntervals;
+  std::sort(sortedBusy.begin(), sortedBusy.end(),
+            [](const QPair<QDateTime, QDateTime> &left, const QPair<QDateTime, QDateTime> &right) {
+              return left.first < right.first;
+            });
+
+  auto cursor = std::max(dayStart, now);
+  for (const auto &interval : sortedBusy) {
+    if (cursor >= dayEnd) {
+      break;
+    }
+    if (interval.second <= cursor) {
+      continue;
+    }
+    if (interval.first > cursor) {
+      const auto gapEnd = std::min(interval.first, dayEnd);
+      if (cursor.secsTo(gapEnd) / 60 >= minFreeWindowMinutes) {
+        result.freeWindowStart = cursor;
+        result.freeWindowEnd = gapEnd;
+        break;
+      }
+    }
+    cursor = std::max(cursor, interval.second);
+  }
+  if (!result.freeWindowStart.has_value() && cursor < dayEnd &&
+      cursor.secsTo(dayEnd) / 60 >= minFreeWindowMinutes) {
+    result.freeWindowStart = cursor;
+    result.freeWindowEnd = dayEnd;
+  }
+
+  return result;
+}
+
+std::optional<DuckEvent> resolveNoteLink(pcm::database::Database &db, const DuckClientNote &note) {
+  if (note.linked_event_id.has_value()) {
+    auto event = db.get_event(*note.linked_event_id);
+    if (!event) {
+      return std::nullopt;
+    }
+    return *event;
+  }
+
+  if (!note.linked_series_id.has_value() || !note.linked_occurrence_start_ms.has_value()) {
+    return std::nullopt;
+  }
+
+  auto materialized =
+      db.get_event_by_series_occurrence(*note.linked_series_id, *note.linked_occurrence_start_ms);
+  if (materialized) {
+    return *materialized;
+  }
+
+  auto series = db.get_event_series(*note.linked_series_id);
+  if (!series) {
+    return std::nullopt;
+  }
+
+  const auto occurrenceStart =
+      QDateTime::fromMSecsSinceEpoch(*note.linked_occurrence_start_ms, QTimeZone::UTC)
+          .toTimeZone(QTimeZone::systemTimeZone());
+  const auto virtualId =
+      -(series->id * 1'000'000LL + static_cast<int64_t>(occurrenceStart.date().toJulianDay()));
+  return buildVirtualOccurrence(*series, occurrenceStart, virtualId);
 }
 
 } // namespace pcm::recurrence

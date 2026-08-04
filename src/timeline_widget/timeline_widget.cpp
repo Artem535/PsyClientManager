@@ -124,6 +124,12 @@ bool QTimelineWidget::hasConflict(const DuckEvent &event) const {
   return mModel && mModel->hasConflict(event);
 }
 
+void QTimelineWidget::highlightEvent(const int64_t eventId) const {
+  if (mEventView) {
+    mEventView->highlightEvent(eventId);
+  }
+}
+
 const QVector<DuckEvent> &QTimelineWidget::events() const {
   static const QVector<DuckEvent> emptyEvents;
   return mModel ? mModel->events() : emptyEvents;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "database.h"
+#include "day_summary_widget.h"
 #include "qevent_details_widget.h"
 #include "timeline_widget.h"
 #include "../../widgets/quick_slots_widget.h"
@@ -35,6 +36,7 @@ signals:
 public slots:
   void onClientResolved(int64_t clientId);
   void refreshAppearance();
+  void openEventOnDay(int64_t eventId, qint64 dayMs);
 
 private slots:
   void onCalendarClicked(const QDate &date);
@@ -45,6 +47,7 @@ private slots:
 void onTimelineEventConfirmToggleRequested(int64_t eventId);
   void onEventSaved(QEventItem *event);
   void onEditingCanceled();
+  void onDaySummaryEventHighlightRequested(int64_t eventId);
 
 private:
   void connectSignals();
@@ -55,6 +58,7 @@ private:
   void openQuickEventDialog(const QTime &startTime, int durationMinutes);
   void editEventWithDialog(int64_t eventId);
   void refreshQuickSlots() const;
+  void refreshDaySummary() const;
   [[nodiscard]] QVector<QPair<QDateTime, QDateTime>> currentBusyIntervals() const;
 
   std::unique_ptr<Ui::EventInfo> mUi;
@@ -62,6 +66,7 @@ private:
   QTimelineWidget *mTimelineWidget = nullptr;
   QPushButton *mCreateEventButton = nullptr;
   QuickSlotsWidget *mQuickSlotsWidget = nullptr;
+  DaySummaryWidget *mDaySummaryWidget = nullptr;
   QPointer<QEventDetailsWidget> mActiveEventDetailsWidget;
 
   int64_t mClientId = 0;

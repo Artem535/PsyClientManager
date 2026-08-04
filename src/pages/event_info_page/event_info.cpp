@@ -89,9 +89,12 @@ QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
   mUi->calendar_widget->hide();
   mUi->calendar_widget->deleteLater();
 
+  mDaySummaryWidget = new DaySummaryWidget(this);
+  mUi->verticalLayout->addWidget(mDaySummaryWidget);
+  mUi->verticalLayout->addStretch(1);
+
   mQuickSlotsWidget = new QuickSlotsWidget(this);
-  mUi->verticalLayout->insertWidget(2, mQuickSlotsWidget);
-  mUi->label->hide();
+  mUi->verticalLayout->addWidget(mQuickSlotsWidget);
 
   mTimelineWidget = new QTimelineWidget(model, this);
   mUi->list_view_layout->addWidget(mTimelineWidget, 0, 0, 2, 1);
@@ -135,6 +138,8 @@ void QEventInfoPage::connectSignals() {
           &QEventInfoPage::refreshQuickSlots);
   connect(mQuickSlotsWidget, &QuickSlotsWidget::quickSlotSelected, this,
           &QEventInfoPage::openQuickEventDialog);
+  connect(mDaySummaryWidget, &DaySummaryWidget::eventHighlightRequested, this,
+          &QEventInfoPage::onDaySummaryEventHighlightRequested);
 
   connect(this, &QEventInfoPage::clientResolved, this,
           &QEventInfoPage::onClientResolved);
@@ -146,11 +151,22 @@ void QEventInfoPage::initDefaultStates() {
   updateCalendarHighlights();
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
   refreshQuickSlots();
+  refreshDaySummary();
 }
 
 void QEventInfoPage::onCalendarClicked(const QDate &date) {
   mSelectedDate = date;
   refreshQuickSlots();
+  refreshDaySummary();
+}
+
+void QEventInfoPage::openEventOnDay(const int64_t eventId, const qint64 dayMs) {
+  const auto date =
+      QDateTime::fromMSecsSinceEpoch(dayMs, QTimeZone::systemTimeZone()).date();
+  mCalendarWidget->setSelectedDate(date);
+  mTimelineWidget->onSelectedDayChanged(date);
+  onCalendarClicked(date);
+  editEventWithDialog(eventId);
 }
 
 void QEventInfoPage::updateCalendarHighlights() const {
@@ -294,6 +310,7 @@ void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
       }
       mTimelineWidget->onSelectedDayChanged(mSelectedDate);
       refreshQuickSlots();
+      refreshDaySummary();
       return;
     }
     if (scope == RecurringDeleteScope::FutureOccurrences) {
@@ -305,6 +322,7 @@ void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
       }
       mTimelineWidget->onSelectedDayChanged(mSelectedDate);
       refreshQuickSlots();
+      refreshDaySummary();
       return;
     }
   }
@@ -323,6 +341,7 @@ void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {
   mTimelineWidget->removeEvent(eventId);
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
   refreshQuickSlots();
+  refreshDaySummary();
 }
 
 void QEventInfoPage::editEventWithDialog(const int64_t eventId) {
@@ -428,6 +447,7 @@ void QEventInfoPage::onEventSaved(QEventItem *event) {
   // Force reload from DB to avoid stale UI state.
   mTimelineWidget->onSelectedDayChanged(mSelectedDate);
   refreshQuickSlots();
+  refreshDaySummary();
 }
 
 void QEventInfoPage::onEditingCanceled() {}
@@ -441,6 +461,7 @@ void QEventInfoPage::refreshAppearance() {
   mTimelineWidget->updateScene();
   mTimelineWidget->update();
   refreshQuickSlots();
+  refreshDaySummary();
 }
 
 void QEventInfoPage::refreshQuickSlots() const {
@@ -449,6 +470,24 @@ void QEventInfoPage::refreshQuickSlots() const {
   }
   mQuickSlotsWidget->setSelectedDate(mSelectedDate);
   mQuickSlotsWidget->setBusyIntervals(currentBusyIntervals());
+}
+
+void QEventInfoPage::refreshDaySummary() const {
+  if (!mDaySummaryWidget || !mTimelineWidget) {
+    return;
+  }
+  const auto nowMs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+  const auto summary = pcm::recurrence::computeDaySummary(
+      mTimelineWidget->events(), currentBusyIntervals(), pcm::app_settings::workDayStart(),
+      pcm::app_settings::workDayEnd(), mSelectedDate, nowMs,
+      pcm::app_settings::defaultSessionDurationMinutes());
+  mDaySummaryWidget->setSummary(summary);
+}
+
+void QEventInfoPage::onDaySummaryEventHighlightRequested(const int64_t eventId) {
+  if (mTimelineWidget) {
+    mTimelineWidget->highlightEvent(eventId);
+  }
 }
 
 QVector<QPair<QDateTime, QDateTime>> QEventInfoPage::currentBusyIntervals() const {

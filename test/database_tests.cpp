@@ -4,6 +4,7 @@
 #include <duckdb.hpp>
 #include <gtest/gtest.h>
 #include <limits>
+#include <set>
 #include "config.h"
 #include "database.h"
 
@@ -179,6 +180,484 @@ TEST(DatabaseTest, PersistsConfirmedAtOnEvent) {
   const auto unconfirmedAgain = db.get_event(eventId);
   ASSERT_NE(unconfirmedAgain, nullptr);
   EXPECT_FALSE(unconfirmedAgain->confirmed_at.has_value());
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, GetEventsForClientReturnsOnlyLinkedEvents) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_events_for_client")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient clientA;
+  clientA.name = std::string{"Alice"};
+  clientA.last_name = std::string{"A"};
+  const auto clientAId = db.add_client(clientA);
+  ASSERT_GT(clientAId, 0);
+
+  DuckClient clientB;
+  clientB.name = std::string{"Bob"};
+  clientB.last_name = std::string{"B"};
+  const auto clientBId = db.add_client(clientB);
+  ASSERT_GT(clientBId, 0);
+
+  DuckEvent eventForA;
+  eventForA.name = std::string{"Session with Alice"};
+  eventForA.start_date = 1730000000000;
+  eventForA.end_date = 1730003600000;
+  const auto eventForAId = db.add_event(eventForA);
+  ASSERT_GT(eventForAId, 0);
+  ASSERT_GT(db.add_event_client(eventForAId, clientAId), 0);
+
+  DuckEvent eventForB;
+  eventForB.name = std::string{"Session with Bob"};
+  eventForB.start_date = 1730100000000;
+  eventForB.end_date = 1730103600000;
+  const auto eventForBId = db.add_event(eventForB);
+  ASSERT_GT(eventForBId, 0);
+  ASSERT_GT(db.add_event_client(eventForBId, clientBId), 0);
+
+  const auto eventsForA = db.get_events_for_client(clientAId);
+  ASSERT_EQ(eventsForA.size(), 1);
+  EXPECT_EQ(eventsForA.front().id, eventForAId);
+  EXPECT_EQ(eventsForA.front().name.value_or(""), "Session with Alice");
+
+  db_dir.remove(true);
+}
+
+namespace {
+pcm::database::Database makeChangeLogTestDatabase(const std::string &dirName) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}};
+  Poco::File dbDir(conf.db_conf().db_pth);
+  if (dbDir.exists()) {
+    dbDir.remove(true);
+  }
+  return pcm::database::Database{conf};
+}
+
+void removeChangeLogTestDatabase(const std::string &dirName) {
+  Poco::File(Poco::Path(Poco::Path::current()).append(dirName)).remove(true);
+}
+
+std::pair<int64_t, int64_t> makeLinkedClientAndEvent(pcm::database::Database &db,
+                                                      const int64_t startMs,
+                                                      const int64_t endMs) {
+  DuckClient client;
+  client.name = std::string{"Change"};
+  client.last_name = std::string{"Log"};
+  const auto clientId = db.add_client(client);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = startMs;
+  event.end_date = endMs;
+  event.event_stat_id = 1;
+  event.payment_stat_id = 1;
+  const auto eventId = db.add_event(event);
+  db.add_event_client(eventId, clientId);
+  return {clientId, eventId};
+}
+} // namespace
+
+TEST(DatabaseTest, UpdateEventLogsStatusChange) {
+  const std::string dirName = "tmp_dir_changelog_status";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  // update_event unlinks EventClient rows and only restores them on failure
+  // (mirrors production, where the UI always re-links via add_event_client
+  // after a successful save); redo the link so the change-log join can see it.
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().event_id, eventId);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().old_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().old_event_stat_id, 1);
+  ASSERT_TRUE(entries.front().new_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_event_stat_id, 2);
+  EXPECT_FALSE(entries.front().old_payment_stat_id.has_value());
+  EXPECT_FALSE(entries.front().old_start_date.has_value());
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventLogsPaymentStatusChange) {
+  const std::string dirName = "tmp_dir_changelog_payment";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 2);
+  ASSERT_TRUE(entries.front().old_payment_stat_id.has_value());
+  EXPECT_EQ(*entries.front().old_payment_stat_id, 1);
+  ASSERT_TRUE(entries.front().new_payment_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_payment_stat_id, 2);
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventLogsReschedule) {
+  const std::string dirName = "tmp_dir_changelog_reschedule";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730100000000;
+  updated.end_date = 1730103600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 3);
+  ASSERT_TRUE(entries.front().old_start_date.has_value());
+  EXPECT_EQ(*entries.front().old_start_date, 1730000000000);
+  ASSERT_TRUE(entries.front().new_start_date.has_value());
+  EXPECT_EQ(*entries.front().new_start_date, 1730100000000);
+  ASSERT_TRUE(entries.front().event_current_start_date.has_value());
+  EXPECT_EQ(*entries.front().event_current_start_date, 1730100000000);
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventStatusChangeToCanceledIncludesReason) {
+  const std::string dirName = "tmp_dir_changelog_cancel";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 3;
+  updated.payment_stat_id = 1;
+  updated.cancellation_reason = std::string{"Client request"};
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().cancellation_reason.has_value());
+  EXPECT_EQ(*entries.front().cancellation_reason, "Client request");
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventStatusChangeToNoShowIncludesReason) {
+  const std::string dirName = "tmp_dir_changelog_noshow";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 5;
+  updated.payment_stat_id = 1;
+  updated.cancellation_reason = std::string{"Did not attend"};
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_EQ(entries.front().change_kind, 1);
+  ASSERT_TRUE(entries.front().new_event_stat_id.has_value());
+  EXPECT_EQ(*entries.front().new_event_stat_id, 5);
+  ASSERT_TRUE(entries.front().cancellation_reason.has_value());
+  EXPECT_EQ(*entries.front().cancellation_reason, "Did not attend");
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventNoOpProducesNoChangeLogRows) {
+  const std::string dirName = "tmp_dir_changelog_noop";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 1;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  EXPECT_TRUE(db.get_event_change_log_for_client(clientId).empty());
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, UpdateEventCombinedChangeProducesOneRowPerAspect) {
+  const std::string dirName = "tmp_dir_changelog_combined";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730100000000;
+  updated.end_date = 1730103600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 2;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+
+  const auto entries = db.get_event_change_log_for_client(clientId);
+  ASSERT_EQ(entries.size(), 3);
+  std::set<int64_t> kinds;
+  for (const auto &entry : entries) {
+    kinds.insert(entry.change_kind);
+  }
+  EXPECT_EQ(kinds, (std::set<int64_t>{1, 2, 3}));
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, RemoveEventSucceedsAfterChangeLogRowsExist) {
+  const std::string dirName = "tmp_dir_changelog_remove";
+  auto db = makeChangeLogTestDatabase(dirName);
+
+  const auto [clientId, eventId] = makeLinkedClientAndEvent(db, 1730000000000, 1730003600000);
+
+  DuckEvent updated;
+  updated.id = eventId;
+  updated.start_date = 1730000000000;
+  updated.end_date = 1730003600000;
+  updated.event_stat_id = 2;
+  updated.payment_stat_id = 1;
+  ASSERT_TRUE(db.update_event(updated));
+  db.add_event_client(eventId, clientId);
+  ASSERT_EQ(db.get_event_change_log_for_client(clientId).size(), 1);
+
+  EXPECT_TRUE(db.remove_event(eventId));
+
+  removeChangeLogTestDatabase(dirName);
+}
+
+TEST(DatabaseTest, GetEventSeriesForClientAndRangeFiltersByClientAndRange) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_series_for_client")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Carol"};
+  client.last_name = std::string{"C"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckClient otherClient;
+  otherClient.name = std::string{"Dave"};
+  otherClient.last_name = std::string{"D"};
+  const auto otherClientId = db.add_client(otherClient);
+  ASSERT_GT(otherClientId, 0);
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly with Carol"};
+  series.client_id = clientId;
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEventSeries otherSeries;
+  otherSeries.name = std::string{"Weekly with Dave"};
+  otherSeries.client_id = otherClientId;
+  otherSeries.start_date = 1730000000000;
+  otherSeries.end_date = 1730003600000;
+  otherSeries.duration = 3600;
+  otherSeries.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  ASSERT_GT(db.add_event_series(otherSeries), 0);
+
+  const auto inRange =
+      db.get_event_series_for_client_and_range(clientId, 1729000000000, 1731000000000);
+  ASSERT_EQ(inRange.size(), 1);
+  EXPECT_EQ(inRange.front().id, seriesId);
+
+  const auto outOfRange =
+      db.get_event_series_for_client_and_range(clientId, 1600000000000, 1700000000000);
+  EXPECT_TRUE(outOfRange.empty());
+
+  const auto forOtherClient =
+      db.get_event_series_for_client_and_range(otherClientId, 1729000000000, 1731000000000);
+  ASSERT_EQ(forOtherClient.size(), 1);
+  EXPECT_NE(forOtherClient.front().id, seriesId);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, ClientNoteRoundTripsLinkedEventId) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_note_linked_event")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Gina"};
+  client.last_name = std::string{"G"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  DuckClientNote note;
+  note.client_id = clientId;
+  note.body_markdown = std::string{"Linked to a real session"};
+  note.linked_event_id = eventId;
+  const auto noteId = db.add_client_note(note);
+  ASSERT_GT(noteId, 0);
+
+  const auto notes = db.get_client_notes(clientId);
+  ASSERT_EQ(notes.size(), 1);
+  ASSERT_TRUE(notes.front().linked_event_id.has_value());
+  EXPECT_EQ(*notes.front().linked_event_id, eventId);
+  EXPECT_FALSE(notes.front().linked_series_id.has_value());
+  EXPECT_FALSE(notes.front().linked_occurrence_start_ms.has_value());
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, ClientNoteRoundTripsLinkedSeriesOccurrence) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_note_linked_series")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckClient client;
+  client.name = std::string{"Hank"};
+  client.last_name = std::string{"H"};
+  const auto clientId = db.add_client(client);
+  ASSERT_GT(clientId, 0);
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.client_id = clientId;
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckClientNote note;
+  note.client_id = clientId;
+  note.body_markdown = std::string{"Linked to a virtual occurrence"};
+  note.linked_series_id = seriesId;
+  note.linked_occurrence_start_ms = 1730600000000;
+  const auto noteId = db.add_client_note(note);
+  ASSERT_GT(noteId, 0);
+
+  const auto notes = db.get_client_notes(clientId);
+  ASSERT_EQ(notes.size(), 1);
+  EXPECT_FALSE(notes.front().linked_event_id.has_value());
+  ASSERT_TRUE(notes.front().linked_series_id.has_value());
+  EXPECT_EQ(*notes.front().linked_series_id, seriesId);
+  ASSERT_TRUE(notes.front().linked_occurrence_start_ms.has_value());
+  EXPECT_EQ(*notes.front().linked_occurrence_start_ms, 1730600000000);
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, GetEventBySeriesOccurrenceFindsMaterializedRow) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_event_by_series_occurrence")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckEventSeries series;
+  series.name = std::string{"Weekly"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  DuckEvent materialized;
+  materialized.name = std::string{"Weekly (materialized)"};
+  materialized.start_date = 1730600000000;
+  materialized.end_date = 1730603600000;
+  materialized.series_id = seriesId;
+  materialized.original_occurrence_start = 1730600000000;
+  const auto materializedId = db.add_event(materialized);
+  ASSERT_GT(materializedId, 0);
+
+  const auto found = db.get_event_by_series_occurrence(seriesId, 1730600000000);
+  ASSERT_NE(found, nullptr);
+  EXPECT_EQ(found->id, materializedId);
+
+  const auto notFound = db.get_event_by_series_occurrence(seriesId, 1731200000000);
+  EXPECT_EQ(notFound, nullptr);
 
   db_dir.remove(true);
 }

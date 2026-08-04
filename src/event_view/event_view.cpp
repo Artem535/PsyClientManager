@@ -14,6 +14,10 @@
 
 Q_LOGGING_CATEGORY(logEventView, "pcm.EventView")
 
+namespace {
+constexpr int kHighlightDurationMs = 2500;
+} // namespace
+
 QEventView::QEventView(QWidget *parent)
     : QGraphicsView(parent), mModel(nullptr) {
   mScene = new QGraphicsScene(this);
@@ -181,6 +185,35 @@ void QEventView::onModelReset() {
 
   updateScene();
   viewport()->update();
+}
+
+void QEventView::clearHighlight() {
+  if (!mHighlightedEventId.has_value()) {
+    return;
+  }
+  if (auto *previous = mSceneItems.value(*mHighlightedEventId)) {
+    previous->setHighlighted(false);
+  }
+  mHighlightedEventId = std::nullopt;
+}
+
+void QEventView::highlightEvent(const int64_t eventId) {
+  clearHighlight();
+
+  auto *item = mSceneItems.value(eventId);
+  if (!item) {
+    return;
+  }
+
+  item->setHighlighted(true);
+  mHighlightedEventId = eventId;
+  centerOn(item);
+
+  QTimer::singleShot(kHighlightDurationMs, this, [this, eventId]() {
+    if (mHighlightedEventId == eventId) {
+      clearHighlight();
+    }
+  });
 }
 
 void QEventView::drawBackground(QPainter *painter, const QRectF &rect) {

@@ -123,6 +123,15 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
   }
 
   duckdb::Connection conn(*mDb);
+  std::unique_ptr<DuckEvent> existingEvent;
+  auto existingResult = executePrepared(conn, constance::kSelectEventByIdQuery,
+                                        {duckdb::Value::BIGINT(event.id)});
+  if (existingResult && !existingResult->HasError()) {
+    if (auto chunk = existingResult->Fetch(); chunk && chunk->size() > 0) {
+      existingEvent = std::make_unique<DuckEvent>(*chunk, 0);
+    }
+  }
+
   std::vector<int64_t> linkedClientIds;
   auto linkedClientsResult = executePrepared(
       conn, constance::kSelectClientIdsByEventIdQuery,
@@ -187,6 +196,57 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
     return false;
   }
 
+  if (existingEvent) {
+    const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
+    const auto occurredAt = db_utils::toDuckTimestamp(nowMs * 1000);
+    const auto effectiveNewEventStat =
+        event.event_stat_id > 0 ? event.event_stat_id : existingEvent->event_stat_id;
+    const auto effectiveNewPaymentStat =
+        event.payment_stat_id > 0 ? event.payment_stat_id : existingEvent->payment_stat_id;
+
+    const auto insertChangeLogRow =
+        [&](const int32_t changeKind, const char *label, const duckdb::Value &oldEventStat,
+            const duckdb::Value &newEventStat, const duckdb::Value &oldPaymentStat,
+            const duckdb::Value &newPaymentStat, const duckdb::Value &oldStart,
+            const duckdb::Value &newStart, const duckdb::Value &reason) {
+          auto logResult = executePrepared(
+              conn, constance::kInsertEventChangeLogQuery,
+              {duckdb::Value::BIGINT(event.id), duckdb::Value::INTEGER(changeKind), oldEventStat,
+               newEventStat, oldPaymentStat, newPaymentStat, oldStart, newStart, reason,
+               occurredAt});
+          if (!logResult || logResult->HasError()) {
+            PLOG_ERROR << "Failed to write EventChangeLog " << label
+                       << " row for event (id=" << event.id
+                       << "): " << (logResult ? logResult->GetError() : "prepare failed");
+          }
+        };
+
+    if (effectiveNewEventStat != existingEvent->event_stat_id) {
+      const auto reasonValue = (effectiveNewEventStat == 3 || effectiveNewEventStat == 5)
+                                    ? db_utils::toDuckValue(event.cancellation_reason)
+                                    : duckdb::Value();
+      insertChangeLogRow(
+          1, "status",
+          duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->event_stat_id)),
+          duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewEventStat)), duckdb::Value(),
+          duckdb::Value(), duckdb::Value(), duckdb::Value(), reasonValue);
+    }
+
+    if (effectiveNewPaymentStat != existingEvent->payment_stat_id) {
+      insertChangeLogRow(
+          2, "payment", duckdb::Value(), duckdb::Value(),
+          duckdb::Value::INTEGER(static_cast<int32_t>(existingEvent->payment_stat_id)),
+          duckdb::Value::INTEGER(static_cast<int32_t>(effectiveNewPaymentStat)), duckdb::Value(),
+          duckdb::Value(), duckdb::Value());
+    }
+
+    if (event.start_date.value_or(0) != existingEvent->start_date.value_or(0)) {
+      insertChangeLogRow(3, "reschedule", duckdb::Value(), duckdb::Value(), duckdb::Value(),
+                          duckdb::Value(), timestampMsOrNull(existingEvent->start_date),
+                          timestampMsOrNull(event.start_date), duckdb::Value());
+    }
+  }
+
   return true;
 }
 
@@ -203,6 +263,14 @@ bool Database::remove_event(const int64_t &id) {
   if (!relationResult || relationResult->HasError()) {
     PLOG_ERROR << "Failed to delete EventClient links for event (id=" << id
                << "): " << relationResult->GetError();
+    return false;
+  }
+
+  auto changeLogResult = executePrepared(
+      conn, constance::kDeleteEventChangeLogByEventIdQuery, {duckdb::Value::BIGINT(id)});
+  if (!changeLogResult || changeLogResult->HasError()) {
+    PLOG_ERROR << "Failed to delete EventChangeLog rows for event (id=" << id
+               << "): " << changeLogResult->GetError();
     return false;
   }
 
@@ -416,6 +484,35 @@ Database::get_event_series_for_range(const int64_t &start_ms,
       series.emplace_back(*chunk, i);
     }
   }
+  return series;
+}
+
+std::vector<DuckEventSeries> Database::get_event_series_for_client_and_range(
+    const int64_t client_id, const int64_t range_start_ms, const int64_t range_end_ms) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventSeriesForClientAndRangeQuery,
+      {duckdb::Value::BIGINT(client_id),
+       db_utils::toDuckTimestamp(std::make_optional(range_end_ms * 1000)),
+       db_utils::toDuckTimestamp(std::make_optional(range_start_ms * 1000))});
+
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch event series for client_id=" << client_id << ": "
+               << (result ? result->GetError() : "prepare failed");
+    return {};
+  }
+
+  std::vector<DuckEventSeries> series;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      series.emplace_back(*chunk, i);
+    }
+  }
+
   return series;
 }
 
@@ -705,7 +802,12 @@ int64_t Database::add_client_note(const DuckClientNote &note) {
           duckdb::Value::BIGINT(note.client_id),
           db_utils::toDuckValue(note.body_markdown),
           db_utils::toDuckTimestamp(createdAtMs * 1000),
-          db_utils::toDuckTimestamp(updatedAtMs * 1000)});
+          db_utils::toDuckTimestamp(updatedAtMs * 1000),
+          db_utils::toDuckValue(note.linked_event_id),
+          db_utils::toDuckValue(note.linked_series_id),
+          note.linked_occurrence_start_ms.has_value()
+              ? db_utils::toDuckTimestamp(std::make_optional(*note.linked_occurrence_start_ms * 1000))
+              : db_utils::toDuckTimestamp(std::nullopt)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert client note: " << result->GetError();
@@ -719,6 +821,55 @@ int64_t Database::add_client_note(const DuckClientNote &note) {
   }
 
   return static_cast<int64_t>(chunk->GetValue(0, 0).GetValue<int32_t>());
+}
+
+std::vector<DuckEvent> Database::get_events_for_client(const int64_t client_id) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventsForClientQuery, {duckdb::Value::BIGINT(client_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch events for client_id=" << client_id << ": "
+               << (result ? result->GetError() : "prepare failed");
+    return {};
+  }
+
+  std::vector<DuckEvent> events;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      events.emplace_back(*chunk, i);
+    }
+  }
+
+  return events;
+}
+
+std::vector<DuckEventChangeLog>
+Database::get_event_change_log_for_client(const int64_t client_id) {
+  if (client_id <= 0) {
+    return {};
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(conn, constance::kSelectEventChangeLogForClientQuery,
+                                {duckdb::Value::BIGINT(client_id)});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to fetch event change log for client_id=" << client_id << ": "
+               << (result ? result->GetError() : "prepare failed");
+    return {};
+  }
+
+  std::vector<DuckEventChangeLog> entries;
+  while (auto chunk = result->Fetch()) {
+    for (duckdb::idx_t i = 0; i < chunk->size(); ++i) {
+      entries.emplace_back(*chunk, i);
+    }
+  }
+
+  return entries;
 }
 
 std::vector<DuckClientNote> Database::get_client_notes(const int64_t client_id) {
@@ -1034,6 +1185,31 @@ std::set<int64_t> Database::get_materialized_occurrence_starts_for_series(
     }
   }
   return starts;
+}
+
+std::unique_ptr<DuckEvent> Database::get_event_by_series_occurrence(
+    const int64_t series_id, const int64_t occurrence_start_ms) {
+  if (series_id <= 0) {
+    return nullptr;
+  }
+
+  duckdb::Connection conn(*mDb);
+  auto result = executePrepared(
+      conn, constance::kSelectEventBySeriesOccurrenceQuery,
+      {duckdb::Value::BIGINT(series_id),
+       db_utils::toDuckTimestamp(std::make_optional(occurrence_start_ms * 1000))});
+  if (!result || result->HasError()) {
+    PLOG_ERROR << "Failed to query event by series occurrence (series_id=" << series_id
+               << "): " << (result ? result->GetError() : "prepare failed");
+    return nullptr;
+  }
+
+  auto chunk = result->Fetch();
+  if (!chunk || chunk->size() == 0) {
+    return nullptr;
+  }
+
+  return std::make_unique<DuckEvent>(*chunk, 0);
 }
 
 std::vector<ClientMonthlyStats>

@@ -50,6 +50,13 @@ Every non-trivial task starts as a GitHub issue:
 7. Update `CHANGELOG.md` with the user-visible changes for that version.
 8. Close the issue through the merged MR/PR using the repository's supported
    closing syntax, such as `Closes #123`.
+9. Before committing new or changed `tr()` strings, run
+   `cmake --build build-release --target update_translations` and translate
+   any resulting `type="unfinished"` entries in `translation/app_ru.ts` and
+   `translation/app_en.ts` — CI fails the build on out-of-sync `.ts` files or
+   any remaining `type="unfinished"` entry. The translation scan covers
+   everything reachable from CMake targets, including `third_party/qlementine`,
+   and would silently miss any source file never attached to a CMake target.
 
 Do not develop directly on `main` or close an issue before its MR/PR is merged.
 

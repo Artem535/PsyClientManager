@@ -2,14 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.24] - 2026-08-04
+
+### Added
+
+- Appointment confirmation tracking: mark a session confirmed or unconfirmed
+  independently of its status, see the state on the Timeline, filter the day
+  view to unconfirmed sessions, and copy a confirmation request from a
+  configurable template.
+
+## [0.1.23] - 2026-08-04
+
+### Fixed
+
+- The Russian interface no longer shows English text in the client Notes
+  feed, the day-summary panel, recurring-event dialogs, and the backup and
+  currency settings — translations are now kept in sync with the source
+  strings, and CI blocks any future change that lets them drift again.
+
+## [0.1.22] - 2026-08-01
+
+### Added
+
+- The client Notes feed now shows a small history line whenever a session's
+  status, payment status, or scheduled time changes (e.g. "Status changed:
+  Scheduled → Completed"), interleaved chronologically with notes and
+  session cards. Click a line to jump to that session on the Calendar.
+
+## [0.1.21] - 2026-07-31
+
+### Fixed
+
+- Session cost in the Notes feed now uses the app's configured currency
+  (Settings → Currency) instead of the system locale's currency symbol.
+
+## [0.1.20] - 2026-07-31
+
+### Added
+
+- Day summary panel on the Calendar page: session/client counts, busy
+  time, next session, and the nearest free window for the selected day,
+  plus a mini list of upcoming sessions that highlights the matching
+  card on the timeline when clicked. Closes the empty gap between the
+  calendar and Quick Slots.
+
+## [0.1.19] - 2026-07-30
+
+### Added
+
+- Notes can now be linked to the session they're about, with a clickable
+  badge that jumps to that event on the Calendar. Session entries in the
+  timeline are clickable the same way. The feed also gained a
+  jump-to-latest button.
+
+## [0.1.18] - 2026-07-30
+
+### Added
+
+- Unified client timeline: the Notes screen now interleaves session
+  entries with notes in one chronological feed, with an All/Sessions/Notes
+  filter and a last/next-appointment summary. The same summary now also
+  appears on the client card.
+
 ## [0.1.17] - 2026-07-30
 
 ### Added
 
-- Appointment confirmation tracking: mark a session confirmed/unconfirmed
-  independently of its status, see it on the Timeline card, filter the day
-  view to unconfirmed sessions, and copy a "please confirm" message using a
-  configurable template.
+- Notes journal: date-grouped feed, a client-card breadcrumb link, compact
+  attachments that expand on click, and a Ctrl+Enter composer shortcut with
+  a save confirmation.
 
 ## [0.1.16] - 2026-07-29
 

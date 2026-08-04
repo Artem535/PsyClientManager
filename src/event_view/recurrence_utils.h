@@ -2,8 +2,13 @@
 
 #include "schema.hpp"
 
+#include <QDate>
 #include <QDateTime>
+#include <QPair>
+#include <QTime>
 #include <QVector>
+
+#include <optional>
 
 namespace pcm::database {
 class Database;
@@ -20,5 +25,36 @@ QVector<QDateTime> occurrences(const DuckEventSeries &series,
 DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
                                  const QDateTime &occurrenceStart,
                                  int64_t virtualId);
+
+QVector<DuckEvent> eventsForClient(pcm::database::Database &db, int64_t clientId,
+                                   const QDateTime &virtualWindowStart,
+                                   const QDateTime &virtualWindowEnd);
+
+struct LastNextAppointment {
+  std::optional<DuckEvent> last;
+  std::optional<DuckEvent> next;
+};
+
+LastNextAppointment lastAndNextAppointment(const QVector<DuckEvent> &events, qint64 nowMs);
+
+struct DaySummary {
+  QDate date;
+  bool hasSessions = false;
+  int sessionCount = 0;
+  int clientCount = 0;
+  qint64 busyMinutes = 0;
+  std::optional<DuckEvent> nextSession;
+  std::optional<QDateTime> freeWindowStart;
+  std::optional<QDateTime> freeWindowEnd;
+  QVector<DuckEvent> upcoming; // up to 3, chronological
+};
+
+DaySummary computeDaySummary(const QVector<DuckEvent> &events,
+                             const QVector<QPair<QDateTime, QDateTime>> &busyIntervals,
+                             QTime workDayStart, QTime workDayEnd,
+                             const QDate &selectedDate, qint64 nowMs,
+                             int minFreeWindowMinutes);
+
+std::optional<DuckEvent> resolveNoteLink(pcm::database::Database &db, const DuckClientNote &note);
 
 } // namespace pcm::recurrence
