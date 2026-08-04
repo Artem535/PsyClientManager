@@ -4,35 +4,24 @@
 <context>
     <name>AnalyticsPage</name>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="97"/>
         <source>Total clients</source>
         <translation>Total clients</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="99"/>
         <source>Active clients</source>
         <translation>Active clients</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="101"/>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="209"/>
         <source>Sessions this month</source>
         <translation>Sessions this month</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="103"/>
         <source>Income this month</source>
         <translation>Income this month</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="117"/>
         <source>Monthly income and sessions</source>
         <translation>Monthly income and sessions</translation>
-    </message>
-    <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="124"/>
-        <source>Combined view for the last six months</source>
-        <translation>Combined view for the last six months</translation>
     </message>
     <message>
         <source>Use the period switch to change chart range</source>
@@ -55,71 +44,72 @@
         <translation>All time</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="128"/>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="148"/>
         <source>No events yet</source>
         <translation>No events yet</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="140"/>
         <source>Work vs personal sessions</source>
         <translation>Work vs personal sessions</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="144"/>
         <source>Monthly breakdown by event type</source>
         <translation>Monthly breakdown by event type</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="209"/>
         <source>work / total</source>
         <translation>work / total</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="249"/>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="269"/>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="355"/>
         <source>Sessions</source>
         <translation>Sessions</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="256"/>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="270"/>
         <source>Income</source>
         <translation>Income</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="333"/>
         <source>Work events</source>
         <translation>Work events</translation>
     </message>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="339"/>
         <source>Personal events</source>
         <translation>Personal events</translation>
     </message>
 </context>
 <context>
+    <name>AppointmentSummaryWidget</name>
+    <message>
+        <source>Last appointment: none</source>
+        <translation>Last appointment: none</translation>
+    </message>
+    <message>
+        <source>Last appointment: %1</source>
+        <translation>Last appointment: %1</translation>
+    </message>
+    <message>
+        <source>Next appointment: none</source>
+        <translation>Next appointment: none</translation>
+    </message>
+    <message>
+        <source>Next appointment: %1</source>
+        <translation>Next appointment: %1</translation>
+    </message>
+</context>
+<context>
     <name>ClientChartsWidget</name>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="133"/>
         <source>Months</source>
         <translation>Months</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="134"/>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="138"/>
         <source>Sessions</source>
         <translation>Sessions</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="135"/>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="144"/>
         <source>Income</source>
         <translation>Income</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_charts_widget.cpp" line="153"/>
         <source>No client activity yet</source>
         <translation>No client activity yet</translation>
     </message>
@@ -127,33 +117,26 @@
 <context>
     <name>ClientInfo</name>
     <message>
-        <location filename="../ui/pages/clientinfo.ui" line="14"/>
         <source>: CLIENT_LIST_TITLE</source>
         <translation>Client List</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="54"/>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="98"/>
         <source>: CLIENTS_LOADING</source>
         <translation>Loading clients</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="106"/>
         <source>: CLIENTS_LOADING_ERROR %1</source>
         <translation>Client loading error %1</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="156"/>
         <source>this client</source>
         <translation>this client</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="159"/>
         <source>Delete client</source>
         <translation>Delete client</translation>
     </message>
     <message>
-        <location filename="../src/pages/client_info_page/client_info.cpp" line="160"/>
         <source>Delete %1? This action cannot be undone.</source>
         <translation>Delete %1? This action cannot be undone.</translation>
     </message>
@@ -161,252 +144,128 @@
 <context>
     <name>ClientInfoCard</name>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="14"/>
         <source>: CLIENT_INFO_TITLE</source>
         <translation>Client Information</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="24"/>
         <source>: CLIENT_INFORMATION_TAB</source>
         <translation>About Client</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="59"/>
         <source>: CLIENT_EDIT_BUTTON</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="101"/>
         <source>: AVATAR_PLACEHOLDER</source>
         <translation>??</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="135"/>
         <source>: CLIENT_LAST_NAME_LABEL</source>
         <translation>Last name</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="147"/>
         <source>: CLIENT_CITY_LABEL</source>
         <translation>City</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="154"/>
         <source>: INPUT_FIRST_NAME</source>
         <translation>Enter first name</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="166"/>
         <source>: CLIENT_AGE_LABEL</source>
         <translation>Age</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="173"/>
         <source>dd.MM.yyyy</source>
         <translation>dd.MM.yyyy</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="186"/>
         <source>: CLIENT_AGE_VALUE</source>
         <translation>0</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="198"/>
         <source>: CLIENT_PHONE_LABEL</source>
         <translation>Phone number</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="210"/>
         <source>: CLIENT_TIMEZONE_LABEL</source>
         <translation>Time zone</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="217"/>
         <source>: INPUT_LAST_NAME</source>
         <translation>Enter last name</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="224"/>
         <source>: INPUT_CITY</source>
         <translation>Enter city</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="236"/>
         <source>: CLIENT_BIRTH_DATE_LABEL</source>
         <translation>Date of birth</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="248"/>
         <source>: CLIENT_COUNTRY_LABEL</source>
         <translation>Country</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="260"/>
         <source>: CLIENT_EMAIL_LABEL</source>
         <translation>Email</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="267"/>
         <source>: INPUT_PHONE</source>
         <translation>Enter phone number</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="279"/>
         <source>: CLIENT_FIRST_NAME_LABEL</source>
         <translation>First name</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="286"/>
         <source>: INPUT_COUNTRY</source>
         <translation>Enter country</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="293"/>
         <source>: INPUT_TIMEZONE</source>
         <translation>Enter time zone</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="300"/>
         <source>: INPUT_EMAIL</source>
         <translation>Enter email</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="307"/>
         <source>: CLIENT_STATUS_INACTIVE</source>
         <translation>Client inactive</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="319"/>
         <source>: CLIENT_STATUS_LABEL</source>
         <translation>Status</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="345"/>
         <source>: CLIENT_MEDICAL_INFO_LABEL</source>
         <translation>Client medical information</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="352"/>
         <source>: CLIENT_CURRENT_DIAGNOSIS_LABEL</source>
         <translation>Diagnoses</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="359"/>
         <source>: INPUT_CURRENT_DIAGNOSIS</source>
         <translation>Enter diagnoses</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="371"/>
         <source>: CLIENT_ADDITIONAL_INFO_LABEL</source>
         <translation>Additional client information</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="378"/>
         <source>: INPUT_ADDITIONAL_INFO</source>
         <translation>Enter additional information</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="398"/>
         <source>: CLIENT_CHARTS_TAB</source>
         <translation>Charts</translation>
     </message>
     <message>
-        <location filename="../ui/pages/detailclientinfo.ui" line="404"/>
         <source>: CHARTS_PLACEHOLDER</source>
         <translation>Charts will be available in the next update</translation>
-    </message>
-</context>
-<context>
-    <name>EventDetails</name>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="20"/>
-        <source>: EVENT_DETAILS_TITLE</source>
-        <translation>Event Details</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="28"/>
-        <source>: EVENT_TITLE_LABEL</source>
-        <translation>Title</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="38"/>
-        <source>: EVENT_DATE_LABEL</source>
-        <translation>Date</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="52"/>
-        <source>: EVENT_TIME_LABEL</source>
-        <translation>Time</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="61"/>
-        <source>: FROM_LABEL</source>
-        <translation>From</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="78"/>
-        <source>: TO_LABEL</source>
-        <translation>To</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="97"/>
-        <source>: EVENT_TYPE_LABEL</source>
-        <translation>Type</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="104"/>
-        <source>: EVENT_IS_WORK_CHECKBOX</source>
-        <translation>Work</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="111"/>
-        <source>: CLIENT_SELECT_LABEL</source>
-        <translation>Client</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="121"/>
-        <source>Cost</source>
-        <translation>Cost</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="131"/>
-        <source>Payment status</source>
-        <translation>Payment status</translation>
-    </message>
-    <message>
-        <source>Event status</source>
-        <translation>Event status</translation>
-    </message>
-    <message>
-        <source>Cancellation reason</source>
-        <translation>Cancellation reason</translation>
-    </message>
-    <message>
-        <source>Canceled by</source>
-        <translation>Canceled by</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="184"/>
-        <source>: EVENT_ADD_BUTTON</source>
-        <translation>Add</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventdetails.ui" line="191"/>
-        <source>: EVENT_EDIT_BUTTON</source>
-        <translation>Edit</translation>
-    </message>
-</context>
-<context>
-    <name>EventInfo</name>
-    <message>
-        <location filename="../ui/pages/eventinfo.ui" line="14"/>
-        <source>: EVENT_INFO_FORM_TITLE</source>
-        <translation>Event Calendar</translation>
-    </message>
-    <message>
-        <location filename="../ui/pages/eventinfo.ui" line="112"/>
-        <source>: FREE_SLOTS_PLACEHOLDER</source>
-        <translation>Free slots will be available in the next update</translation>
     </message>
 </context>
 <context>
@@ -420,12 +279,64 @@
         <translation>No client selected</translation>
     </message>
     <message>
+        <source>%1 → Notes</source>
+        <translation>%1 → Notes</translation>
+    </message>
+    <message>
+        <source>Note saved</source>
+        <translation>Note saved</translation>
+    </message>
+    <message>
+        <source>Open client card</source>
+        <translation>Open client card</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>All</translation>
+    </message>
+    <message>
+        <source>Sessions</source>
+        <translation>Sessions</translation>
+    </message>
+    <message>
         <source>No notes yet</source>
         <translation>No notes yet</translation>
     </message>
     <message>
+        <source>Jump to today</source>
+        <translation>Jump to today</translation>
+    </message>
+    <message>
+        <source>Jump to latest</source>
+        <translation>Jump to latest</translation>
+    </message>
+    <message>
         <source>Write a note in Markdown...</source>
         <translation>Write a note in Markdown...</translation>
+    </message>
+    <message>
+        <source>Canceled</source>
+        <translation>Canceled</translation>
+    </message>
+    <message>
+        <source>Cost: %1</source>
+        <translation>Cost: %1</translation>
+    </message>
+    <message>
+        <source>Session: %1</source>
+        <translation>Session: %1</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Image</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>File</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Open</translation>
     </message>
     <message>
         <source>Attach files</source>
@@ -440,20 +351,40 @@
         <translation>All files (*);;Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.svg)</translation>
     </message>
     <message>
+        <source>Link to a session</source>
+        <translation>Link to a session</translation>
+    </message>
+    <message>
         <source>Select a client to open notes.</source>
         <translation>Select a client to open notes.</translation>
     </message>
     <message>
+        <source>No entries yet</source>
+        <translation>No entries yet</translation>
+    </message>
+    <message>
+        <source>Last: %1</source>
+        <translation>Last: %1</translation>
+    </message>
+    <message>
+        <source>Next: %1</source>
+        <translation>Next: %1</translation>
+    </message>
+    <message>
+        <source>Linked: %1</source>
+        <translation>Linked: %1</translation>
+    </message>
+    <message>
+        <source>Don&apos;t link</source>
+        <translation>Don&apos;t link</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Session</translation>
+    </message>
+    <message>
         <source>Unknown time</source>
         <translation>Unknown time</translation>
-    </message>
-    <message>
-        <source>Open image: %1</source>
-        <translation>Open image: %1</translation>
-    </message>
-    <message>
-        <source>Open file: %1</source>
-        <translation>Open file: %1</translation>
     </message>
     <message>
         <source>Image: %1</source>
@@ -471,99 +402,226 @@
         <source>Unnamed client</source>
         <translation>Unnamed client</translation>
     </message>
+    <message>
+        <source>Completed</source>
+        <translation>Completed</translation>
+    </message>
+    <message>
+        <source>Confirmed</source>
+        <translation>Confirmed</translation>
+    </message>
+    <message>
+        <source>No show</source>
+        <translation>No show</translation>
+    </message>
+    <message>
+        <source>Rescheduled</source>
+        <translation>Rescheduled</translation>
+    </message>
+    <message>
+        <source>Scheduled</source>
+        <translation>Scheduled</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Paid</translation>
+    </message>
+    <message>
+        <source>Refunded</source>
+        <translation>Refunded</translation>
+    </message>
+    <message>
+        <source>Skipped</source>
+        <translation>Skipped</translation>
+    </message>
+    <message>
+        <source>Pending</source>
+        <translation>Pending</translation>
+    </message>
+    <message>
+        <source>Status changed: %1 → %2</source>
+        <translation>Status changed: %1 → %2</translation>
+    </message>
+    <message>
+        <source>Payment status changed: %1 → %2</source>
+        <translation>Payment status changed: %1 → %2</translation>
+    </message>
+    <message>
+        <source>Rescheduled from %1 to %2</source>
+        <translation>Rescheduled from %1 to %2</translation>
+    </message>
+</context>
+<context>
+    <name>DaySummaryWidget</name>
+    <message>
+        <source>Free all day</source>
+        <translation>Free all day</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n session(s) · %1 client(s)</source>
+        <translation>
+            <numerusform>%n session · %1 client(s)</numerusform>
+            <numerusform>%n sessions · %1 client(s)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Busy: %1h %2m</source>
+        <translation>Busy: %1h %2m</translation>
+    </message>
+    <message>
+        <source>Next session: %1</source>
+        <translation>Next session: %1</translation>
+    </message>
+    <message>
+        <source>Nearest free window: %1-%2</source>
+        <translation>Nearest free window: %1-%2</translation>
+    </message>
+</context>
+<context>
+    <name>EventDetails</name>
+    <message>
+        <source>: EVENT_DETAILS_TITLE</source>
+        <translation>Event Details</translation>
+    </message>
+    <message>
+        <source>: EVENT_TITLE_LABEL</source>
+        <translation>Title</translation>
+    </message>
+    <message>
+        <source>: EVENT_DATE_LABEL</source>
+        <translation>Date</translation>
+    </message>
+    <message>
+        <source>: EVENT_TIME_LABEL</source>
+        <translation>Time</translation>
+    </message>
+    <message>
+        <source>: FROM_LABEL</source>
+        <translation>From</translation>
+    </message>
+    <message>
+        <source>: TO_LABEL</source>
+        <translation>To</translation>
+    </message>
+    <message>
+        <source>: EVENT_TYPE_LABEL</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>: EVENT_IS_WORK_CHECKBOX</source>
+        <translation>Work</translation>
+    </message>
+    <message>
+        <source>: CLIENT_SELECT_LABEL</source>
+        <translation>Client</translation>
+    </message>
+    <message>
+        <source>Cost</source>
+        <translation>Cost</translation>
+    </message>
+    <message>
+        <source>Payment status</source>
+        <translation>Payment status</translation>
+    </message>
+    <message>
+        <source>Event status</source>
+        <translation>Event status</translation>
+    </message>
+    <message>
+        <source>Cancellation reason</source>
+        <translation>Cancellation reason</translation>
+    </message>
+    <message>
+        <source>Canceled by</source>
+        <translation>Canceled by</translation>
+    </message>
+    <message>
+        <source>: EVENT_ADD_BUTTON</source>
+        <translation>Add</translation>
+    </message>
+    <message>
+        <source>: EVENT_EDIT_BUTTON</source>
+        <translation>Edit</translation>
+    </message>
+</context>
+<context>
+    <name>EventInfo</name>
+    <message>
+        <source>: EVENT_INFO_FORM_TITLE</source>
+        <translation>Event Calendar</translation>
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../ui/app/mainwindow.ui" line="23"/>
         <source>: APP_TITLE</source>
         <translation>PsyClientManager</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="47"/>
         <source>: NAV_CALENDAR</source>
         <translation>Calendar</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="49"/>
         <source>: NAV_CLIENTS</source>
         <translation>Clients</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="51"/>
-        <location filename="../src/app/main_window.cpp" line="311"/>
         <source>Analytics</source>
         <translation>Analytics</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="53"/>
         <source>: NAV_DETAILS</source>
         <translation>Details</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="56"/>
-        <location filename="../src/app/main_window.cpp" line="315"/>
         <source>Notes</source>
         <translation>Notes</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="84"/>
         <source>Search clients</source>
         <translation>Search clients</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="89"/>
         <source>Add client</source>
         <translation>Add client</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="88"/>
         <source>Show inactive</source>
         <translation>Show inactive</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="220"/>
         <source>Opened %1</source>
         <translation>Opened %1</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="275"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="276"/>
-        <location filename="../src/app/main_window.cpp" line="293"/>
         <source>About</source>
         <translation>About</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="298"/>
         <source>Desktop workspace for calendar scheduling, client management, and session tracking.</source>
         <translation>Desktop workspace for calendar scheduling, client management, and session tracking.</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="299"/>
         <source>Built with Qt, DuckDB, and Qlementine.</source>
         <translation>Built with Qt, DuckDB, and Qlementine.</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="307"/>
         <source>Clients</source>
         <translation>Clients</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="309"/>
         <source>Calendar</source>
         <translation>Calendar</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="313"/>
         <source>Details</source>
         <translation>Details</translation>
     </message>
     <message>
-        <location filename="../src/app/main_window.cpp" line="316"/>
         <source>Page</source>
         <translation>Page</translation>
     </message>
@@ -571,38 +629,30 @@
 <context>
     <name>QClientDelegate</name>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="104"/>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="119"/>
         <source>: CLIENT_AGE_YEARS %1</source>
         <translation>%1 years</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="153"/>
         <source>: CLIENT_EMAIL_EMPTY</source>
         <translation>Email not specified</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="160"/>
         <source>: CLIENT_PHONE_EMPTY</source>
         <translation>Phone not specified</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="191"/>
         <source>: VALUE_NOT_AVAILABLE</source>
         <translation>N/A</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="216"/>
         <source>: CLIENT_STATUS_ACTIVE</source>
         <translation>Client active</translation>
     </message>
     <message>
-        <location filename="../src/client_model/qclient_delegate.cpp" line="217"/>
         <source>: CLIENT_STATUS_INACTIVE</source>
         <translation>Client inactive</translation>
     </message>
@@ -610,22 +660,18 @@
 <context>
     <name>QClientInfoCardPage</name>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="78"/>
         <source>: WARNING_TITLE</source>
         <translation>Warning</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="79"/>
         <source>: CLIENT_NAME_AND_LAST_NAME_REQUIRED</source>
         <translation>First and last name are required</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="133"/>
         <source>: CLIENT_STATUS_ACTIVE</source>
         <translation>Client active</translation>
     </message>
     <message>
-        <location filename="../src/pages/detail_client_info_page/client_info_card.cpp" line="134"/>
         <source>: CLIENT_STATUS_INACTIVE</source>
         <translation>Client inactive</translation>
     </message>
@@ -633,8 +679,6 @@
 <context>
     <name>QClientModel</name>
     <message>
-        <location filename="../src/client_model/qclient_model.cpp" line="131"/>
-        <location filename="../src/client_model/qclient_model.cpp" line="134"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
     </message>
@@ -654,56 +698,38 @@
         <translation>After</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="101"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_REGULAR</source>
         <translation>Regular</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="178"/>
         <source>: EVENT_NEW_TITLE</source>
         <translation>New event</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="311"/>
         <source>: EVENT_TYPE_WORK</source>
         <translation>Work</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="257"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="269"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="348"/>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="353"/>
         <source>: ERROR_TITLE</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="38"/>
-        <source> ₽</source>
-        <translation> ₽</translation>
-    </message>
-    <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="47"/>
         <source>Pending</source>
         <translation>Pending</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="49"/>
         <source>Paid</source>
         <translation>Paid</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="51"/>
         <source>Canceled</source>
         <translation>Canceled</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="53"/>
         <source>Refunded</source>
         <translation>Refunded</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="55"/>
         <source>Skipped</source>
         <translation>Skipped</translation>
     </message>
@@ -828,6 +854,10 @@
         <translation>Sun</translation>
     </message>
     <message>
+        <source> min</source>
+        <translation> min</translation>
+    </message>
+    <message>
         <source>Repeat end date must not be earlier than the event date.</source>
         <translation>Repeat end date must not be earlier than the event date.</translation>
     </message>
@@ -860,22 +890,18 @@
         <translation>Online session is enabled, but the meeting link is empty. Save without a link?</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="258"/>
         <source>The selected time range overlaps an existing event.</source>
         <translation>The selected time range overlaps an existing event.</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="270"/>
         <source>Failed to save event to database</source>
         <translation>Failed to save event to database</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="349"/>
         <source>: EVENT_TITLE_EMPTY_ERROR</source>
         <translation>Event title cannot be empty</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/qevent_details_widget.cpp" line="354"/>
         <source>: EVENT_DURATION_INVALID_ERROR</source>
         <translation>End time must be later than start time</translation>
     </message>
@@ -883,23 +909,18 @@
 <context>
     <name>QEventInfoPage</name>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="34"/>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="98"/>
         <source>: EVENT_ADD_BUTTON</source>
         <translation>Add</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="97"/>
         <source>: EVENT_EDIT_BUTTON</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="149"/>
         <source>: EVENT_DELETE_TITLE</source>
         <translation>Delete event</translation>
     </message>
     <message>
-        <location filename="../src/pages/event_info_page/event_info.cpp" line="150"/>
         <source>: EVENT_DELETE_CONFIRMATION</source>
         <translation>Are you sure you want to delete this event?</translation>
     </message>
@@ -907,35 +928,45 @@
 <context>
     <name>QEventItem</name>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="29"/>
         <source>Paid</source>
         <translation>Paid</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="31"/>
         <source>Canceled</source>
         <translation>Canceled</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="33"/>
         <source>Refunded</source>
         <translation>Refunded</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="35"/>
         <source>Skipped</source>
         <translation>Skipped</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="38"/>
         <source>Pending</source>
         <translation>Pending</translation>
     </message>
-    <message><source>Scheduled</source><translation>Scheduled</translation></message>
-    <message><source>Confirmed</source><translation>Confirmed</translation></message>
-    <message><source>Completed</source><translation>Completed</translation></message>
-    <message><source>No show</source><translation>No show</translation></message>
-    <message><source>Rescheduled</source><translation>Rescheduled</translation></message>
+    <message>
+        <source>Scheduled</source>
+        <translation>Scheduled</translation>
+    </message>
+    <message>
+        <source>Confirmed</source>
+        <translation>Confirmed</translation>
+    </message>
+    <message>
+        <source>Completed</source>
+        <translation>Completed</translation>
+    </message>
+    <message>
+        <source>No show</source>
+        <translation>No show</translation>
+    </message>
+    <message>
+        <source>Rescheduled</source>
+        <translation>Rescheduled</translation>
+    </message>
     <message>
         <source>Open meeting</source>
         <translation>Open meeting</translation>
@@ -953,12 +984,10 @@
         <translation>Online</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="259"/>
         <source>: EVENT_CONTEXT_EDIT</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../src/event_view/event_item.cpp" line="260"/>
         <source>: EVENT_CONTEXT_DELETE</source>
         <translation>Delete</translation>
     </message>
@@ -973,33 +1002,12 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/pages/analytics_page/analytics_page.cpp" line="39"/>
-        <source> ₽</source>
-        <translation> ₽</translation>
+        <source>: ERROR_TITLE</source>
+        <translation>Error</translation>
     </message>
     <message>
         <source>Enter a valid http or https meeting link.</source>
         <translation>Enter a valid http or https meeting link.</translation>
-    </message>
-    <message>
-        <source>Hello!</source>
-        <translation>Hello!</translation>
-    </message>
-    <message>
-        <source>Hello, %1!</source>
-        <translation>Hello, %1!</translation>
-    </message>
-    <message>
-        <source>We meet on %1 at %2.</source>
-        <translation>We meet on %1 at %2.</translation>
-    </message>
-    <message>
-        <source>Connection link:</source>
-        <translation>Connection link:</translation>
-    </message>
-    <message>
-        <source>See you!</source>
-        <translation>See you!</translation>
     </message>
     <message>
         <source>Hello, {client_name}!
@@ -1018,6 +1026,64 @@ Connection link:
 {meeting_url}
 
 See you!</translation>
+    </message>
+    <message>
+        <source>Recurring event</source>
+        <translation>Recurring event</translation>
+    </message>
+    <message>
+        <source>What do you want to update?</source>
+        <translation>What do you want to update?</translation>
+    </message>
+    <message>
+        <source>Only this event</source>
+        <translation>Only this event</translation>
+    </message>
+    <message>
+        <source>Whole series</source>
+        <translation>Whole series</translation>
+    </message>
+    <message>
+        <source>What do you want to delete?</source>
+        <translation>What do you want to delete?</translation>
+    </message>
+    <message>
+        <source>This and future events</source>
+        <translation>This and future events</translation>
+    </message>
+</context>
+<context>
+    <name>QShortcut</name>
+    <message>
+        <source>Left</source>
+        <translation>Left</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>Right</translation>
+    </message>
+    <message>
+        <source>Up</source>
+        <translation>Up</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Down</translation>
+    </message>
+</context>
+<context>
+    <name>QuickSlotsWidget</name>
+    <message>
+        <source>Quick session slots</source>
+        <translation>Quick session slots</translation>
+    </message>
+    <message>
+        <source>No quick slots available for the selected day.</source>
+        <translation>No quick slots available for the selected day.</translation>
+    </message>
+    <message>
+        <source>Quick slots are not configured yet.</source>
+        <translation>Quick slots are not configured yet.</translation>
     </message>
 </context>
 <context>
@@ -1039,12 +1105,10 @@ See you!</translation>
         <translation>Time reserved after each new session and Quick Slot.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="59"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="67"/>
         <source>Application settings</source>
         <translation>Application settings</translation>
     </message>
@@ -1065,6 +1129,22 @@ See you!</translation>
         <translation>Online</translation>
     </message>
     <message>
+        <source>Russian Ruble (₽)</source>
+        <translation>Russian Ruble (₽)</translation>
+    </message>
+    <message>
+        <source>US Dollar ($)</source>
+        <translation>US Dollar ($)</translation>
+    </message>
+    <message>
+        <source>Euro (€)</source>
+        <translation>Euro (€)</translation>
+    </message>
+    <message>
+        <source>British Pound (£)</source>
+        <translation>British Pound (£)</translation>
+    </message>
+    <message>
         <source>Invite template</source>
         <translation>Invite template</translation>
     </message>
@@ -1073,220 +1153,339 @@ See you!</translation>
         <translation>Available variables: {client_name}, {date}, {time}, {meeting_url}</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="74"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="79"/>
         <source>System default</source>
         <translation>System default</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="80"/>
         <source>Russian</source>
         <translation>Russian</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="81"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="83"/>
         <source>Interface language</source>
         <translation>Interface language</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="84"/>
         <source>The selected language will be applied after restarting the application.</source>
         <translation>The selected language will be applied after restarting the application.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="88"/>
         <source>Database</source>
         <translation>Database</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="92"/>
         <source>Database directory</source>
         <translation>Database directory</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="100"/>
         <source>Open folder</source>
         <translation>Open folder</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="103"/>
+        <source>Backup</source>
+        <translation>Backup</translation>
+    </message>
+    <message>
+        <source>Create a full backup (database and attachments) as a single .psybackup file, or validate an existing one.</source>
+        <translation>Create a full backup (database and attachments) as a single .psybackup file, or validate an existing one.</translation>
+    </message>
+    <message>
+        <source>Create backup...</source>
+        <translation>Create backup...</translation>
+    </message>
+    <message>
+        <source>Validate backup...</source>
+        <translation>Validate backup...</translation>
+    </message>
+    <message>
+        <source>Restore backup...</source>
+        <translation>Restore backup...</translation>
+    </message>
+    <message>
+        <source>Automatic Backups</source>
+        <translation>Automatic Backups</translation>
+    </message>
+    <message>
+        <source> days</source>
+        <translation> days</translation>
+    </message>
+    <message>
+        <source>Browse...</source>
+        <translation>Browse...</translation>
+    </message>
+    <message>
+        <source>Automatic backups</source>
+        <translation>Automatic backups</translation>
+    </message>
+    <message>
+        <source>Periodically create a backup in the background without needing to click &quot;Create backup...&quot;.</source>
+        <translation>Periodically create a backup in the background without needing to click &quot;Create backup...&quot;.</translation>
+    </message>
+    <message>
+        <source>Backup interval</source>
+        <translation>Backup interval</translation>
+    </message>
+    <message>
+        <source>How often an automatic backup is taken.</source>
+        <translation>How often an automatic backup is taken.</translation>
+    </message>
+    <message>
+        <source>Keep last</source>
+        <translation>Keep last</translation>
+    </message>
+    <message>
+        <source>How many automatic backups to keep before older ones are deleted.</source>
+        <translation>How many automatic backups to keep before older ones are deleted.</translation>
+    </message>
+    <message>
+        <source>Destination folder</source>
+        <translation>Destination folder</translation>
+    </message>
+    <message>
+        <source>Where automatic backups are saved.</source>
+        <translation>Where automatic backups are saved.</translation>
+    </message>
+    <message>
         <source>Notifications</source>
         <translation>Notifications</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="112"/>
+        <source> min</source>
+        <translation> min</translation>
+    </message>
+    <message>
         <source>Session reminders</source>
         <translation>Session reminders</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="113"/>
         <source>Show a desktop notification before a scheduled session starts.</source>
         <translation>Show a desktop notification before a scheduled session starts.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="116"/>
         <source>Notify before start</source>
         <translation>Notify before start</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="117"/>
         <source>How many minutes before the session the reminder should appear.</source>
         <translation>How many minutes before the session the reminder should appear.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="106"/>
         <source>Timeline colors</source>
         <translation>Timeline colors</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="118"/>
-        <source> ₽</source>
-        <translation> ₽</translation>
+        <source>Create Backup</source>
+        <translation>Create Backup</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="120"/>
+        <source>PsyClientManager Backup (*.psybackup)</source>
+        <translation>PsyClientManager Backup (*.psybackup)</translation>
+    </message>
+    <message>
+        <source>Creating backup…</source>
+        <translation>Creating backup…</translation>
+    </message>
+    <message>
+        <source>Backup Created</source>
+        <translation>Backup Created</translation>
+    </message>
+    <message>
+        <source>Backup created at:
+%1</source>
+        <translation>Backup created at:
+%1</translation>
+    </message>
+    <message>
+        <source>Backup Failed</source>
+        <translation>Backup Failed</translation>
+    </message>
+    <message>
+        <source>Select Automatic Backup Folder</source>
+        <translation>Select Automatic Backup Folder</translation>
+    </message>
+    <message>
+        <source>Validate Backup</source>
+        <translation>Validate Backup</translation>
+    </message>
+    <message>
+        <source>Validating backup…</source>
+        <translation>Validating backup…</translation>
+    </message>
+    <message>
+        <source>Backup Valid</source>
+        <translation>Backup Valid</translation>
+    </message>
+    <message>
+        <source>The backup is valid.</source>
+        <translation>The backup is valid.</translation>
+    </message>
+    <message>
+        <source>
+... and %1 more</source>
+        <translation>
+... and %1 more</translation>
+    </message>
+    <message>
+        <source>Backup Invalid</source>
+        <translation>Backup Invalid</translation>
+    </message>
+    <message>
+        <source>Restore Backup</source>
+        <translation>Restore Backup</translation>
+    </message>
+    <message>
+        <source>Checking backup…</source>
+        <translation>Checking backup…</translation>
+    </message>
+    <message>
+        <source>This will replace all current data (clients, events, notes, and attachments) with the contents of this backup. Your current data will be kept as a protective copy, but the application must restart to complete the restore. Continue?</source>
+        <translation>This will replace all current data (clients, events, notes, and attachments) with the contents of this backup. Your current data will be kept as a protective copy, but the application must restart to complete the restore. Continue?</translation>
+    </message>
+    <message>
+        <source>Restore Failed</source>
+        <translation>Restore Failed</translation>
+    </message>
+    <message>
+        <source>Could not stage the restore. Check that there is enough disk space and try again.</source>
+        <translation>Could not stage the restore. Check that there is enough disk space and try again.</translation>
+    </message>
+    <message>
+        <source>Restore Staged</source>
+        <translation>Restore Staged</translation>
+    </message>
+    <message>
+        <source>PsyClientManager will now close. Restart it to complete the restore.</source>
+        <translation>PsyClientManager will now close. Restart it to complete the restore.</translation>
+    </message>
+    <message>
         <source>Disallow overlapping events</source>
         <translation>Disallow overlapping events</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="121"/>
         <source>Reject saves when the selected time range intersects another event.</source>
         <translation>Reject saves when the selected time range intersects another event.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="135"/>
         <source>Work day start</source>
         <translation>Work day start</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="136"/>
         <source>Start time used for quick session suggestions.</source>
         <translation>Start time used for quick session suggestions.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="139"/>
         <source>Work day end</source>
         <translation>Work day end</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="140"/>
         <source>End time used for quick session suggestions.</source>
         <translation>End time used for quick session suggestions.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="143"/>
         <source>Default session duration</source>
         <translation>Default session duration</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="144"/>
         <source>Duration used for quick session suggestions and new sessions.</source>
         <translation>Duration used for quick session suggestions and new sessions.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="124"/>
+        <source>Currency</source>
+        <translation>Currency</translation>
+    </message>
+    <message>
+        <source>Symbol shown next to cost values throughout the app.</source>
+        <translation>Symbol shown next to cost values throughout the app.</translation>
+    </message>
+    <message>
         <source>Default work event cost</source>
         <translation>Default work event cost</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="125"/>
         <source>Used to prefill new work sessions.</source>
         <translation>Used to prefill new work sessions.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="128"/>
         <source>Work events</source>
         <translation>Work events</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="129"/>
         <source>Accent color for work sessions in the timeline.</source>
         <translation>Accent color for work sessions in the timeline.</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="132"/>
         <source>Personal events</source>
         <translation>Personal events</translation>
     </message>
     <message>
-        <location filename="../src/app/settings_dialog.cpp" line="133"/>
         <source>Accent color for personal events in the timeline.</source>
         <translation>Accent color for personal events in the timeline.</translation>
     </message>
 </context>
 <context>
-    <name>QuickSlotsWidget</name>
-    <message>
-        <location filename="../src/widgets/quick_slots_widget.cpp" line="17"/>
-        <source>Quick session slots</source>
-        <translation>Quick session slots</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/quick_slots_widget.cpp" line="30"/>
-        <location filename="../src/widgets/quick_slots_widget.cpp" line="101"/>
-        <source>No quick slots available for the selected day.</source>
-        <translation>No quick slots available for the selected day.</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/quick_slots_widget.cpp" line="64"/>
-        <source>Quick slots are not configured yet.</source>
-        <translation>Quick slots are not configured yet.</translation>
-    </message>
-</context>
-<context>
     <name>pcm::Application</name>
     <message>
-        <location filename="../src/app/application.cpp" line="91"/>
+        <source>Restore Complete</source>
+        <translation>Restore Complete</translation>
+    </message>
+    <message>
+        <source>The backup was restored successfully.</source>
+        <translation>The backup was restored successfully.</translation>
+    </message>
+    <message>
+        <source>Restore Failed</source>
+        <translation>Restore Failed</translation>
+    </message>
+    <message>
+        <source>The restore could not be completed:
+%1
+
+Your previous data was kept.</source>
+        <translation>The restore could not be completed:
+%1
+
+Your previous data was kept.</translation>
+    </message>
+    <message>
         <source>PsyClientManager</source>
         <translation>PsyClientManager</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="92"/>
         <source>The app is still running in the system tray.</source>
         <translation>The app is still running in the system tray.</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="104"/>
-        <location filename="../src/app/application.cpp" line="107"/>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="164"/>
         <source>Upcoming session</source>
         <translation>Upcoming session</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="181"/>
         <source>Client: %1</source>
         <translation>Client: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="187"/>
         <source>Session</source>
         <translation>Session</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="187"/>
         <source>%1 at %2</source>
         <translation>%1 at %2</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="198"/>
         <source>Open</source>
         <translation>Open</translation>
     </message>
     <message>
-        <location filename="../src/app/application.cpp" line="199"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>

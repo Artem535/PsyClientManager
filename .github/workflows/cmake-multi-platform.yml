@@ -227,6 +227,17 @@ jobs:
             ${{ github.workspace }}/build-release/vcpkg_installed
           key: ${{ steps.cache-vcpkg-installed.outputs.cache-primary-key }}
 
+      - name: Check translations are up to date
+        if: runner.os == 'Linux'
+        run: |
+          cmake --build build-release --target update_translations
+          git diff --exit-code -- translation/app_ru.ts translation/app_en.ts
+          if grep -q 'type="unfinished"' translation/app_ru.ts translation/app_en.ts; then
+            echo "::error::Untranslated entries remain in translation/*.ts"
+            grep -n 'type="unfinished"' translation/app_ru.ts translation/app_en.ts
+            exit 1
+          fi
+
       - name: Build
         run: cmake --build build-release --parallel
 
