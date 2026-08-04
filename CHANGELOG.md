@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.25] - 2026-08-04
+
+### Changed
+
+- Documented the encrypted backup format, recovery-password flow, and
+  system-keychain integration before implementation.
+
 ## [0.1.23] - 2026-08-04
 
 ### Fixed
