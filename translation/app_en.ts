@@ -80,19 +80,19 @@
     <name>AppointmentSummaryWidget</name>
     <message>
         <source>Last appointment: none</source>
-        <translation type="unfinished"></translation>
+        <translation>Last appointment: none</translation>
     </message>
     <message>
         <source>Last appointment: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Last appointment: %1</translation>
     </message>
     <message>
         <source>Next appointment: none</source>
-        <translation type="unfinished"></translation>
+        <translation>Next appointment: none</translation>
     </message>
     <message>
         <source>Next appointment: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Next appointment: %1</translation>
     </message>
 </context>
 <context>
@@ -280,23 +280,23 @@
     </message>
     <message>
         <source>%1 → Notes</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 → Notes</translation>
     </message>
     <message>
         <source>Note saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Note saved</translation>
     </message>
     <message>
         <source>Open client card</source>
-        <translation type="unfinished"></translation>
+        <translation>Open client card</translation>
     </message>
     <message>
         <source>All</source>
-        <translation type="unfinished"></translation>
+        <translation>All</translation>
     </message>
     <message>
         <source>Sessions</source>
-        <translation type="unfinished">Sessions</translation>
+        <translation>Sessions</translation>
     </message>
     <message>
         <source>No notes yet</source>
@@ -304,11 +304,11 @@
     </message>
     <message>
         <source>Jump to today</source>
-        <translation type="unfinished"></translation>
+        <translation>Jump to today</translation>
     </message>
     <message>
         <source>Jump to latest</source>
-        <translation type="unfinished"></translation>
+        <translation>Jump to latest</translation>
     </message>
     <message>
         <source>Write a note in Markdown...</source>
@@ -316,27 +316,27 @@
     </message>
     <message>
         <source>Canceled</source>
-        <translation type="unfinished">Canceled</translation>
+        <translation>Canceled</translation>
     </message>
     <message>
         <source>Cost: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Cost: %1</translation>
     </message>
     <message>
         <source>Session: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Session: %1</translation>
     </message>
     <message>
         <source>Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Image</translation>
     </message>
     <message>
         <source>File</source>
-        <translation type="unfinished"></translation>
+        <translation>File</translation>
     </message>
     <message>
         <source>Open</source>
-        <translation type="unfinished">Open</translation>
+        <translation>Open</translation>
     </message>
     <message>
         <source>Attach files</source>
@@ -352,7 +352,7 @@
     </message>
     <message>
         <source>Link to a session</source>
-        <translation type="unfinished"></translation>
+        <translation>Link to a session</translation>
     </message>
     <message>
         <source>Select a client to open notes.</source>
@@ -360,27 +360,27 @@
     </message>
     <message>
         <source>No entries yet</source>
-        <translation type="unfinished"></translation>
+        <translation>No entries yet</translation>
     </message>
     <message>
         <source>Last: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Last: %1</translation>
     </message>
     <message>
         <source>Next: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Next: %1</translation>
     </message>
     <message>
         <source>Linked: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Linked: %1</translation>
     </message>
     <message>
         <source>Don&apos;t link</source>
-        <translation type="unfinished"></translation>
+        <translation>Don&apos;t link</translation>
     </message>
     <message>
         <source>Session</source>
-        <translation type="unfinished">Session</translation>
+        <translation>Session</translation>
     </message>
     <message>
         <source>Unknown time</source>
@@ -404,77 +404,77 @@
     </message>
     <message>
         <source>Completed</source>
-        <translation type="unfinished">Completed</translation>
+        <translation>Completed</translation>
     </message>
     <message>
         <source>Confirmed</source>
-        <translation type="unfinished">Confirmed</translation>
+        <translation>Confirmed</translation>
     </message>
     <message>
         <source>No show</source>
-        <translation type="unfinished">No show</translation>
+        <translation>No show</translation>
     </message>
     <message>
         <source>Rescheduled</source>
-        <translation type="unfinished">Rescheduled</translation>
+        <translation>Rescheduled</translation>
     </message>
     <message>
         <source>Scheduled</source>
-        <translation type="unfinished">Scheduled</translation>
+        <translation>Scheduled</translation>
     </message>
     <message>
         <source>Paid</source>
-        <translation type="unfinished">Paid</translation>
+        <translation>Paid</translation>
     </message>
     <message>
         <source>Refunded</source>
-        <translation type="unfinished">Refunded</translation>
+        <translation>Refunded</translation>
     </message>
     <message>
         <source>Skipped</source>
-        <translation type="unfinished">Skipped</translation>
+        <translation>Skipped</translation>
     </message>
     <message>
         <source>Pending</source>
-        <translation type="unfinished">Pending</translation>
+        <translation>Pending</translation>
     </message>
     <message>
         <source>Status changed: %1 → %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Status changed: %1 → %2</translation>
     </message>
     <message>
         <source>Payment status changed: %1 → %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Payment status changed: %1 → %2</translation>
     </message>
     <message>
         <source>Rescheduled from %1 to %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Rescheduled from %1 to %2</translation>
     </message>
 </context>
 <context>
     <name>DaySummaryWidget</name>
     <message>
         <source>Free all day</source>
-        <translation type="unfinished"></translation>
+        <translation>Free all day</translation>
     </message>
     <message numerus="yes">
         <source>%n session(s) · %1 client(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n session · %1 client(s)</numerusform>
+            <numerusform>%n sessions · %1 client(s)</numerusform>
         </translation>
     </message>
     <message>
         <source>Busy: %1h %2m</source>
-        <translation type="unfinished"></translation>
+        <translation>Busy: %1h %2m</translation>
     </message>
     <message>
         <source>Next session: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Next session: %1</translation>
     </message>
     <message>
         <source>Nearest free window: %1-%2</source>
-        <translation type="unfinished"></translation>
+        <translation>Nearest free window: %1-%2</translation>
     </message>
 </context>
 <context>
@@ -855,7 +855,7 @@
     </message>
     <message>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> min</translation>
     </message>
     <message>
         <source>Repeat end date must not be earlier than the event date.</source>
@@ -1003,7 +1003,7 @@
     <name>QObject</name>
     <message>
         <source>: ERROR_TITLE</source>
-        <translation type="unfinished">Error</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <source>Enter a valid http or https meeting link.</source>
@@ -1029,46 +1029,46 @@ See you!</translation>
     </message>
     <message>
         <source>Recurring event</source>
-        <translation type="unfinished"></translation>
+        <translation>Recurring event</translation>
     </message>
     <message>
         <source>What do you want to update?</source>
-        <translation type="unfinished"></translation>
+        <translation>What do you want to update?</translation>
     </message>
     <message>
         <source>Only this event</source>
-        <translation type="unfinished"></translation>
+        <translation>Only this event</translation>
     </message>
     <message>
         <source>Whole series</source>
-        <translation type="unfinished"></translation>
+        <translation>Whole series</translation>
     </message>
     <message>
         <source>What do you want to delete?</source>
-        <translation type="unfinished"></translation>
+        <translation>What do you want to delete?</translation>
     </message>
     <message>
         <source>This and future events</source>
-        <translation type="unfinished"></translation>
+        <translation>This and future events</translation>
     </message>
 </context>
 <context>
     <name>QShortcut</name>
     <message>
         <source>Left</source>
-        <translation type="unfinished"></translation>
+        <translation>Left</translation>
     </message>
     <message>
         <source>Right</source>
-        <translation type="unfinished"></translation>
+        <translation>Right</translation>
     </message>
     <message>
         <source>Up</source>
-        <translation type="unfinished"></translation>
+        <translation>Up</translation>
     </message>
     <message>
         <source>Down</source>
-        <translation type="unfinished"></translation>
+        <translation>Down</translation>
     </message>
 </context>
 <context>
@@ -1130,19 +1130,19 @@ See you!</translation>
     </message>
     <message>
         <source>Russian Ruble (₽)</source>
-        <translation type="unfinished"></translation>
+        <translation>Russian Ruble (₽)</translation>
     </message>
     <message>
         <source>US Dollar ($)</source>
-        <translation type="unfinished"></translation>
+        <translation>US Dollar ($)</translation>
     </message>
     <message>
         <source>Euro (€)</source>
-        <translation type="unfinished"></translation>
+        <translation>Euro (€)</translation>
     </message>
     <message>
         <source>British Pound (£)</source>
-        <translation type="unfinished"></translation>
+        <translation>British Pound (£)</translation>
     </message>
     <message>
         <source>Invite template</source>
@@ -1190,67 +1190,67 @@ See you!</translation>
     </message>
     <message>
         <source>Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup</translation>
     </message>
     <message>
         <source>Create a full backup (database and attachments) as a single .psybackup file, or validate an existing one.</source>
-        <translation type="unfinished"></translation>
+        <translation>Create a full backup (database and attachments) as a single .psybackup file, or validate an existing one.</translation>
     </message>
     <message>
         <source>Create backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Create backup...</translation>
     </message>
     <message>
         <source>Validate backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Validate backup...</translation>
     </message>
     <message>
         <source>Restore backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore backup...</translation>
     </message>
     <message>
         <source>Automatic Backups</source>
-        <translation type="unfinished"></translation>
+        <translation>Automatic Backups</translation>
     </message>
     <message>
         <source> days</source>
-        <translation type="unfinished"></translation>
+        <translation> days</translation>
     </message>
     <message>
         <source>Browse...</source>
-        <translation type="unfinished"></translation>
+        <translation>Browse...</translation>
     </message>
     <message>
         <source>Automatic backups</source>
-        <translation type="unfinished"></translation>
+        <translation>Automatic backups</translation>
     </message>
     <message>
         <source>Periodically create a backup in the background without needing to click &quot;Create backup...&quot;.</source>
-        <translation type="unfinished"></translation>
+        <translation>Periodically create a backup in the background without needing to click &quot;Create backup...&quot;.</translation>
     </message>
     <message>
         <source>Backup interval</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup interval</translation>
     </message>
     <message>
         <source>How often an automatic backup is taken.</source>
-        <translation type="unfinished"></translation>
+        <translation>How often an automatic backup is taken.</translation>
     </message>
     <message>
         <source>Keep last</source>
-        <translation type="unfinished"></translation>
+        <translation>Keep last</translation>
     </message>
     <message>
         <source>How many automatic backups to keep before older ones are deleted.</source>
-        <translation type="unfinished"></translation>
+        <translation>How many automatic backups to keep before older ones are deleted.</translation>
     </message>
     <message>
         <source>Destination folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Destination folder</translation>
     </message>
     <message>
         <source>Where automatic backups are saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Where automatic backups are saved.</translation>
     </message>
     <message>
         <source>Notifications</source>
@@ -1258,7 +1258,7 @@ See you!</translation>
     </message>
     <message>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> min</translation>
     </message>
     <message>
         <source>Session reminders</source>
@@ -1282,85 +1282,87 @@ See you!</translation>
     </message>
     <message>
         <source>Create Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Create Backup</translation>
     </message>
     <message>
         <source>PsyClientManager Backup (*.psybackup)</source>
-        <translation type="unfinished"></translation>
+        <translation>PsyClientManager Backup (*.psybackup)</translation>
     </message>
     <message>
         <source>Creating backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Creating backup…</translation>
     </message>
     <message>
         <source>Backup Created</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup Created</translation>
     </message>
     <message>
         <source>Backup created at:
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup created at:
+%1</translation>
     </message>
     <message>
         <source>Backup Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup Failed</translation>
     </message>
     <message>
         <source>Select Automatic Backup Folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Select Automatic Backup Folder</translation>
     </message>
     <message>
         <source>Validate Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Validate Backup</translation>
     </message>
     <message>
         <source>Validating backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Validating backup…</translation>
     </message>
     <message>
         <source>Backup Valid</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup Valid</translation>
     </message>
     <message>
         <source>The backup is valid.</source>
-        <translation type="unfinished"></translation>
+        <translation>The backup is valid.</translation>
     </message>
     <message>
         <source>
 ... and %1 more</source>
-        <translation type="unfinished"></translation>
+        <translation>
+... and %1 more</translation>
     </message>
     <message>
         <source>Backup Invalid</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup Invalid</translation>
     </message>
     <message>
         <source>Restore Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Backup</translation>
     </message>
     <message>
         <source>Checking backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Checking backup…</translation>
     </message>
     <message>
         <source>This will replace all current data (clients, events, notes, and attachments) with the contents of this backup. Your current data will be kept as a protective copy, but the application must restart to complete the restore. Continue?</source>
-        <translation type="unfinished"></translation>
+        <translation>This will replace all current data (clients, events, notes, and attachments) with the contents of this backup. Your current data will be kept as a protective copy, but the application must restart to complete the restore. Continue?</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Failed</translation>
     </message>
     <message>
         <source>Could not stage the restore. Check that there is enough disk space and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Could not stage the restore. Check that there is enough disk space and try again.</translation>
     </message>
     <message>
         <source>Restore Staged</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Staged</translation>
     </message>
     <message>
         <source>PsyClientManager will now close. Restart it to complete the restore.</source>
-        <translation type="unfinished"></translation>
+        <translation>PsyClientManager will now close. Restart it to complete the restore.</translation>
     </message>
     <message>
         <source>Disallow overlapping events</source>
@@ -1396,11 +1398,11 @@ See you!</translation>
     </message>
     <message>
         <source>Currency</source>
-        <translation type="unfinished"></translation>
+        <translation>Currency</translation>
     </message>
     <message>
         <source>Symbol shown next to cost values throughout the app.</source>
-        <translation type="unfinished"></translation>
+        <translation>Symbol shown next to cost values throughout the app.</translation>
     </message>
     <message>
         <source>Default work event cost</source>
@@ -1431,22 +1433,25 @@ See you!</translation>
     <name>pcm::Application</name>
     <message>
         <source>Restore Complete</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Complete</translation>
     </message>
     <message>
         <source>The backup was restored successfully.</source>
-        <translation type="unfinished"></translation>
+        <translation>The backup was restored successfully.</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Failed</translation>
     </message>
     <message>
         <source>The restore could not be completed:
 %1
 
 Your previous data was kept.</source>
-        <translation type="unfinished"></translation>
+        <translation>The restore could not be completed:
+%1
+
+Your previous data was kept.</translation>
     </message>
     <message>
         <source>PsyClientManager</source>
