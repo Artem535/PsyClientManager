@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.23] - 2026-08-04
+
+### Fixed
+
+- The Russian interface no longer shows English text in the client Notes
+  feed, the day-summary panel, recurring-event dialogs, and the backup and
+  currency settings — translations are now kept in sync with the source
+  strings, and CI blocks any future change that lets them drift again.
+
 ## [0.1.22] - 2026-08-01
 
 ### Added
