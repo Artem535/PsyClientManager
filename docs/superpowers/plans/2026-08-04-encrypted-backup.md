@@ -77,10 +77,11 @@ Run: `ctest --test-dir build -R EncryptedContainerTest --output-on-failure`
 
 Expected: compilation failure because `encrypted_container.h` does not exist.
 
-- [ ] **Step 3: Add libsodium and QtKeychain dependencies**
+- [ ] **Step 3: Add the libsodium dependency**
 
-Add `libsodium` and `qtkeychain` to `vcpkg.json`. Link the backup target to
-`unofficial-sodium::sodium`; link QtKeychain only from the app target. Call
+Add `libsodium` to `vcpkg.json`. Link the backup target to
+`unofficial-sodium::sodium`. Add `qtkeychain-qt6` only in Task 3, where the
+app-level credential-store adapter is introduced. Call
 `sodium_init()` once in the container implementation and fail closed if it
 returns an error.
 
