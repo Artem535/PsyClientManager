@@ -15,15 +15,19 @@
 #include <vector>
 
 #include "auto_backup_due.h"
+#include "auto_backup_scheduler.h"
+#include "backup_encryption_policy.h"
 #include "backup_manifest.hpp"
 #include "backup_rotation_service.h"
 #include "backup_service.h"
 #include "backup_validator.h"
 #include "checksum_utils.hpp"
 #include "config.h"
+#include "credential_store.h"
 #include "database.h"
 #include "encrypted_container.h"
 #include "restore_service.h"
+#include "app_settings.h"
 
 namespace {
 
@@ -66,6 +70,49 @@ pcm::backup::MasterKey fixedMasterKey() {
   }
   return key;
 }
+
+class InMemoryCredentialStore final : public pcm::backup::CredentialStore {
+public:
+  bool available = true;
+  int readCalls = 0;
+  pcm::backup::MasterKey masterKey = fixedMasterKey();
+
+  void readWorkspaceMasterKey(const QString &) override {
+    ++readCalls;
+    emit readFinished(available, masterKey,
+                      available ? QString{} : QStringLiteral("system keychain unavailable"));
+  }
+
+  void writeWorkspaceMasterKey(const QString &, const pcm::backup::MasterKey &key) override {
+    masterKey = key;
+    emit writeFinished(true, {});
+  }
+};
+
+class BackupSettingsGuard final {
+public:
+  BackupSettingsGuard()
+      : mAutoBackupEnabled(pcm::app_settings::autoBackupEnabled()),
+        mLastRunAtMs(pcm::app_settings::autoBackupLastRunAtMs()),
+        mDestination(pcm::app_settings::autoBackupDestination()),
+        mEncryptionEnabled(pcm::app_settings::backupEncryptionEnabled()),
+        mKeychainEntry(pcm::app_settings::backupEncryptionKeychainEntry()) {}
+
+  ~BackupSettingsGuard() {
+    pcm::app_settings::setAutoBackupEnabled(mAutoBackupEnabled);
+    pcm::app_settings::setAutoBackupLastRunAtMs(mLastRunAtMs);
+    pcm::app_settings::setAutoBackupDestination(mDestination);
+    pcm::app_settings::setBackupEncryptionEnabled(mEncryptionEnabled);
+    pcm::app_settings::setBackupEncryptionKeychainEntry(mKeychainEntry);
+  }
+
+private:
+  bool mAutoBackupEnabled;
+  qint64 mLastRunAtMs;
+  QString mDestination;
+  bool mEncryptionEnabled;
+  QString mKeychainEntry;
+};
 
 } // namespace
 
@@ -1429,4 +1476,82 @@ TEST(AutoBackupDueTest, DueOnceIntervalElapsed) {
   const std::int64_t lastRun = 1'700'000'000'000;
   const std::int64_t sevenDaysLater = lastRun + 7LL * 24 * 60 * 60 * 1000;
   EXPECT_TRUE(pcm::backup::isAutoBackupDue(true, lastRun, 7, sevenDaysLater));
+}
+
+TEST(AutoBackupDueTest, EncryptedAutoBackupIsSkippedWhenKeyUnavailable) {
+  BackupSettingsGuard settingsGuard;
+  const auto destination = tempPath("tmp_auto_backup_key_unavailable");
+  if (Poco::File(destination).exists()) {
+    Poco::File(destination).remove(true);
+  }
+  auto database = std::make_shared<pcm::database::Database>(
+      makeTestDatabase("tmp_auto_backup_key_unavailable_db"));
+  InMemoryCredentialStore credentialStore;
+  credentialStore.available = false;
+  pcm::backup::AutoBackupScheduler scheduler(database, nullptr, &credentialStore);
+  bool finished = false;
+  bool ok = true;
+  QObject::connect(&scheduler, &pcm::backup::AutoBackupScheduler::backupFinished,
+                   [&finished, &ok](const bool result, const QString &) {
+                     finished = true;
+                     ok = result;
+                   });
+
+  pcm::app_settings::setAutoBackupEnabled(true);
+  pcm::app_settings::setAutoBackupLastRunAtMs(0);
+  pcm::app_settings::setAutoBackupDestination(QString::fromStdString(destination));
+  pcm::app_settings::setBackupEncryptionEnabled(true);
+  pcm::app_settings::setBackupEncryptionKeychainEntry(
+      pcm::backup::workspaceBackupKeychainEntry(QString::fromStdString(
+          database->get_application_metadata().workspace_uuid)));
+  scheduler.runAsync();
+
+  EXPECT_FALSE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::Unavailable));
+  EXPECT_EQ(credentialStore.readCalls, 1);
+  EXPECT_TRUE(finished);
+  EXPECT_FALSE(ok);
+  EXPECT_FALSE(Poco::File(destination).exists());
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_auto_backup_key_unavailable_db")
+                 .toString())
+      .remove(true);
+}
+
+TEST(AutoBackupDueTest, EncryptedAutoBackupUsesKeyWhenAvailable) {
+  BackupSettingsGuard settingsGuard;
+  auto database = std::make_shared<pcm::database::Database>(
+      makeTestDatabase("tmp_auto_backup_key_available_db"));
+  InMemoryCredentialStore credentialStore;
+  pcm::backup::AutoBackupScheduler scheduler(database, nullptr, &credentialStore);
+  bool finished = false;
+  QString error;
+  QObject::connect(&scheduler, &pcm::backup::AutoBackupScheduler::backupFinished,
+                   [&finished, &error](const bool, const QString &resultError) {
+                     finished = true;
+                     error = resultError;
+                   });
+
+  pcm::app_settings::setAutoBackupEnabled(true);
+  pcm::app_settings::setAutoBackupLastRunAtMs(0);
+  pcm::app_settings::setBackupEncryptionEnabled(true);
+  pcm::app_settings::setBackupEncryptionKeychainEntry(
+      pcm::backup::workspaceBackupKeychainEntry(QString::fromStdString(
+          database->get_application_metadata().workspace_uuid)));
+  scheduler.runAsync();
+
+  EXPECT_TRUE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::Keychain));
+  EXPECT_EQ(credentialStore.readCalls, 1);
+  EXPECT_TRUE(finished);
+  EXPECT_EQ(error, QStringLiteral("encrypted automatic backup requires a recovery password"));
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_auto_backup_key_available_db")
+                 .toString())
+      .remove(true);
+}
+
+TEST(AutoBackupDueTest, RecoveryOnlyKeyNeverEnablesAutomaticBackup) {
+  EXPECT_FALSE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::RecoveryOnly));
 }

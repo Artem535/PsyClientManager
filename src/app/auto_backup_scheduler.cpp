@@ -4,6 +4,7 @@
 #include "../backup/backup_rotation_service.h"
 #include "../backup/backup_service.h"
 #include "../widgets/app_settings.h"
+#include "backup_encryption_policy.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -20,15 +21,23 @@ class AutoBackupWorker final : public QObject {
 
 public:
   AutoBackupWorker(std::shared_ptr<database::Database> db, QString destinationPath,
-                   QString attachmentsRoot)
+                   QString attachmentsRoot, std::optional<MasterKey> masterKey,
+                   QString recoveryPassword)
       : mDb(std::move(db)), mDestinationPath(std::move(destinationPath)),
-        mAttachmentsRoot(std::move(attachmentsRoot)) {}
+        mAttachmentsRoot(std::move(attachmentsRoot)), mMasterKey(std::move(masterKey)),
+        mRecoveryPassword(std::move(recoveryPassword)) {}
 
 public slots:
   void run() {
     BackupService service;
     BackupOptions options;
     options.attachments_root = mAttachmentsRoot.toStdString();
+    if (mMasterKey.has_value()) {
+      options.encryption = BackupEncryptionOptions{
+          .master_key = mMasterKey,
+          .recovery_password = mRecoveryPassword.toStdString(),
+      };
+    }
     const auto result =
         service.create_backup(*mDb, mDestinationPath.toStdString(), options);
     emit finished(result.ok, QString::fromStdString(result.error));
@@ -41,13 +50,22 @@ private:
   std::shared_ptr<database::Database> mDb;
   QString mDestinationPath;
   QString mAttachmentsRoot;
+  std::optional<MasterKey> mMasterKey;
+  QString mRecoveryPassword;
 };
 
 } // namespace
 
 AutoBackupScheduler::AutoBackupScheduler(std::shared_ptr<database::Database> db,
-                                         QObject *parent)
-    : QObject(parent), mDb(std::move(db)) {}
+                                         QObject *parent,
+                                         CredentialStore *credentialStore)
+    : QObject(parent), mDb(std::move(db)), mCredentialStore(credentialStore) {
+  if (mCredentialStore == nullptr) {
+    mCredentialStore = new QtKeychainCredentialStore(this);
+  }
+  connect(mCredentialStore, &CredentialStore::readFinished, this,
+          &AutoBackupScheduler::onWorkspaceMasterKeyRead);
+}
 
 void AutoBackupScheduler::start() {
   mTimer.setInterval(kAutoBackupTimerIntervalMs);
@@ -68,8 +86,57 @@ void AutoBackupScheduler::runAsync() {
     return;
   }
   mRunInProgress = true;
+  mDestinationDir = app_settings::autoBackupDestination();
 
-  const auto destinationDir = app_settings::autoBackupDestination();
+  if (app_settings::backupEncryptionEnabled()) {
+    const auto metadata = mDb->get_application_metadata();
+    mWorkspaceUuid = QString::fromStdString(metadata.workspace_uuid);
+    const auto expectedEntry = workspaceBackupKeychainEntry(mWorkspaceUuid);
+    if (mWorkspaceUuid.isEmpty() ||
+        app_settings::backupEncryptionKeychainEntry() != expectedEntry) {
+      finishBackup(false, QStringLiteral("encrypted automatic backup key is unavailable"),
+                   mDestinationDir);
+      return;
+    }
+    mCredentialStore->readWorkspaceMasterKey(mWorkspaceUuid);
+    return;
+  }
+
+  startBackupWorker();
+}
+
+void AutoBackupScheduler::setRecoveryPasswordForCurrentSession(
+    QString recoveryPassword) {
+  mRecoveryPassword = std::move(recoveryPassword);
+}
+
+void AutoBackupScheduler::onWorkspaceMasterKeyRead(const bool ok,
+                                                    const MasterKey &key,
+                                                    const QString &error) {
+  if (!mRunInProgress) {
+    return;
+  }
+  const auto keySource = ok ? BackupKeySource::Keychain
+                            : BackupKeySource::Unavailable;
+  if (!automaticEncryptedBackupAllowed(app_settings::backupEncryptionEnabled(),
+                                       keySource)) {
+    finishBackup(false, error.isEmpty()
+                            ? QStringLiteral("encrypted automatic backup key is unavailable")
+                            : error,
+                 mDestinationDir);
+    return;
+  }
+  if (mRecoveryPassword.isEmpty()) {
+    finishBackup(false, QStringLiteral("encrypted automatic backup requires a recovery password"),
+                 mDestinationDir);
+    return;
+  }
+
+  startBackupWorker(key);
+}
+
+void AutoBackupScheduler::startBackupWorker(std::optional<MasterKey> masterKey) {
+  const auto destinationDir = mDestinationDir;
   QDir().mkpath(destinationDir);
   const auto destinationPath =
       QDir(destinationDir)
@@ -78,34 +145,38 @@ void AutoBackupScheduler::runAsync() {
 
   auto *thread = new QThread(this);
   auto *worker = new AutoBackupWorker(mDb, destinationPath,
-                                      app_settings::attachmentsStorageRoot());
+                                      app_settings::attachmentsStorageRoot(),
+                                      std::move(masterKey), mRecoveryPassword);
   worker->moveToThread(thread);
 
   connect(thread, &QThread::started, worker, &AutoBackupWorker::run);
   connect(worker, &AutoBackupWorker::finished, this,
           [this, destinationDir](const bool ok, const QString &error) {
-            mRunInProgress = false;
-            if (ok) {
-              app_settings::setAutoBackupLastRunAtMs(
-                  QDateTime::currentMSecsSinceEpoch());
-              BackupRotationService rotation;
-              const auto rotationResult =
-                  rotation.prune(destinationDir.toStdString(),
-                                "PsyClientManager-auto-",
-                                app_settings::autoBackupKeepCount());
-              if (!rotationResult.ok) {
-                qWarning() << "AutoBackupScheduler: rotation failed:"
-                           << QString::fromStdString(rotationResult.error);
-              }
-            } else {
-              qWarning() << "AutoBackupScheduler: automatic backup failed:" << error;
-            }
-            emit backupFinished(ok, error);
+            finishBackup(ok, error, destinationDir);
           });
   connect(worker, &AutoBackupWorker::finished, thread, &QThread::quit);
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
   thread->start();
+}
+
+void AutoBackupScheduler::finishBackup(const bool ok, const QString &error,
+                                       const QString &destinationDir) {
+  mRunInProgress = false;
+  if (ok) {
+    app_settings::setAutoBackupLastRunAtMs(QDateTime::currentMSecsSinceEpoch());
+    BackupRotationService rotation;
+    const auto rotationResult = rotation.prune(destinationDir.toStdString(),
+                                                "PsyClientManager-auto-",
+                                                app_settings::autoBackupKeepCount());
+    if (!rotationResult.ok) {
+      qWarning() << "AutoBackupScheduler: rotation failed:"
+                 << QString::fromStdString(rotationResult.error);
+    }
+  } else {
+    qWarning() << "AutoBackupScheduler: automatic backup failed:" << error;
+  }
+  emit backupFinished(ok, error);
 }
 
 } // namespace pcm::backup

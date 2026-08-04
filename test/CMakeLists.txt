@@ -66,16 +66,27 @@ gtest_discover_tests(PsyClientManager_change_log_text_tests)
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
-add_executable(PsyClientManager_backup_tests backup_tests.cpp)
+add_executable(PsyClientManager_backup_tests
+    backup_tests.cpp
+    ../src/app/auto_backup_scheduler.cpp
+    ../src/app/backup_encryption_policy.cpp
+    ../src/app/credential_store.cpp
+)
 target_link_libraries(PsyClientManager_backup_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     PsyClientManager_config
     PsyClientManager_database
     PsyClientManager_backup
+    PsyClientManager_widgets
     Poco::Foundation
     Poco::Zip
     reflectcpp::reflectcpp
     unofficial-sodium::sodium
+    qt6keychain
+)
+target_include_directories(PsyClientManager_backup_tests PRIVATE
+    ${qtkeychain_SOURCE_DIR}
+    ${qtkeychain_BINARY_DIR}
 )
 gtest_discover_tests(PsyClientManager_backup_tests)

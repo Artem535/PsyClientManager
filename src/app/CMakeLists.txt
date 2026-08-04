@@ -14,6 +14,8 @@ qt_add_library(${TARGET_NAME} STATIC
         main_window.cpp
         settings_dialog.cpp
         auto_backup_scheduler.cpp
+        backup_encryption_policy.cpp
+        credential_store.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE
@@ -53,4 +55,10 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_widgets
         qlementine
         Qt6::Widgets
+        qt6keychain
+)
+
+target_include_directories(${TARGET_NAME} PRIVATE
+        ${qtkeychain_SOURCE_DIR}
+        ${qtkeychain_BINARY_DIR}
 )

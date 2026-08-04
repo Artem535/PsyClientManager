@@ -29,6 +29,8 @@ constexpr auto kAutoBackupIntervalDaysKey = "backup/autoIntervalDays";
 constexpr auto kAutoBackupKeepCountKey = "backup/autoKeepCount";
 constexpr auto kAutoBackupDestinationKey = "backup/autoDestination";
 constexpr auto kAutoBackupLastRunAtMsKey = "backup/autoLastRunAtMs";
+constexpr auto kBackupEncryptionEnabledKey = "backup/encryptionEnabled";
+constexpr auto kBackupEncryptionKeychainEntryKey = "backup/keychainEntry";
 
 QColor defaultWorkEventColor() {
   return QColor(37, 99, 235);
@@ -340,6 +342,26 @@ qint64 autoBackupLastRunAtMs() {
 void setAutoBackupLastRunAtMs(const qint64 ms) {
   QSettings settings;
   settings.setValue(kAutoBackupLastRunAtMsKey, ms);
+}
+
+bool backupEncryptionEnabled() {
+  QSettings settings;
+  return settings.value(kBackupEncryptionEnabledKey, false).toBool();
+}
+
+void setBackupEncryptionEnabled(const bool enabled) {
+  QSettings settings;
+  settings.setValue(kBackupEncryptionEnabledKey, enabled);
+}
+
+QString backupEncryptionKeychainEntry() {
+  QSettings settings;
+  return settings.value(kBackupEncryptionKeychainEntryKey).toString();
+}
+
+void setBackupEncryptionKeychainEntry(const QString &entry) {
+  QSettings settings;
+  settings.setValue(kBackupEncryptionKeychainEntryKey, entry);
 }
 
 } // namespace pcm::app_settings
