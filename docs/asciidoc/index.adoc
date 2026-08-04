@@ -14,6 +14,7 @@ include::06-database-and-data-model.adoc[]
 include::07-testing.adoc[]
 include::08-recursive-model-migration.adoc[]
 include::09-recurring-events.adoc[]
+include::10-encrypted-backup-adr.adoc[]
 
 == Roadmap
 
