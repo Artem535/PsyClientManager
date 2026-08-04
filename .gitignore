@@ -4,7 +4,11 @@
 
 #Build dir
 build
+build-release/
 cmake-build-debug
+
+# Compiled Qt Linguist translations (build output of lrelease)
+translation/*.qm
 
 .idea
 .vscode/*
