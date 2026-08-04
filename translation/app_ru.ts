@@ -80,19 +80,19 @@
     <name>AppointmentSummaryWidget</name>
     <message>
         <source>Last appointment: none</source>
-        <translation type="unfinished"></translation>
+        <translation>Последняя встреча: нет</translation>
     </message>
     <message>
         <source>Last appointment: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Последняя встреча: %1</translation>
     </message>
     <message>
         <source>Next appointment: none</source>
-        <translation type="unfinished"></translation>
+        <translation>Следующая встреча: нет</translation>
     </message>
     <message>
         <source>Next appointment: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Следующая встреча: %1</translation>
     </message>
 </context>
 <context>
@@ -280,23 +280,23 @@
     </message>
     <message>
         <source>%1 → Notes</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 → Заметки</translation>
     </message>
     <message>
         <source>Note saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Заметка сохранена</translation>
     </message>
     <message>
         <source>Open client card</source>
-        <translation type="unfinished"></translation>
+        <translation>Открыть карточку клиента</translation>
     </message>
     <message>
         <source>All</source>
-        <translation type="unfinished"></translation>
+        <translation>Все</translation>
     </message>
     <message>
         <source>Sessions</source>
-        <translation type="unfinished">Сессии</translation>
+        <translation>Сессии</translation>
     </message>
     <message>
         <source>No notes yet</source>
@@ -304,11 +304,11 @@
     </message>
     <message>
         <source>Jump to today</source>
-        <translation type="unfinished"></translation>
+        <translation>Перейти к сегодняшнему дню</translation>
     </message>
     <message>
         <source>Jump to latest</source>
-        <translation type="unfinished"></translation>
+        <translation>Перейти к последним записям</translation>
     </message>
     <message>
         <source>Write a note in Markdown...</source>
@@ -316,27 +316,27 @@
     </message>
     <message>
         <source>Canceled</source>
-        <translation type="unfinished">Отменено</translation>
+        <translation>Отменено</translation>
     </message>
     <message>
         <source>Cost: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Стоимость: %1</translation>
     </message>
     <message>
         <source>Session: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Сеанс: %1</translation>
     </message>
     <message>
         <source>Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Изображение</translation>
     </message>
     <message>
         <source>File</source>
-        <translation type="unfinished"></translation>
+        <translation>Файл</translation>
     </message>
     <message>
         <source>Open</source>
-        <translation type="unfinished">Открыть</translation>
+        <translation>Открыть</translation>
     </message>
     <message>
         <source>Attach files</source>
@@ -352,7 +352,7 @@
     </message>
     <message>
         <source>Link to a session</source>
-        <translation type="unfinished"></translation>
+        <translation>Привязать к сеансу</translation>
     </message>
     <message>
         <source>Select a client to open notes.</source>
@@ -360,27 +360,27 @@
     </message>
     <message>
         <source>No entries yet</source>
-        <translation type="unfinished"></translation>
+        <translation>Записей пока нет</translation>
     </message>
     <message>
         <source>Last: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Последняя: %1</translation>
     </message>
     <message>
         <source>Next: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Следующая: %1</translation>
     </message>
     <message>
         <source>Linked: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Привязано: %1</translation>
     </message>
     <message>
         <source>Don&apos;t link</source>
-        <translation type="unfinished"></translation>
+        <translation>Не привязывать</translation>
     </message>
     <message>
         <source>Session</source>
-        <translation type="unfinished">Сеанс</translation>
+        <translation>Сеанс</translation>
     </message>
     <message>
         <source>Unknown time</source>
@@ -404,78 +404,78 @@
     </message>
     <message>
         <source>Completed</source>
-        <translation type="unfinished">Проведена</translation>
+        <translation>Проведена</translation>
     </message>
     <message>
         <source>Confirmed</source>
-        <translation type="unfinished">Подтверждена</translation>
+        <translation>Подтверждена</translation>
     </message>
     <message>
         <source>No show</source>
-        <translation type="unfinished">Клиент не пришёл</translation>
+        <translation>Клиент не пришёл</translation>
     </message>
     <message>
         <source>Rescheduled</source>
-        <translation type="unfinished">Перенесена</translation>
+        <translation>Перенесена</translation>
     </message>
     <message>
         <source>Scheduled</source>
-        <translation type="unfinished">Запланирована</translation>
+        <translation>Запланирована</translation>
     </message>
     <message>
         <source>Paid</source>
-        <translation type="unfinished">Оплачено</translation>
+        <translation>Оплачено</translation>
     </message>
     <message>
         <source>Refunded</source>
-        <translation type="unfinished">Возврат</translation>
+        <translation>Возврат</translation>
     </message>
     <message>
         <source>Skipped</source>
-        <translation type="unfinished">Без оплаты</translation>
+        <translation>Без оплаты</translation>
     </message>
     <message>
         <source>Pending</source>
-        <translation type="unfinished">Не оплачено</translation>
+        <translation>Не оплачено</translation>
     </message>
     <message>
         <source>Status changed: %1 → %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Статус изменён: %1 → %2</translation>
     </message>
     <message>
         <source>Payment status changed: %1 → %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Статус оплаты изменён: %1 → %2</translation>
     </message>
     <message>
         <source>Rescheduled from %1 to %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Перенесено с %1 на %2</translation>
     </message>
 </context>
 <context>
     <name>DaySummaryWidget</name>
     <message>
         <source>Free all day</source>
-        <translation type="unfinished"></translation>
+        <translation>Свободно весь день</translation>
     </message>
     <message numerus="yes">
         <source>%n session(s) · %1 client(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n сессия · %1 клиент(ов)</numerusform>
+            <numerusform>%n сессии · %1 клиент(ов)</numerusform>
+            <numerusform>%n сессий · %1 клиент(ов)</numerusform>
         </translation>
     </message>
     <message>
         <source>Busy: %1h %2m</source>
-        <translation type="unfinished"></translation>
+        <translation>Занято: %1 ч %2 мин</translation>
     </message>
     <message>
         <source>Next session: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Следующая сессия: %1</translation>
     </message>
     <message>
         <source>Nearest free window: %1-%2</source>
-        <translation type="unfinished"></translation>
+        <translation>Ближайшее свободное окно: %1–%2</translation>
     </message>
 </context>
 <context>
@@ -588,7 +588,7 @@
     </message>
     <message>
         <source>Notes</source>
-        <translation type="unfinished">Заметки</translation>
+        <translation>Заметки</translation>
     </message>
     <message>
         <source>Opened %1</source>
@@ -856,7 +856,7 @@
     </message>
     <message>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> мин</translation>
     </message>
     <message>
         <source>Repeat end date must not be earlier than the event date.</source>
@@ -1004,7 +1004,7 @@
     <name>QObject</name>
     <message>
         <source>: ERROR_TITLE</source>
-        <translation type="unfinished">Ошибка</translation>
+        <translation>Ошибка</translation>
     </message>
     <message>
         <source>Enter a valid http or https meeting link.</source>
@@ -1030,46 +1030,46 @@ See you!</source>
     </message>
     <message>
         <source>Recurring event</source>
-        <translation type="unfinished"></translation>
+        <translation>Повторяющееся событие</translation>
     </message>
     <message>
         <source>What do you want to update?</source>
-        <translation type="unfinished"></translation>
+        <translation>Что вы хотите обновить?</translation>
     </message>
     <message>
         <source>Only this event</source>
-        <translation type="unfinished"></translation>
+        <translation>Только это событие</translation>
     </message>
     <message>
         <source>Whole series</source>
-        <translation type="unfinished"></translation>
+        <translation>Всю серию</translation>
     </message>
     <message>
         <source>What do you want to delete?</source>
-        <translation type="unfinished"></translation>
+        <translation>Что вы хотите удалить?</translation>
     </message>
     <message>
         <source>This and future events</source>
-        <translation type="unfinished"></translation>
+        <translation>Это и все последующие события</translation>
     </message>
 </context>
 <context>
     <name>QShortcut</name>
     <message>
         <source>Left</source>
-        <translation type="unfinished"></translation>
+        <translation>Влево</translation>
     </message>
     <message>
         <source>Right</source>
-        <translation type="unfinished"></translation>
+        <translation>Вправо</translation>
     </message>
     <message>
         <source>Up</source>
-        <translation type="unfinished"></translation>
+        <translation>Вверх</translation>
     </message>
     <message>
         <source>Down</source>
-        <translation type="unfinished"></translation>
+        <translation>Вниз</translation>
     </message>
 </context>
 <context>
@@ -1131,19 +1131,19 @@ See you!</source>
     </message>
     <message>
         <source>Russian Ruble (₽)</source>
-        <translation type="unfinished"></translation>
+        <translation>Российский рубль (₽)</translation>
     </message>
     <message>
         <source>US Dollar ($)</source>
-        <translation type="unfinished"></translation>
+        <translation>Доллар США ($)</translation>
     </message>
     <message>
         <source>Euro (€)</source>
-        <translation type="unfinished"></translation>
+        <translation>Евро (€)</translation>
     </message>
     <message>
         <source>British Pound (£)</source>
-        <translation type="unfinished"></translation>
+        <translation>Фунт стерлингов (£)</translation>
     </message>
     <message>
         <source>Invite template</source>
@@ -1191,67 +1191,67 @@ See you!</source>
     </message>
     <message>
         <source>Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервное копирование</translation>
     </message>
     <message>
         <source>Create a full backup (database and attachments) as a single .psybackup file, or validate an existing one.</source>
-        <translation type="unfinished"></translation>
+        <translation>Создайте полную резервную копию (базу данных и вложения) в виде одного файла .psybackup или проверьте существующую.</translation>
     </message>
     <message>
         <source>Create backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Создать резервную копию…</translation>
     </message>
     <message>
         <source>Validate backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Проверить резервную копию…</translation>
     </message>
     <message>
         <source>Restore backup...</source>
-        <translation type="unfinished"></translation>
+        <translation>Восстановить из резервной копии…</translation>
     </message>
     <message>
         <source>Automatic Backups</source>
-        <translation type="unfinished"></translation>
+        <translation>Автоматическое резервное копирование</translation>
     </message>
     <message>
         <source> days</source>
-        <translation type="unfinished"></translation>
+        <translation> дн.</translation>
     </message>
     <message>
         <source>Browse...</source>
-        <translation type="unfinished"></translation>
+        <translation>Обзор…</translation>
     </message>
     <message>
         <source>Automatic backups</source>
-        <translation type="unfinished"></translation>
+        <translation>Автоматически создавать резервные копии</translation>
     </message>
     <message>
         <source>Periodically create a backup in the background without needing to click &quot;Create backup...&quot;.</source>
-        <translation type="unfinished"></translation>
+        <translation>Периодически создавать резервную копию в фоновом режиме, не нажимая «Создать резервную копию…».</translation>
     </message>
     <message>
         <source>Backup interval</source>
-        <translation type="unfinished"></translation>
+        <translation>Интервал резервного копирования</translation>
     </message>
     <message>
         <source>How often an automatic backup is taken.</source>
-        <translation type="unfinished"></translation>
+        <translation>Как часто создаётся автоматическая резервная копия.</translation>
     </message>
     <message>
         <source>Keep last</source>
-        <translation type="unfinished"></translation>
+        <translation>Хранить последние</translation>
     </message>
     <message>
         <source>How many automatic backups to keep before older ones are deleted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Сколько последних резервных копий хранить, прежде чем более старые будут удалены.</translation>
     </message>
     <message>
         <source>Destination folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Папка назначения</translation>
     </message>
     <message>
         <source>Where automatic backups are saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Куда сохраняются автоматические резервные копии.</translation>
     </message>
     <message>
         <source>Notifications</source>
@@ -1259,7 +1259,7 @@ See you!</source>
     </message>
     <message>
         <source> min</source>
-        <translation type="unfinished"></translation>
+        <translation> мин</translation>
     </message>
     <message>
         <source>Session reminders</source>
@@ -1283,85 +1283,87 @@ See you!</source>
     </message>
     <message>
         <source>Create Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Создание резервной копии</translation>
     </message>
     <message>
         <source>PsyClientManager Backup (*.psybackup)</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия PsyClientManager (*.psybackup)</translation>
     </message>
     <message>
         <source>Creating backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Создание резервной копии…</translation>
     </message>
     <message>
         <source>Backup Created</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия создана</translation>
     </message>
     <message>
         <source>Backup created at:
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия создана:
+%1</translation>
     </message>
     <message>
         <source>Backup Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось создать резервную копию</translation>
     </message>
     <message>
         <source>Select Automatic Backup Folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Выбор папки для автоматических резервных копий</translation>
     </message>
     <message>
         <source>Validate Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Проверка резервной копии</translation>
     </message>
     <message>
         <source>Validating backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Проверка резервной копии…</translation>
     </message>
     <message>
         <source>Backup Valid</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия корректна</translation>
     </message>
     <message>
         <source>The backup is valid.</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия корректна.</translation>
     </message>
     <message>
         <source>
 ... and %1 more</source>
-        <translation type="unfinished"></translation>
+        <translation>
+… и ещё %1</translation>
     </message>
     <message>
         <source>Backup Invalid</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия повреждена</translation>
     </message>
     <message>
         <source>Restore Backup</source>
-        <translation type="unfinished"></translation>
+        <translation>Восстановление из резервной копии</translation>
     </message>
     <message>
         <source>Checking backup…</source>
-        <translation type="unfinished"></translation>
+        <translation>Проверка резервной копии…</translation>
     </message>
     <message>
         <source>This will replace all current data (clients, events, notes, and attachments) with the contents of this backup. Your current data will be kept as a protective copy, but the application must restart to complete the restore. Continue?</source>
-        <translation type="unfinished"></translation>
+        <translation>Это заменит все текущие данные (клиентов, события, заметки и вложения) содержимым этой резервной копии. Текущие данные будут сохранены как защитная копия, но для завершения восстановления потребуется перезапустить приложение. Продолжить?</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось восстановить данные</translation>
     </message>
     <message>
         <source>Could not stage the restore. Check that there is enough disk space and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось подготовить восстановление. Убедитесь, что на диске достаточно места, и попробуйте снова.</translation>
     </message>
     <message>
         <source>Restore Staged</source>
-        <translation type="unfinished"></translation>
+        <translation>Восстановление подготовлено</translation>
     </message>
     <message>
         <source>PsyClientManager will now close. Restart it to complete the restore.</source>
-        <translation type="unfinished"></translation>
+        <translation>PsyClientManager сейчас закроется. Перезапустите приложение, чтобы завершить восстановление.</translation>
     </message>
     <message>
         <source>Disallow overlapping events</source>
@@ -1397,11 +1399,11 @@ See you!</source>
     </message>
     <message>
         <source>Currency</source>
-        <translation type="unfinished"></translation>
+        <translation>Валюта</translation>
     </message>
     <message>
         <source>Symbol shown next to cost values throughout the app.</source>
-        <translation type="unfinished"></translation>
+        <translation>Символ, который отображается рядом со значениями стоимости по всему приложению.</translation>
     </message>
     <message>
         <source>Default work event cost</source>
@@ -1432,22 +1434,25 @@ See you!</source>
     <name>pcm::Application</name>
     <message>
         <source>Restore Complete</source>
-        <translation type="unfinished"></translation>
+        <translation>Восстановление завершено</translation>
     </message>
     <message>
         <source>The backup was restored successfully.</source>
-        <translation type="unfinished"></translation>
+        <translation>Резервная копия успешно восстановлена.</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось восстановить данные</translation>
     </message>
     <message>
         <source>The restore could not be completed:
 %1
 
 Your previous data was kept.</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось завершить восстановление:
+%1
+
+Предыдущие данные сохранены.</translation>
     </message>
     <message>
         <source>PsyClientManager</source>
