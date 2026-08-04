@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.24] - 2026-08-04
+
+### Added
+
+- Appointment confirmation tracking: mark a session confirmed or unconfirmed
+  independently of its status, see the state on the Timeline, filter the day
+  view to unconfirmed sessions, and copy a confirmation request from a
+  configurable template.
+
 ## [0.1.23] - 2026-08-04
 
 ### Fixed

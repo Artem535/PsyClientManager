@@ -981,6 +981,18 @@
         <translation>Скопировать приглашение на встречу</translation>
     </message>
     <message>
+        <source>Mark unconfirmed</source>
+        <translation>Отметить как неподтверждённую</translation>
+    </message>
+    <message>
+        <source>Mark confirmed</source>
+        <translation>Отметить как подтверждённую</translation>
+    </message>
+    <message>
+        <source>Copy confirmation request</source>
+        <translation>Скопировать запрос подтверждения</translation>
+    </message>
+    <message>
         <source>Online</source>
         <translation>Онлайн</translation>
     </message>
@@ -1029,6 +1041,18 @@ See you!</source>
 До встречи!</translation>
     </message>
     <message>
+        <source>Hello, {client_name}!
+
+Please confirm your session on {date} at {time}.
+
+Thank you!</source>
+        <translation>Здравствуйте, {client_name}!
+
+Пожалуйста, подтвердите вашу сессию {date} в {time}.
+
+Спасибо!</translation>
+    </message>
+    <message>
         <source>Recurring event</source>
         <translation>Повторяющееся событие</translation>
     </message>
@@ -1051,6 +1075,13 @@ See you!</source>
     <message>
         <source>This and future events</source>
         <translation>Это и все последующие события</translation>
+    </message>
+</context>
+<context>
+    <name>QTimelineWidget</name>
+    <message>
+        <source>Show only unconfirmed</source>
+        <translation>Показывать только неподтверждённые</translation>
     </message>
 </context>
 <context>
@@ -1280,6 +1311,14 @@ See you!</source>
     <message>
         <source>Timeline colors</source>
         <translation>Цвета таймлайна</translation>
+    </message>
+    <message>
+        <source>Confirmation request template</source>
+        <translation>Шаблон запроса подтверждения</translation>
+    </message>
+    <message>
+        <source>Available variables: {client_name}, {date}, {time}</source>
+        <translation>Доступные переменные: {client_name}, {date}, {time}</translation>
     </message>
     <message>
         <source>Create Backup</source>

@@ -175,6 +175,7 @@ struct DuckEvent {
   std::int64_t buffer_before_minutes = 0;
   std::int64_t buffer_after_minutes = 0;
   bool is_virtual_occurrence = false;
+  std::optional<std::int64_t> confirmed_at = std::nullopt;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -214,6 +215,9 @@ struct DuckEvent {
     }
     readBufferMinutes(chunk, index, 17, 18, buffer_before_minutes,
                       buffer_after_minutes);
+    if (chunk.ColumnCount() > 19) {
+      confirmed_at = db_utils::toOptionalTimestampMs(chunk.GetValue(19, index));
+    }
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {

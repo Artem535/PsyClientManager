@@ -101,6 +101,7 @@ public:
   [[nodiscard]] QString meetingUrl() const;
   [[nodiscard]] int64_t bufferBeforeMinutes() const;
   [[nodiscard]] int64_t bufferAfterMinutes() const;
+  [[nodiscard]] bool isConfirmed() const;
 
   /**
    * @brief Returns the unique identifier of the event.
@@ -172,6 +173,7 @@ signals:
   void itemSelected();
   void editRequested();
   void deleteRequested();
+  void confirmToggleRequested();
 
 protected:
   void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -193,6 +195,7 @@ private:
   std::optional<int64_t> mSeriesId;
   std::optional<int64_t> mOriginalOccurrenceStart;
   bool mIsVirtualOccurrence = false;
+  std::optional<int64_t> mConfirmedAt;
   int64_t mBufferBeforeMinutes = 0;
   int64_t mBufferAfterMinutes = 0;
   QDateTime mStartTime;       ///< The start time of the event.

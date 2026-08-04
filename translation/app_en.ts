@@ -980,6 +980,18 @@
         <translation>Copy meeting invite</translation>
     </message>
     <message>
+        <source>Mark unconfirmed</source>
+        <translation>Mark unconfirmed</translation>
+    </message>
+    <message>
+        <source>Mark confirmed</source>
+        <translation>Mark confirmed</translation>
+    </message>
+    <message>
+        <source>Copy confirmation request</source>
+        <translation>Copy confirmation request</translation>
+    </message>
+    <message>
         <source>Online</source>
         <translation>Online</translation>
     </message>
@@ -1028,6 +1040,18 @@ Connection link:
 See you!</translation>
     </message>
     <message>
+        <source>Hello, {client_name}!
+
+Please confirm your session on {date} at {time}.
+
+Thank you!</source>
+        <translation>Hello, {client_name}!
+
+Please confirm your session on {date} at {time}.
+
+Thank you!</translation>
+    </message>
+    <message>
         <source>Recurring event</source>
         <translation>Recurring event</translation>
     </message>
@@ -1050,6 +1074,13 @@ See you!</translation>
     <message>
         <source>This and future events</source>
         <translation>This and future events</translation>
+    </message>
+</context>
+<context>
+    <name>QTimelineWidget</name>
+    <message>
+        <source>Show only unconfirmed</source>
+        <translation>Show only unconfirmed</translation>
     </message>
 </context>
 <context>
@@ -1279,6 +1310,14 @@ See you!</translation>
     <message>
         <source>Timeline colors</source>
         <translation>Timeline colors</translation>
+    </message>
+    <message>
+        <source>Confirmation request template</source>
+        <translation>Confirmation request template</translation>
+    </message>
+    <message>
+        <source>Available variables: {client_name}, {date}, {time}</source>
+        <translation>Available variables: {client_name}, {date}, {time}</translation>
     </message>
     <message>
         <source>Create Backup</source>

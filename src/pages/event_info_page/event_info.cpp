@@ -130,6 +130,8 @@ void QEventInfoPage::connectSignals() {
           &QEventInfoPage::onTimelineEventEditRequested);
   connect(mTimelineWidget, &QTimelineWidget::eventDeleteRequested, this,
           &QEventInfoPage::onTimelineEventDeleteRequested);
+  connect(mTimelineWidget, &QTimelineWidget::eventConfirmToggleRequested, this,
+          &QEventInfoPage::onTimelineEventConfirmToggleRequested);
   connect(mTimelineWidget, &QTimelineWidget::createEventRequested, this,
           &QEventInfoPage::openQuickEventDialog);
   connect(mTimelineWidget, &QTimelineWidget::needSceneUpdate, this,
@@ -282,6 +284,12 @@ void QEventInfoPage::onTimelineEventSelected(const int64_t eventId) {
 
 void QEventInfoPage::onTimelineEventEditRequested(const int64_t eventId) {
   editEventWithDialog(eventId);
+}
+
+void QEventInfoPage::onTimelineEventConfirmToggleRequested(const int64_t eventId) {
+  if (mTimelineWidget) {
+    mTimelineWidget->toggleEventConfirmed(eventId);
+  }
 }
 
 void QEventInfoPage::onTimelineEventDeleteRequested(const int64_t eventId) {

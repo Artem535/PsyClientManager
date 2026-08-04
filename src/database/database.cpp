@@ -90,7 +90,8 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.cancellation_reason),
        db_utils::toDuckValue(event.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes))});
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
+       timestampMsOrNull(event.confirmed_at)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -176,6 +177,7 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
+       timestampMsOrNull(event.confirmed_at),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {

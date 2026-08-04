@@ -13,10 +13,16 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
   mLayout->setSpacing(0);
   setLayout(mLayout);
 
+  mUnconfirmedOnlyCheckBox = new QCheckBox(tr("Show only unconfirmed"), this);
+  mLayout->addWidget(mUnconfirmedOnlyCheckBox);
+
   mEventView = new QEventView(this);
   mEventView->setModel(mModel);
 
   mLayout->addWidget(mEventView);
+
+  connect(mUnconfirmedOnlyCheckBox, &QCheckBox::toggled, mModel,
+          &QTimelineModel::setUnconfirmedOnlyFilter);
 
   connect(mModel, &QTimelineModel::eventsLoaded, this,
           &QTimelineWidget::updateScene);
@@ -26,6 +32,8 @@ QTimelineWidget::QTimelineWidget(QTimelineModel *model, QWidget *parent)
           &QTimelineWidget::eventEditRequested);
   connect(mEventView, &QEventView::eventDeleteRequested, this,
           &QTimelineWidget::eventDeleteRequested);
+  connect(mEventView, &QEventView::eventConfirmToggleRequested, this,
+          &QTimelineWidget::eventConfirmToggleRequested);
   connect(mEventView, &QEventView::createEventRequested, this,
           [this](const QTime &startTime, const int durationMinutes) {
             QTimer::singleShot(0, this, [this, startTime, durationMinutes]() {
@@ -104,6 +112,12 @@ void QTimelineWidget::removeEvent(const int64_t id) const {
   if (!mModel)
     return;
   mModel->removeEvent(id);
+}
+
+void QTimelineWidget::toggleEventConfirmed(const int64_t id) const {
+  if (!mModel)
+    return;
+  mModel->toggleEventConfirmed(id);
 }
 
 bool QTimelineWidget::hasConflict(const DuckEvent &event) const {

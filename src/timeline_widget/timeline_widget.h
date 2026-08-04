@@ -1,6 +1,7 @@
 // src/timeline_widget/timeline_widget.h
 #pragma once
 
+#include <QCheckBox>
 #include <QLoggingCategory>
 #include <QObject>
 #include <QVBoxLayout>
@@ -43,6 +44,7 @@ public slots:
 
     void updateEvent(const DuckEvent &event, bool allowOverlap = true) const;
     void removeEvent(int64_t id) const;
+    void toggleEventConfirmed(int64_t id) const;
     [[nodiscard]] bool hasConflict(const DuckEvent &event) const;
     const QVector<DuckEvent> &events() const;
     std::optional<DuckEvent> eventById(int64_t eventId) const;
@@ -52,12 +54,14 @@ signals:
     void eventSelected(int64_t eventId);
     void eventEditRequested(int64_t eventId);
     void eventDeleteRequested(int64_t eventId);
+    void eventConfirmToggleRequested(int64_t eventId);
     void createEventRequested(const QTime &startTime, int durationMinutes);
 
     void needSceneUpdate();
 
 private:
     QVBoxLayout *mLayout = nullptr;
+    QCheckBox *mUnconfirmedOnlyCheckBox = nullptr;
     QEventView *mEventView = nullptr;
     QTimelineModel *mModel = nullptr;
 };

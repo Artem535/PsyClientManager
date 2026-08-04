@@ -165,6 +165,7 @@ ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_before_minutes INTEGER DEFAULT
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DEFAULT 0;
 UPDATE Event SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
 UPDATE Event SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMP;
 
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS description TEXT;
@@ -206,11 +207,12 @@ INSERT INTO Event (
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
     is_online, meeting_url, series_id, original_occurrence_start,
-    cancellation_reason, canceled_by, buffer_before_minutes, buffer_after_minutes
+    cancellation_reason, canceled_by, buffer_before_minutes, buffer_after_minutes,
+    confirmed_at
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 FROM Event
 RETURNING id
 )duckdb";
@@ -234,11 +236,12 @@ SET name = $1,
     canceled_by = $15,
     buffer_before_minutes = $16,
     buffer_after_minutes = $17,
+    confirmed_at = $18,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
     END
-WHERE id = $18
+WHERE id = $19
 )duckdb";
 
 constexpr auto kInsertEventSeriesQuery = R"duckdb(

@@ -373,6 +373,21 @@ void SettingsDialog::setupUi() {
                      tr("Accent color for personal events in the timeline."),
                      mPersonalEventColorEditor, eventsBox));
   eventSettingsLayout->addWidget(eventsBox);
+
+  auto *confirmationBox = new QGroupBox(tr("Confirmation request template"), eventsPage);
+  auto *confirmationLayout = new QVBoxLayout(confirmationBox);
+  confirmationLayout->setContentsMargins(16, 16, 16, 16);
+  confirmationLayout->setSpacing(10);
+  auto *confirmationTemplateDescription = new QLabel(
+      tr("Available variables: {client_name}, {date}, {time}"), confirmationBox);
+  confirmationTemplateDescription->setWordWrap(true);
+  confirmationTemplateDescription->setStyleSheet("color: rgba(255, 255, 255, 0.68);");
+  mConfirmationRequestTemplateEdit = new QTextEdit(confirmationBox);
+  mConfirmationRequestTemplateEdit->setAcceptRichText(false);
+  mConfirmationRequestTemplateEdit->setMinimumHeight(100);
+  confirmationLayout->addWidget(confirmationTemplateDescription);
+  confirmationLayout->addWidget(mConfirmationRequestTemplateEdit);
+  eventSettingsLayout->addWidget(confirmationBox);
   eventSettingsLayout->addStretch();
 
   auto *onlineBox = new QGroupBox(tr("Online sessions"), onlinePage);
@@ -437,6 +452,8 @@ void SettingsDialog::loadSettings() const {
   mPersonalEventColorEditor->setColor(pcm::app_settings::personalEventColor());
   mMeetingInviteTemplateEdit->setPlainText(
       pcm::app_settings::meetingInviteTemplate());
+  mConfirmationRequestTemplateEdit->setPlainText(
+      pcm::app_settings::confirmationRequestTemplate());
 }
 
 void SettingsDialog::connectSignals() const {
@@ -526,6 +543,10 @@ void SettingsDialog::connectSignals() const {
   connect(mMeetingInviteTemplateEdit, &QTextEdit::textChanged, this, [this]() {
     pcm::app_settings::setMeetingInviteTemplate(
         mMeetingInviteTemplateEdit->toPlainText());
+  });
+  connect(mConfirmationRequestTemplateEdit, &QTextEdit::textChanged, this, [this]() {
+    pcm::app_settings::setConfirmationRequestTemplate(
+        mConfirmationRequestTemplateEdit->toPlainText());
   });
 }
 

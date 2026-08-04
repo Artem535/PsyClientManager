@@ -141,6 +141,49 @@ TEST(DatabaseTest, AddClientAndEvent) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, PersistsConfirmedAtOnEvent) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_confirmed_at")}};
+
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+
+  DuckEvent event;
+  event.name = std::string{"Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  const auto unconfirmed = db.get_event(eventId);
+  ASSERT_NE(unconfirmed, nullptr);
+  EXPECT_FALSE(unconfirmed->confirmed_at.has_value());
+
+  auto toConfirm = *unconfirmed;
+  toConfirm.confirmed_at = 1730000500000;
+  ASSERT_TRUE(db.update_event(toConfirm));
+
+  const auto confirmed = db.get_event(eventId);
+  ASSERT_NE(confirmed, nullptr);
+  ASSERT_TRUE(confirmed->confirmed_at.has_value());
+  EXPECT_EQ(*confirmed->confirmed_at, 1730000500000);
+
+  auto toUnconfirm = *confirmed;
+  toUnconfirm.confirmed_at = std::nullopt;
+  ASSERT_TRUE(db.update_event(toUnconfirm));
+
+  const auto unconfirmedAgain = db.get_event(eventId);
+  ASSERT_NE(unconfirmedAgain, nullptr);
+  EXPECT_FALSE(unconfirmedAgain->confirmed_at.has_value());
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, GetEventsForClientReturnsOnlyLinkedEvents) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

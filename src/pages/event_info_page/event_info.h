@@ -44,6 +44,7 @@ private slots:
   void onTimelineEventSelected(int64_t eventId);
   void onTimelineEventEditRequested(int64_t eventId);
   void onTimelineEventDeleteRequested(int64_t eventId);
+void onTimelineEventConfirmToggleRequested(int64_t eventId);
   void onEventSaved(QEventItem *event);
   void onEditingCanceled();
   void onDaySummaryEventHighlightRequested(int64_t eventId);

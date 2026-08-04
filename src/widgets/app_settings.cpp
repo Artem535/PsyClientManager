@@ -23,6 +23,7 @@ constexpr auto kDefaultSessionDurationMinutesKey = "event/defaultSessionDuration
 constexpr auto kDefaultBufferBeforeMinutesKey = "event/defaultBufferBeforeMinutes";
 constexpr auto kDefaultBufferAfterMinutesKey = "event/defaultBufferAfterMinutes";
 constexpr auto kMeetingInviteTemplateKey = "online/meetingInviteTemplate";
+constexpr auto kConfirmationRequestTemplateKey = "event/confirmationRequestTemplate";
 constexpr auto kCurrencyCodeKey = "ui/currency";
 constexpr auto kAutoBackupEnabledKey = "backup/autoEnabled";
 constexpr auto kAutoBackupIntervalDaysKey = "backup/autoIntervalDays";
@@ -75,6 +76,12 @@ QString defaultMeetingInviteTemplateValue() {
                      "Connection link:\n"
                      "{meeting_url}\n\n"
                      "See you!");
+}
+
+QString defaultConfirmationRequestTemplateValue() {
+  return QObject::tr("Hello, {client_name}!\n\n"
+                     "Please confirm your session on {date} at {time}.\n\n"
+                     "Thank you!");
 }
 
 int defaultAutoBackupIntervalDaysValue() {
@@ -254,6 +261,18 @@ QString meetingInviteTemplate() {
 void setMeetingInviteTemplate(const QString &templateText) {
   QSettings settings;
   settings.setValue(kMeetingInviteTemplateKey, templateText);
+}
+
+QString confirmationRequestTemplate() {
+  QSettings settings;
+  return settings
+      .value(kConfirmationRequestTemplateKey, defaultConfirmationRequestTemplateValue())
+      .toString();
+}
+
+void setConfirmationRequestTemplate(const QString &templateText) {
+  QSettings settings;
+  settings.setValue(kConfirmationRequestTemplateKey, templateText);
 }
 
 QString currencyCode() {

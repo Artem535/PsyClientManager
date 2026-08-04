@@ -87,6 +87,8 @@ void QEventView::onRowsInserted(const QModelIndex &parent, int first,
             &QEventView::onEventEditRequested);
     connect(item, &QEventItem::deleteRequested, this,
             &QEventView::onEventDeleteRequested);
+    connect(item, &QEventItem::confirmToggleRequested, this,
+            &QEventView::onEventConfirmToggleRequested);
 
     mScene->addItem(item);
     mSceneItems.insert(event.id, item);
@@ -175,6 +177,8 @@ void QEventView::onModelReset() {
             &QEventView::onEventEditRequested);
     connect(item, &QEventItem::deleteRequested, this,
             &QEventView::onEventDeleteRequested);
+    connect(item, &QEventItem::confirmToggleRequested, this,
+            &QEventView::onEventConfirmToggleRequested);
     mScene->addItem(item);
     mSceneItems.insert(event.id, item);
   }
@@ -311,6 +315,13 @@ void QEventView::onEventDeleteRequested() {
   auto *item = qobject_cast<QEventItem *>(sender());
   if (item != nullptr) {
     emit eventDeleteRequested(item->getId());
+  }
+}
+
+void QEventView::onEventConfirmToggleRequested() {
+  auto *item = qobject_cast<QEventItem *>(sender());
+  if (item != nullptr) {
+    emit eventConfirmToggleRequested(item->getId());
   }
 }
 

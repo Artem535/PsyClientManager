@@ -30,7 +30,7 @@ int Application::run(int argc, char *argv[]) {
   app.setOrganizationName("PsyClientManager");
   app.setApplicationName("PsyClientManager");
   app.setApplicationDisplayName("PsyClientManager");
-  app.setApplicationVersion("0.1.23");
+  app.setApplicationVersion("0.1.24");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);

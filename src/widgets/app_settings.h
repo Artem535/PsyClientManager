@@ -45,6 +45,8 @@ void setDefaultBufferAfterMinutes(int minutes);
 
 QString meetingInviteTemplate();
 void setMeetingInviteTemplate(const QString &templateText);
+QString confirmationRequestTemplate();
+void setConfirmationRequestTemplate(const QString &templateText);
 
 QString currencyCode();
 void setCurrencyCode(const QString &code);
