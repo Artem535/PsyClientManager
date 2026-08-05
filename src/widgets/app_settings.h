@@ -20,6 +20,10 @@ void setNotificationLeadMinutes(int minutes);
 
 int appLockTimeoutMinutes();
 void setAppLockTimeoutMinutes(int minutes);
+bool clearSensitiveClipboard();
+void setClearSensitiveClipboard(bool enabled);
+int sensitiveClipboardClearDelaySeconds();
+void setSensitiveClipboardClearDelaySeconds(int seconds);
 
 QString languageCode();
 void setLanguageCode(const QString &languageCode);

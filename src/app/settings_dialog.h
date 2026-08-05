@@ -86,6 +86,8 @@ private:
   oclero::qlementine::Switch *mAppLockEnabledSwitch{nullptr};
   QSpinBox *mAppLockTimeoutSpinBox{nullptr};
   QPushButton *mChangeAppLockCredentialButton{nullptr};
+  oclero::qlementine::Switch *mClearSensitiveClipboardSwitch{nullptr};
+  QSpinBox *mSensitiveClipboardDelaySpinBox{nullptr};
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};

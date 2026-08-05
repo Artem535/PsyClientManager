@@ -393,6 +393,10 @@ void SettingsDialog::setupUi() {
   mAppLockTimeoutSpinBox->setRange(1, 24 * 60);
   mAppLockTimeoutSpinBox->setSuffix(tr(" min"));
   mChangeAppLockCredentialButton = new QPushButton(tr("Change PIN or password"), privacyBox);
+  mClearSensitiveClipboardSwitch = new oclero::qlementine::Switch(privacyBox);
+  mSensitiveClipboardDelaySpinBox = new QSpinBox(privacyBox);
+  mSensitiveClipboardDelaySpinBox->setRange(5, 10 * 60);
+  mSensitiveClipboardDelaySpinBox->setSuffix(tr(" sec"));
   privacyLayout->addWidget(makeSettingRow(
       tr("Lock application"),
       tr("Require a PIN or password after inactivity or from the system tray."),
@@ -401,6 +405,13 @@ void SettingsDialog::setupUi() {
       tr("Lock after"), tr("Time without keyboard or mouse activity."),
       mAppLockTimeoutSpinBox, privacyBox));
   privacyLayout->addWidget(mChangeAppLockCredentialButton, 0, Qt::AlignRight);
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Clear copied meeting details"),
+      tr("Clear meeting links and invitations copied by the application."),
+      mClearSensitiveClipboardSwitch, privacyBox));
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Clear after"), tr("Delay before copied meeting details are removed."),
+      mSensitiveClipboardDelaySpinBox, privacyBox));
   generalSettingsLayout->addWidget(privacyBox);
   generalSettingsLayout->addStretch();
 
@@ -522,6 +533,12 @@ void SettingsDialog::loadSettings() const {
   mAppLockTimeoutSpinBox->setValue(pcm::app_settings::appLockTimeoutMinutes());
   mAppLockTimeoutSpinBox->setEnabled(appLockEnabled);
   mChangeAppLockCredentialButton->setEnabled(appLockEnabled);
+  mClearSensitiveClipboardSwitch->setChecked(
+      pcm::app_settings::clearSensitiveClipboard());
+  mSensitiveClipboardDelaySpinBox->setValue(
+      pcm::app_settings::sensitiveClipboardClearDelaySeconds());
+  mSensitiveClipboardDelaySpinBox->setEnabled(
+      mClearSensitiveClipboardSwitch->isChecked());
   mAutoBackupEnabledSwitch->setChecked(pcm::app_settings::autoBackupEnabled());
   mAutoBackupIntervalSpinBox->setValue(pcm::app_settings::autoBackupIntervalDays());
   mAutoBackupKeepCountSpinBox->setValue(pcm::app_settings::autoBackupKeepCount());
@@ -608,6 +625,15 @@ void SettingsDialog::connectSignals() {
           });
   connect(mChangeAppLockCredentialButton, &QPushButton::clicked, this,
           [this]() { configureAppLock(); });
+  connect(mClearSensitiveClipboardSwitch, &QAbstractButton::toggled, this,
+          [this](const bool enabled) {
+            pcm::app_settings::setClearSensitiveClipboard(enabled);
+            mSensitiveClipboardDelaySpinBox->setEnabled(enabled);
+          });
+  connect(mSensitiveClipboardDelaySpinBox, &QSpinBox::valueChanged, this,
+          [](const int seconds) {
+            pcm::app_settings::setSensitiveClipboardClearDelaySeconds(seconds);
+          });
   connect(mAutoBackupEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
             pcm::app_settings::setAutoBackupEnabled(checked);
