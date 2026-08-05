@@ -1,10 +1,13 @@
 #pragma once
 
+#include "backup_service.h"
+#include "credential_store.h"
 #include "config.h"
 
 #include <QDialog>
 
 #include <memory>
+#include <optional>
 
 namespace pcm::database {
 class Database;
@@ -21,6 +24,7 @@ class QSpinBox;
 class QStackedWidget;
 class QTextEdit;
 class QTimeEdit;
+class QWidget;
 
 namespace oclero::qlementine {
 class ColorEditor;
@@ -42,6 +46,14 @@ private:
   void connectSignals() const;
   void openDatabaseFolder() const;
   void createBackup();
+  void startBackupWorker(
+      const QString &destinationPath,
+      std::optional<pcm::backup::BackupEncryptionOptions> encryption = std::nullopt);
+  void onManualBackupKeyRead(bool ok, pcm::backup::MasterKey key,
+                             const QString &error);
+  void enableBackupEncryption();
+  void onBackupEncryptionKeyWritten(bool ok, const QString &error);
+  void updateBackupEncryptionUi() const;
   void validateBackup();
   void restoreBackup();
   void browseAutoBackupDestination();
@@ -56,6 +68,12 @@ private:
   QPushButton *mRestoreBackupButton{nullptr};
   QProgressBar *mBackupProgressBar{nullptr};
   QLabel *mBackupStatusLabel{nullptr};
+  oclero::qlementine::Switch *mBackupEncryptionEnabledSwitch{nullptr};
+  QWidget *mBackupEncryptionDetails{nullptr};
+  QLabel *mBackupEncryptionWarningLabel{nullptr};
+  QLineEdit *mBackupEncryptionPasswordEdit{nullptr};
+  QLineEdit *mBackupEncryptionConfirmationEdit{nullptr};
+  QPushButton *mEnableBackupEncryptionButton{nullptr};
   oclero::qlementine::Switch *mAutoBackupEnabledSwitch{nullptr};
   QSpinBox *mAutoBackupIntervalSpinBox{nullptr};
   QSpinBox *mAutoBackupKeepCountSpinBox{nullptr};
@@ -77,4 +95,12 @@ private:
   QDialogButtonBox *mButtonBox{nullptr};
   pcm::config::Config mConfig;
   std::shared_ptr<pcm::database::Database> mDb;
+  pcm::backup::CredentialStore *mCredentialStore{nullptr};
+  QString mPendingManualBackupDestinationPath;
+  std::optional<pcm::backup::RecoveryEnvelope> mPendingManualBackupEnvelope;
+  std::optional<pcm::backup::MasterKey> mPendingEncryptionKey;
+  std::optional<pcm::backup::RecoveryEnvelope> mPendingEncryptionEnvelope;
+  QString mPendingEncryptionWorkspaceUuid;
+  bool mManualBackupKeyReadInProgress{false};
+  bool mBackupEncryptionEnableInProgress{false};
 };

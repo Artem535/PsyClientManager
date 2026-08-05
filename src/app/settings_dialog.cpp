@@ -1,7 +1,6 @@
 #include "settings_dialog.h"
 
 #include "../widgets/app_settings.h"
-#include "backup_service.h"
 #include "backup_validator.h"
 #include "restore_service.h"
 
@@ -19,6 +18,7 @@
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -34,6 +34,10 @@
 #include <QVBoxLayout>
 
 #include <Poco/Path.h>
+
+#include <sodium.h>
+
+#include <algorithm>
 
 namespace {
 QWidget *makeSettingRow(const QString &title, const QString &description,
@@ -66,22 +70,49 @@ QWidget *makeSettingRow(const QString &title, const QString &description,
   return row;
 }
 
+void clearSensitiveText(QString *text) {
+  text->detach();
+  std::fill(text->begin(), text->end(), QChar{});
+  text->clear();
+}
+
+void clearMasterKey(pcm::backup::MasterKey *key) {
+  sodium_memzero(key->bytes.data(), key->bytes.size());
+}
+
+void clearSensitiveString(std::string *text) {
+  sodium_memzero(text->data(), text->size());
+  text->clear();
+}
+
 class BackupWorker final : public QObject {
   Q_OBJECT
 
 public:
   BackupWorker(std::shared_ptr<pcm::database::Database> db,
-              QString destinationPath, QString attachmentsRoot)
+              QString destinationPath, QString attachmentsRoot,
+              std::optional<pcm::backup::BackupEncryptionOptions> encryption)
       : mDb(std::move(db)), mDestinationPath(std::move(destinationPath)),
-        mAttachmentsRoot(std::move(attachmentsRoot)) {}
+        mAttachmentsRoot(std::move(attachmentsRoot)), mEncryption(std::move(encryption)) {}
+
+  ~BackupWorker() override {
+    if (mEncryption.has_value() && mEncryption->master_key.has_value()) {
+      clearMasterKey(&*mEncryption->master_key);
+    }
+  }
 
 public slots:
   void run() {
     pcm::backup::BackupService service;
     pcm::backup::BackupOptions options;
     options.attachments_root = mAttachmentsRoot.toStdString();
+    options.encryption = std::move(mEncryption);
     const auto result =
         service.create_backup(*mDb, mDestinationPath.toStdString(), options);
+    if (options.encryption.has_value() &&
+        options.encryption->master_key.has_value()) {
+      clearMasterKey(&*options.encryption->master_key);
+    }
     emit finished(result.ok, QString::fromStdString(result.error));
   }
 
@@ -92,19 +123,33 @@ private:
   std::shared_ptr<pcm::database::Database> mDb;
   QString mDestinationPath;
   QString mAttachmentsRoot;
+  std::optional<pcm::backup::BackupEncryptionOptions> mEncryption;
 };
 
 class ValidateWorker final : public QObject {
   Q_OBJECT
 
 public:
-  explicit ValidateWorker(QString backupPath)
-      : mBackupPath(std::move(backupPath)) {}
+  explicit ValidateWorker(QString backupPath,
+                          std::optional<std::string> recoveryPassword = std::nullopt)
+      : mBackupPath(std::move(backupPath)),
+        mRecoveryPassword(std::move(recoveryPassword)) {}
+
+  ~ValidateWorker() override {
+    if (mRecoveryPassword.has_value()) {
+      clearSensitiveString(&*mRecoveryPassword);
+    }
+  }
 
 public slots:
   void run() {
     pcm::backup::BackupValidator validator;
-    const auto result = validator.validate(mBackupPath.toStdString());
+    const auto result = validator.validate(mBackupPath.toStdString(),
+                                           mRecoveryPassword);
+    if (mRecoveryPassword.has_value()) {
+      clearSensitiveString(&*mRecoveryPassword);
+      mRecoveryPassword.reset();
+    }
     QStringList errors;
     errors.reserve(static_cast<int>(result.errors.size()));
     for (const auto &error : result.errors) {
@@ -118,15 +163,22 @@ signals:
 
 private:
   QString mBackupPath;
+  std::optional<std::string> mRecoveryPassword;
 };
 } // namespace
 
 SettingsDialog::SettingsDialog(std::shared_ptr<pcm::database::Database> db,
                                QWidget *parent)
     : QDialog(parent), mDb(std::move(db)) {
+  mCredentialStore = new pcm::backup::QtKeychainCredentialStore(this);
   setupUi();
   loadSettings();
   connectSignals();
+
+  connect(mCredentialStore, &pcm::backup::CredentialStore::readFinished, this,
+          &SettingsDialog::onManualBackupKeyRead);
+  connect(mCredentialStore, &pcm::backup::CredentialStore::writeFinished, this,
+          &SettingsDialog::onBackupEncryptionKeyWritten);
 }
 
 void SettingsDialog::setupUi() {
@@ -238,6 +290,37 @@ void SettingsDialog::setupUi() {
   backupLayout->addWidget(backupButtonsRow);
   backupLayout->addWidget(mBackupStatusLabel);
   backupLayout->addWidget(mBackupProgressBar);
+
+  mBackupEncryptionEnabledSwitch = new oclero::qlementine::Switch(backupBox);
+  mBackupEncryptionDetails = new QWidget(backupBox);
+  auto *encryptionDetailsLayout = new QVBoxLayout(mBackupEncryptionDetails);
+  encryptionDetailsLayout->setContentsMargins(0, 0, 0, 0);
+  encryptionDetailsLayout->setSpacing(10);
+  mBackupEncryptionWarningLabel = new QLabel(
+      tr("The recovery password cannot be recovered. Store it safely."),
+      mBackupEncryptionDetails);
+  mBackupEncryptionWarningLabel->setWordWrap(true);
+  mBackupEncryptionWarningLabel->setStyleSheet("color: #f0c36d;");
+  mBackupEncryptionPasswordEdit = new QLineEdit(mBackupEncryptionDetails);
+  mBackupEncryptionPasswordEdit->setEchoMode(QLineEdit::Password);
+  mBackupEncryptionConfirmationEdit = new QLineEdit(mBackupEncryptionDetails);
+  mBackupEncryptionConfirmationEdit->setEchoMode(QLineEdit::Password);
+  mEnableBackupEncryptionButton =
+      new QPushButton(tr("Enable encryption"), mBackupEncryptionDetails);
+  encryptionDetailsLayout->addWidget(mBackupEncryptionWarningLabel);
+  encryptionDetailsLayout->addWidget(makeSettingRow(
+      tr("Recovery password"), tr("Use at least 12 characters."),
+      mBackupEncryptionPasswordEdit, mBackupEncryptionDetails));
+  encryptionDetailsLayout->addWidget(makeSettingRow(
+      tr("Confirm recovery password"), tr("Enter the same password again."),
+      mBackupEncryptionConfirmationEdit, mBackupEncryptionDetails));
+  encryptionDetailsLayout->addWidget(mEnableBackupEncryptionButton, 0,
+                                     Qt::AlignRight);
+  backupLayout->addWidget(makeSettingRow(
+      tr("Encrypt backups"),
+      tr("Protect new backups with a recovery password and the system keychain."),
+      mBackupEncryptionEnabledSwitch, backupBox));
+  backupLayout->addWidget(mBackupEncryptionDetails);
   generalSettingsLayout->addWidget(backupBox);
 
   auto *autoBackupBox = new QGroupBox(tr("Automatic Backups"), generalPage);
@@ -421,6 +504,9 @@ void SettingsDialog::loadSettings() const {
   mAutoBackupKeepCountSpinBox->setEnabled(autoBackupEnabled);
   mAutoBackupDestinationEdit->setEnabled(autoBackupEnabled);
   mAutoBackupBrowseButton->setEnabled(autoBackupEnabled);
+  mBackupEncryptionEnabledSwitch->setChecked(
+      pcm::app_settings::backupEncryptionEnabled());
+  updateBackupEncryptionUi();
   mPreventOverlapsSwitch->setChecked(pcm::app_settings::preventEventOverlaps());
   mWorkDayStartEdit->setTime(pcm::app_settings::workDayStart());
   mWorkDayEndEdit->setTime(pcm::app_settings::workDayEnd());
@@ -456,6 +542,17 @@ void SettingsDialog::connectSignals() const {
           &SettingsDialog::validateBackup);
   connect(mRestoreBackupButton, &QPushButton::clicked, this,
           &SettingsDialog::restoreBackup);
+  connect(mBackupEncryptionEnabledSwitch, &QAbstractButton::toggled, this,
+          [this](const bool checked) {
+            if (!checked) {
+              pcm::app_settings::setBackupEncryptionEnabled(false);
+              mBackupEncryptionPasswordEdit->clear();
+              mBackupEncryptionConfirmationEdit->clear();
+            }
+            updateBackupEncryptionUi();
+          });
+  connect(mEnableBackupEncryptionButton, &QPushButton::clicked, this,
+          &SettingsDialog::enableBackupEncryption);
   connect(mNotificationsEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
             pcm::app_settings::setNotificationsEnabled(checked);
@@ -553,9 +650,46 @@ void SettingsDialog::createBackup() {
   mBackupStatusLabel->setVisible(true);
   mBackupProgressBar->setVisible(true);
 
+  if (pcm::app_settings::backupEncryptionEnabled()) {
+    std::optional<pcm::backup::RecoveryEnvelope> recoveryEnvelope;
+    QString workspaceUuid;
+    try {
+      recoveryEnvelope = pcm::backup::deserialize_recovery_envelope(
+          pcm::app_settings::backupEncryptionRecoveryEnvelope().toStdString());
+      workspaceUuid = QString::fromStdString(mDb->get_application_metadata().workspace_uuid);
+    } catch (const std::exception &) {
+      // Treat metadata access failures like an unavailable encryption key.
+    }
+    const auto expectedEntry = pcm::backup::workspaceBackupKeychainEntry(workspaceUuid);
+    if (!recoveryEnvelope.has_value() || workspaceUuid.isEmpty() ||
+        pcm::app_settings::backupEncryptionKeychainEntry() != expectedEntry) {
+      mBackupStatusLabel->setVisible(false);
+      mBackupProgressBar->setVisible(false);
+      mCreateBackupButton->setEnabled(true);
+      mValidateBackupButton->setEnabled(true);
+      QMessageBox::warning(this, tr("Backup Failed"),
+                           tr("Encrypted backup key is unavailable."));
+      return;
+    }
+
+    mPendingManualBackupDestinationPath = destinationPath;
+    mPendingManualBackupEnvelope = *recoveryEnvelope;
+    mManualBackupKeyReadInProgress = true;
+    mCredentialStore->readWorkspaceMasterKey(workspaceUuid);
+    return;
+  }
+
+  startBackupWorker(destinationPath);
+}
+
+void SettingsDialog::startBackupWorker(
+    const QString &destinationPath,
+    std::optional<pcm::backup::BackupEncryptionOptions> encryption) {
+
   auto *thread = new QThread(this);
   auto *worker = new BackupWorker(mDb, destinationPath,
-                                  pcm::app_settings::attachmentsStorageRoot());
+                                  pcm::app_settings::attachmentsStorageRoot(),
+                                  std::move(encryption));
   worker->moveToThread(thread);
 
   connect(thread, &QThread::started, worker, &BackupWorker::run);
@@ -577,6 +711,157 @@ void SettingsDialog::createBackup() {
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
   thread->start();
+}
+
+void SettingsDialog::onManualBackupKeyRead(const bool ok,
+                                           pcm::backup::MasterKey key,
+                                           const QString &error) {
+  if (!mManualBackupKeyReadInProgress) {
+    clearMasterKey(&key);
+    return;
+  }
+
+  mManualBackupKeyReadInProgress = false;
+  const auto destinationPath = std::move(mPendingManualBackupDestinationPath);
+  const auto recoveryEnvelope = std::move(mPendingManualBackupEnvelope);
+  mPendingManualBackupEnvelope.reset();
+  if (!ok || !recoveryEnvelope.has_value()) {
+    clearMasterKey(&key);
+    mBackupStatusLabel->setVisible(false);
+    mBackupProgressBar->setVisible(false);
+    mCreateBackupButton->setEnabled(true);
+    mValidateBackupButton->setEnabled(true);
+    QMessageBox::warning(this, tr("Backup Failed"),
+                         error.isEmpty() ? tr("Encrypted backup key is unavailable.")
+                                         : error);
+    return;
+  }
+
+  pcm::backup::BackupEncryptionOptions encryption{
+      .master_key = key,
+      .recovery_envelope = std::move(recoveryEnvelope),
+  };
+  clearMasterKey(&key);
+  startBackupWorker(destinationPath, std::move(encryption));
+}
+
+void SettingsDialog::enableBackupEncryption() {
+  QString password = mBackupEncryptionPasswordEdit->text();
+  QString confirmation = mBackupEncryptionConfirmationEdit->text();
+  mBackupEncryptionPasswordEdit->clear();
+  mBackupEncryptionConfirmationEdit->clear();
+
+  if (password.size() < 12) {
+    clearSensitiveText(&password);
+    clearSensitiveText(&confirmation);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("The recovery password must contain at least 12 characters."));
+    return;
+  }
+  if (password != confirmation) {
+    clearSensitiveText(&password);
+    clearSensitiveText(&confirmation);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("Recovery passwords do not match."));
+    return;
+  }
+
+  pcm::backup::MasterKey key;
+  if (sodium_init() < 0) {
+    clearSensitiveText(&password);
+    clearSensitiveText(&confirmation);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("Backup encryption is unavailable."));
+    return;
+  }
+  randombytes_buf(key.bytes.data(), key.bytes.size());
+
+  auto passwordBytes = password.toUtf8();
+  pcm::backup::RecoveryEnvelope recoveryEnvelope;
+  const auto envelopeResult = pcm::backup::create_recovery_envelope(
+      std::string_view(passwordBytes.constData(),
+                       static_cast<std::size_t>(passwordBytes.size())),
+      key, &recoveryEnvelope);
+  std::fill(passwordBytes.begin(), passwordBytes.end(), '\0');
+  passwordBytes.clear();
+  clearSensitiveText(&password);
+  clearSensitiveText(&confirmation);
+  if (!envelopeResult.ok) {
+    clearMasterKey(&key);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("Backup encryption is unavailable."));
+    return;
+  }
+
+  QString workspaceUuid;
+  try {
+    workspaceUuid = QString::fromStdString(mDb->get_application_metadata().workspace_uuid);
+  } catch (const std::exception &) {
+    clearMasterKey(&key);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("Backup encryption is unavailable."));
+    return;
+  }
+  if (workspaceUuid.isEmpty()) {
+    clearMasterKey(&key);
+    QMessageBox::warning(this, tr("Backup Encryption"),
+                         tr("Backup encryption is unavailable."));
+    return;
+  }
+
+  mPendingEncryptionKey = key;
+  clearMasterKey(&key);
+  mPendingEncryptionWorkspaceUuid = workspaceUuid;
+  mPendingEncryptionEnvelope = std::move(recoveryEnvelope);
+  mBackupEncryptionEnableInProgress = true;
+  mBackupEncryptionEnabledSwitch->setEnabled(false);
+  mEnableBackupEncryptionButton->setEnabled(false);
+  mCreateBackupButton->setEnabled(false);
+  mValidateBackupButton->setEnabled(false);
+  mCredentialStore->writeWorkspaceMasterKey(workspaceUuid, *mPendingEncryptionKey);
+}
+
+void SettingsDialog::onBackupEncryptionKeyWritten(const bool ok,
+                                                   const QString &error) {
+  if (!mBackupEncryptionEnableInProgress) {
+    return;
+  }
+
+  mBackupEncryptionEnableInProgress = false;
+  if (mPendingEncryptionKey.has_value()) {
+    clearMasterKey(&*mPendingEncryptionKey);
+  }
+  mPendingEncryptionKey.reset();
+  mBackupEncryptionEnabledSwitch->setEnabled(true);
+  mCreateBackupButton->setEnabled(true);
+  mValidateBackupButton->setEnabled(true);
+  if (ok && mPendingEncryptionEnvelope.has_value()) {
+    pcm::app_settings::setBackupEncryptionKeychainEntry(
+        pcm::backup::workspaceBackupKeychainEntry(mPendingEncryptionWorkspaceUuid));
+    pcm::app_settings::setBackupEncryptionRecoveryEnvelope(
+        QString::fromStdString(
+            pcm::backup::serialize_recovery_envelope(*mPendingEncryptionEnvelope)));
+    pcm::app_settings::setBackupEncryptionEnabled(true);
+    mPendingEncryptionEnvelope.reset();
+    mPendingEncryptionWorkspaceUuid.clear();
+    updateBackupEncryptionUi();
+    return;
+  }
+
+  mPendingEncryptionEnvelope.reset();
+  mPendingEncryptionWorkspaceUuid.clear();
+  mBackupEncryptionEnabledSwitch->setChecked(false);
+  updateBackupEncryptionUi();
+  QMessageBox::warning(this, tr("Backup Encryption"),
+                       error.isEmpty() ? tr("System keychain is unavailable.") : error);
+}
+
+void SettingsDialog::updateBackupEncryptionUi() const {
+  const bool needsSetup = mBackupEncryptionEnabledSwitch->isChecked() &&
+                          !pcm::app_settings::backupEncryptionEnabled();
+  mBackupEncryptionDetails->setVisible(needsSetup);
+  mEnableBackupEncryptionButton->setEnabled(
+      needsSetup && !mBackupEncryptionEnableInProgress);
 }
 
 void SettingsDialog::browseAutoBackupDestination() {
@@ -647,6 +932,27 @@ void SettingsDialog::restoreBackup() {
     return;
   }
 
+  std::optional<std::string> recoveryPassword;
+  if (pcm::backup::detect_backup_container(backupPath.toStdString()) ==
+      pcm::backup::BackupContainerKind::Encrypted) {
+    bool accepted = false;
+    QString password = QInputDialog::getText(
+        this, tr("Encrypted Backup"),
+        tr("This backup is encrypted. Enter its recovery password to validate it. "
+           "You will be asked again after the application restarts to complete "
+           "the restore."),
+        QLineEdit::Password, {}, &accepted);
+    if (!accepted) {
+      clearSensitiveText(&password);
+      return;
+    }
+    auto passwordBytes = password.toUtf8();
+    recoveryPassword = std::string(
+        passwordBytes.constData(), static_cast<std::size_t>(passwordBytes.size()));
+    std::fill(passwordBytes.begin(), passwordBytes.end(), '\0');
+    clearSensitiveText(&password);
+  }
+
   mCreateBackupButton->setEnabled(false);
   mValidateBackupButton->setEnabled(false);
   mRestoreBackupButton->setEnabled(false);
@@ -655,7 +961,7 @@ void SettingsDialog::restoreBackup() {
   mBackupProgressBar->setVisible(true);
 
   auto *thread = new QThread(this);
-  auto *worker = new ValidateWorker(backupPath);
+  auto *worker = new ValidateWorker(backupPath, std::move(recoveryPassword));
   worker->moveToThread(thread);
 
   connect(thread, &QThread::started, worker, &ValidateWorker::run);

@@ -1000,6 +1000,105 @@
     </message>
 </context>
 <context>
+    <name>QKeychain::DeletePasswordJobPrivate</name>
+    <message>
+        <source>Unknown error</source>
+        <translation>Unknown error</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Could not open wallet: %1; %2</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::JobPrivate</name>
+    <message>
+        <source>Unknown error</source>
+        <translation>Unknown error</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Access to keychain denied</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::PlainTextStore</name>
+    <message>
+        <source>Could not store data in settings: access error</source>
+        <translation>Could not store data in settings: access error</translation>
+    </message>
+    <message>
+        <source>Could not store data in settings: format error</source>
+        <translation>Could not store data in settings: format error</translation>
+    </message>
+    <message>
+        <source>Could not delete data from settings: access error</source>
+        <translation>Could not delete data from settings: access error</translation>
+    </message>
+    <message>
+        <source>Could not delete data from settings: format error</source>
+        <translation>Could not delete data from settings: format error</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Entry not found</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::ReadPasswordJobPrivate</name>
+    <message>
+        <source>D-Bus is not running</source>
+        <translation>D-Bus is not running</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Unknown error</translation>
+    </message>
+    <message>
+        <source>No keychain service available</source>
+        <translation>No keychain service available</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Could not open wallet: %1; %2</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Access to keychain denied</translation>
+    </message>
+    <message>
+        <source>Could not determine data type: %1; %2</source>
+        <translation>Could not determine data type: %1; %2</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Entry not found</translation>
+    </message>
+    <message>
+        <source>Unsupported entry type &apos;Map&apos;</source>
+        <translation>Unsupported entry type &apos;Map&apos;</translation>
+    </message>
+    <message>
+        <source>Unknown kwallet entry type &apos;%1&apos;</source>
+        <translation>Unknown kwallet entry type &apos;%1&apos;</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::WritePasswordJobPrivate</name>
+    <message>
+        <source>D-Bus is not running</source>
+        <translation>D-Bus is not running</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Unknown error</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Could not open wallet: %1; %2</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>: ERROR_TITLE</source>
@@ -1050,6 +1149,50 @@ See you!</translation>
     <message>
         <source>This and future events</source>
         <translation>This and future events</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Access to keychain denied</translation>
+    </message>
+    <message>
+        <source>No keyring daemon</source>
+        <translation>No keyring daemon</translation>
+    </message>
+    <message>
+        <source>Already unlocked</source>
+        <translation>Already unlocked</translation>
+    </message>
+    <message>
+        <source>No such keyring</source>
+        <translation>No such keyring</translation>
+    </message>
+    <message>
+        <source>Bad arguments</source>
+        <translation>Bad arguments</translation>
+    </message>
+    <message>
+        <source>I/O error</source>
+        <translation>I/O error</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>Cancelled</translation>
+    </message>
+    <message>
+        <source>Keyring already exists</source>
+        <translation>Keyring already exists</translation>
+    </message>
+    <message>
+        <source>No match</source>
+        <translation>No match</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Unknown error</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Entry not found</translation>
     </message>
 </context>
 <context>
@@ -1209,6 +1352,38 @@ See you!</translation>
         <translation>Restore backup...</translation>
     </message>
     <message>
+        <source>The recovery password cannot be recovered. Store it safely.</source>
+        <translation>The recovery password cannot be recovered. Store it safely.</translation>
+    </message>
+    <message>
+        <source>Enable encryption</source>
+        <translation>Enable encryption</translation>
+    </message>
+    <message>
+        <source>Recovery password</source>
+        <translation>Recovery password</translation>
+    </message>
+    <message>
+        <source>Use at least 12 characters.</source>
+        <translation>Use at least 12 characters.</translation>
+    </message>
+    <message>
+        <source>Confirm recovery password</source>
+        <translation>Confirm recovery password</translation>
+    </message>
+    <message>
+        <source>Enter the same password again.</source>
+        <translation>Enter the same password again.</translation>
+    </message>
+    <message>
+        <source>Encrypt backups</source>
+        <translation>Encrypt backups</translation>
+    </message>
+    <message>
+        <source>Protect new backups with a recovery password and the system keychain.</source>
+        <translation>Protect new backups with a recovery password and the system keychain.</translation>
+    </message>
+    <message>
         <source>Automatic Backups</source>
         <translation>Automatic Backups</translation>
     </message>
@@ -1293,6 +1468,10 @@ See you!</translation>
         <translation>Creating backup…</translation>
     </message>
     <message>
+        <source>Encrypted backup key is unavailable.</source>
+        <translation>Encrypted backup key is unavailable.</translation>
+    </message>
+    <message>
         <source>Backup Created</source>
         <translation>Backup Created</translation>
     </message>
@@ -1305,6 +1484,26 @@ See you!</translation>
     <message>
         <source>Backup Failed</source>
         <translation>Backup Failed</translation>
+    </message>
+    <message>
+        <source>Backup Encryption</source>
+        <translation>Backup Encryption</translation>
+    </message>
+    <message>
+        <source>The recovery password must contain at least 12 characters.</source>
+        <translation>The recovery password must contain at least 12 characters.</translation>
+    </message>
+    <message>
+        <source>Recovery passwords do not match.</source>
+        <translation>Recovery passwords do not match.</translation>
+    </message>
+    <message>
+        <source>Backup encryption is unavailable.</source>
+        <translation>Backup encryption is unavailable.</translation>
+    </message>
+    <message>
+        <source>System keychain is unavailable.</source>
+        <translation>System keychain is unavailable.</translation>
     </message>
     <message>
         <source>Select Automatic Backup Folder</source>
@@ -1339,6 +1538,14 @@ See you!</translation>
     <message>
         <source>Restore Backup</source>
         <translation>Restore Backup</translation>
+    </message>
+    <message>
+        <source>Encrypted Backup</source>
+        <translation>Encrypted Backup</translation>
+    </message>
+    <message>
+        <source>This backup is encrypted. Enter its recovery password to validate it. You will be asked again after the application restarts to complete the restore.</source>
+        <translation>This backup is encrypted. Enter its recovery password to validate it. You will be asked again after the application restarts to complete the restore.</translation>
     </message>
     <message>
         <source>Checking backup…</source>
@@ -1431,6 +1638,22 @@ See you!</translation>
 </context>
 <context>
     <name>pcm::Application</name>
+    <message>
+        <source>Encrypted Backup</source>
+        <translation>Encrypted Backup</translation>
+    </message>
+    <message>
+        <source>The backup is encrypted. Enter its recovery password to continue the restore.</source>
+        <translation>The backup is encrypted. Enter its recovery password to continue the restore.</translation>
+    </message>
+    <message>
+        <source>Restore Cancelled</source>
+        <translation>Restore Cancelled</translation>
+    </message>
+    <message>
+        <source>The restore was cancelled. Your current data was not changed.</source>
+        <translation>The restore was cancelled. Your current data was not changed.</translation>
+    </message>
     <message>
         <source>Restore Complete</source>
         <translation>Restore Complete</translation>
