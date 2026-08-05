@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.28] - 2026-08-05
+
+### Added
+
+- Optional application lock with a six-digit PIN or 12-character password,
+  Argon2id verification, idle timeout, and a manual system-tray action.
+- Privacy controls to clear copied meeting links and invitations after a
+  configurable delay without clearing clipboard content replaced by the user.
+
 ## [0.1.27] - 2026-08-05
 
 ### Added
