@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.26 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.27 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)
@@ -196,6 +196,15 @@ set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}/packages")
 
 if(WIN32)
   set(CPACK_GENERATOR "ZIP")
+elseif(UNIX AND NOT APPLE)
+  set(CPACK_GENERATOR "RPM")
+  set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+  set(CPACK_RPM_PACKAGE_RELEASE 1)
+  set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-or-later")
+  set(CPACK_RPM_PACKAGE_GROUP "Applications/Productivity")
+  set(CPACK_RPM_PACKAGE_URL "https://github.com/Artem535/PsyClientManager")
+  set(CPACK_RPM_PACKAGE_DESCRIPTION
+      "Local-first desktop workspace for calendar scheduling, client management, and session tracking.")
 endif()
 
 include(CPack)

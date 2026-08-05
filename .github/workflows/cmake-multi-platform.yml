@@ -57,6 +57,7 @@ jobs:
             cmake \
             ninja-build \
             patchelf \
+            rpm \
             file \
             wget \
             curl \
@@ -329,6 +330,13 @@ jobs:
           mkdir -p build-release/packages
           find . -maxdepth 1 -type f -name '*.AppImage' ! -name 'linuxdeploy*.AppImage' -exec mv {} build-release/packages/ \;
 
+      - name: Build RPM package
+        if: runner.os == 'Linux'
+        run: |
+          cpack --config build-release/CPackConfig.cmake --generator RPM --verbose
+          rpm -qip build-release/packages/*.rpm
+          rpm -qlp build-release/packages/*.rpm
+
       - name: Upload Linux package
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
@@ -425,6 +433,7 @@ jobs:
         run: |
           mkdir -p release/assets
           find release/linux -type f -name '*.AppImage' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-linux.AppImage" \;
+          find release/linux -type f -name '*.rpm' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-linux.rpm" \;
           find release/macos -type f -name '*.dmg' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-macos.dmg" \;
           find release/windows -type f -name '*.exe' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-windows-setup.exe" \;
           ls -lah release/assets
