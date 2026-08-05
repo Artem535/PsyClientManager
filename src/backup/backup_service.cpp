@@ -80,10 +80,16 @@ BackupResult BackupService::create_backup(const database::Database &db,
                                           const std::string &destination_path,
                                           const BackupOptions &options) {
   try {
-    if (options.encryption.has_value() &&
-        (!options.encryption->master_key.has_value() ||
-         !options.encryption->recovery_password.has_value())) {
-      return {false, "backup encryption requires a master key and recovery password"};
+    if (options.encryption.has_value()) {
+      const auto &encryption = *options.encryption;
+      const bool hasPassword = encryption.recovery_password.has_value();
+      const bool hasEnvelope = encryption.recovery_envelope.has_value();
+      if (!encryption.master_key.has_value() || hasPassword == hasEnvelope) {
+        return {false, "backup encryption requires a master key and exactly one recovery method"};
+      }
+      if (hasEnvelope && !validate_recovery_envelope(*encryption.recovery_envelope).ok) {
+        return {false, "backup encryption recovery envelope is invalid"};
+      }
     }
 
     const auto uuid =
@@ -169,9 +175,16 @@ BackupResult BackupService::create_backup(const database::Database &db,
     }
 
     if (options.encryption.has_value()) {
-      const auto encryptionResult = encrypt_backup_file(
-          tempZipPath, destination_path, *options.encryption->recovery_password,
-          *options.encryption->master_key);
+      const auto &encryption = *options.encryption;
+      const auto encryptionResult = encryption.recovery_password.has_value()
+                                        ? encrypt_backup_file(
+                                              tempZipPath, destination_path,
+                                              *encryption.recovery_password,
+                                              *encryption.master_key)
+                                        : encrypt_backup_file(
+                                              tempZipPath, destination_path,
+                                              *encryption.recovery_envelope,
+                                              *encryption.master_key);
       if (!encryptionResult.ok) {
         return {false, "failed to encrypt backup: " + encryptionResult.error};
       }

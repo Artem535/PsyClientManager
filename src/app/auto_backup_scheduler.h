@@ -21,7 +21,6 @@ public:
   void start();
   bool isDue() const;
   void runAsync();
-  void setRecoveryPasswordForCurrentSession(QString recoveryPassword);
 
 signals:
   void backupFinished(bool ok, const QString &error);
@@ -37,7 +36,7 @@ private:
   CredentialStore *mCredentialStore = nullptr;
   QString mWorkspaceUuid;
   QString mDestinationDir;
-  QString mRecoveryPassword;
+  std::optional<RecoveryEnvelope> mRecoveryEnvelope;
   bool mRunInProgress = false;
 };
 

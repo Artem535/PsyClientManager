@@ -5,14 +5,23 @@
 #include <Poco/Zip/Compress.h>
 #include <Poco/Zip/Decompress.h>
 #include <Poco/Zip/ZipCommon.h>
+#include <QCoreApplication>
+#include <QDir>
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QThread>
 #include <algorithm>
 #include <array>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <optional>
 #include <rfl/json.hpp>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
+#include <sodium.h>
 
 #include "auto_backup_due.h"
 #include "auto_backup_scheduler.h"
@@ -71,6 +80,165 @@ pcm::backup::MasterKey fixedMasterKey() {
   return key;
 }
 
+pcm::backup::RecoveryEnvelope recoveryEnvelope() {
+  pcm::backup::RecoveryEnvelope envelope;
+  const auto result = pcm::backup::create_recovery_envelope(
+      "correct horse battery staple", fixedMasterKey(), &envelope);
+  if (!result.ok) {
+    throw std::runtime_error(result.error);
+  }
+  return envelope;
+}
+
+constexpr std::string_view kLegacyContainerMagic = "PCMENC01";
+constexpr std::uint32_t kLegacyContainerVersion = 1;
+constexpr std::uint32_t kLegacyChunkSize = 64 * 1024;
+
+struct LegacyHeaderForWrapFixture {
+  std::uint32_t container_version = kLegacyContainerVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
+  std::string stream_header;
+  std::uint32_t chunk_size = kLegacyChunkSize;
+};
+
+struct LegacyContainerHeaderFixture {
+  std::uint32_t container_version = kLegacyContainerVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
+  std::string stream_header;
+  std::uint32_t chunk_size = kLegacyChunkSize;
+  std::string wrapped_master_key;
+};
+
+template <std::size_t Size>
+std::string base64Encode(const std::array<unsigned char, Size> &bytes) {
+  std::array<char, sodium_base64_ENCODED_LEN(Size, sodium_base64_VARIANT_ORIGINAL)>
+      encoded{};
+  sodium_bin2base64(encoded.data(), encoded.size(), bytes.data(), bytes.size(),
+                    sodium_base64_VARIANT_ORIGINAL);
+  return encoded.data();
+}
+
+void appendLittleEndianUint32(std::ostream &output, const std::uint32_t value) {
+  for (int offset = 0; offset != 4; ++offset) {
+    output.put(static_cast<char>((value >> (offset * 8)) & 0xff));
+  }
+}
+
+bool writeLegacyV1EncryptedBackup(const std::string &zip_path,
+                                  const std::string &output_path,
+                                  const std::string_view recovery_password,
+                                  const pcm::backup::MasterKey &master_key) {
+  if (sodium_init() < 0) {
+    return false;
+  }
+  std::ifstream input(zip_path, std::ios::binary);
+  if (!input) {
+    return false;
+  }
+
+  std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
+  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_KEYBYTES> wrappingKey{};
+  std::array<unsigned char,
+             crypto_aead_xchacha20poly1305_ietf_ABYTES + pcm::backup::MasterKey{}.bytes.size()>
+      wrappedMasterKey{};
+  randombytes_buf(salt.data(), salt.size());
+  randombytes_buf(wrapNonce.data(), wrapNonce.size());
+
+  LegacyContainerHeaderFixture header;
+  header.salt = base64Encode(salt);
+  header.wrap_nonce = base64Encode(wrapNonce);
+  if (crypto_pwhash(wrappingKey.data(), wrappingKey.size(), recovery_password.data(),
+                    recovery_password.size(), salt.data(), header.kdf_opslimit,
+                    header.kdf_memlimit, crypto_pwhash_ALG_ARGON2ID13) != 0) {
+    return false;
+  }
+
+  crypto_secretstream_xchacha20poly1305_state streamState{};
+  if (crypto_secretstream_xchacha20poly1305_init_push(&streamState, streamHeader.data(),
+                                                       master_key.bytes.data()) != 0) {
+    return false;
+  }
+  header.stream_header = base64Encode(streamHeader);
+  const auto wrapHeader = LegacyHeaderForWrapFixture{
+      .container_version = header.container_version,
+      .kdf_algorithm = header.kdf_algorithm,
+      .kdf_opslimit = header.kdf_opslimit,
+      .kdf_memlimit = header.kdf_memlimit,
+      .salt = header.salt,
+      .wrap_nonce = header.wrap_nonce,
+      .stream_header = header.stream_header,
+      .chunk_size = header.chunk_size};
+  const auto wrapAdditionalData = std::string{kLegacyContainerMagic} +
+                                  rfl::json::write(wrapHeader);
+  unsigned long long wrappedSize = 0;
+  if (crypto_aead_xchacha20poly1305_ietf_encrypt(
+          wrappedMasterKey.data(), &wrappedSize, master_key.bytes.data(), master_key.bytes.size(),
+          reinterpret_cast<const unsigned char *>(wrapAdditionalData.data()),
+          wrapAdditionalData.size(), nullptr, wrapNonce.data(), wrappingKey.data()) != 0 ||
+      wrappedSize != wrappedMasterKey.size()) {
+    return false;
+  }
+  header.wrapped_master_key = base64Encode(wrappedMasterKey);
+  const auto serializedHeader = rfl::json::write(header);
+
+  std::ofstream output(output_path, std::ios::binary | std::ios::trunc);
+  if (!output) {
+    return false;
+  }
+  output.write(kLegacyContainerMagic.data(), kLegacyContainerMagic.size());
+  appendLittleEndianUint32(output, static_cast<std::uint32_t>(serializedHeader.size()));
+  output.write(serializedHeader.data(), serializedHeader.size());
+
+  std::vector<unsigned char> plaintext(header.chunk_size);
+  std::vector<unsigned char> ciphertext(header.chunk_size +
+                                         crypto_secretstream_xchacha20poly1305_ABYTES);
+  while (output) {
+    input.read(reinterpret_cast<char *>(plaintext.data()), plaintext.size());
+    const auto plainSize = static_cast<unsigned long long>(input.gcount());
+    if (input.bad() || (!input.eof() && input.fail())) {
+      return false;
+    }
+    const auto tag = input.eof() ? crypto_secretstream_xchacha20poly1305_TAG_FINAL
+                                 : crypto_secretstream_xchacha20poly1305_TAG_MESSAGE;
+    unsigned long long ciphertextSize = 0;
+    if (crypto_secretstream_xchacha20poly1305_push(
+            &streamState, ciphertext.data(), &ciphertextSize, plaintext.data(), plainSize,
+            reinterpret_cast<const unsigned char *>(serializedHeader.data()),
+            serializedHeader.size(), tag) != 0) {
+      return false;
+    }
+    appendLittleEndianUint32(output, static_cast<std::uint32_t>(ciphertextSize));
+    output.write(reinterpret_cast<const char *>(ciphertext.data()), ciphertextSize);
+    if (tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL) {
+      break;
+    }
+  }
+  sodium_memzero(wrappingKey.data(), wrappingKey.size());
+  sodium_memzero(wrappedMasterKey.data(), wrappedMasterKey.size());
+  return static_cast<bool>(output);
+}
+
+QCoreApplication &testApplication() {
+  if (auto *application = QCoreApplication::instance(); application != nullptr) {
+    return *application;
+  }
+  static int argc = 1;
+  static char applicationName[] = "PsyClientManager_backup_tests";
+  static char *argv[] = {applicationName, nullptr};
+  static QCoreApplication application(argc, argv);
+  return application;
+}
+
 class InMemoryCredentialStore final : public pcm::backup::CredentialStore {
 public:
   bool available = true;
@@ -96,7 +264,8 @@ public:
         mLastRunAtMs(pcm::app_settings::autoBackupLastRunAtMs()),
         mDestination(pcm::app_settings::autoBackupDestination()),
         mEncryptionEnabled(pcm::app_settings::backupEncryptionEnabled()),
-        mKeychainEntry(pcm::app_settings::backupEncryptionKeychainEntry()) {}
+        mKeychainEntry(pcm::app_settings::backupEncryptionKeychainEntry()),
+        mRecoveryEnvelope(pcm::app_settings::backupEncryptionRecoveryEnvelope()) {}
 
   ~BackupSettingsGuard() {
     pcm::app_settings::setAutoBackupEnabled(mAutoBackupEnabled);
@@ -104,6 +273,7 @@ public:
     pcm::app_settings::setAutoBackupDestination(mDestination);
     pcm::app_settings::setBackupEncryptionEnabled(mEncryptionEnabled);
     pcm::app_settings::setBackupEncryptionKeychainEntry(mKeychainEntry);
+    pcm::app_settings::setBackupEncryptionRecoveryEnvelope(mRecoveryEnvelope);
   }
 
 private:
@@ -112,6 +282,7 @@ private:
   QString mDestination;
   bool mEncryptionEnabled;
   QString mKeychainEntry;
+  QString mRecoveryEnvelope;
 };
 
 } // namespace
@@ -135,6 +306,54 @@ TEST(EncryptedContainerTest, RoundTripsZipWithRecoveryPassword) {
   Poco::File(plain).remove();
   Poco::File(encrypted).remove();
   Poco::File(restored).remove();
+}
+
+TEST(EncryptedContainerTest, ReusesRecoveryEnvelopeAcrossIndependentBackups) {
+  const auto firstPlain = writeTempFile("tmp_envelope_first.zip", "PK\x03\x04first");
+  const auto secondPlain = writeTempFile("tmp_envelope_second.zip", "PK\x03\x04second");
+  const auto firstEncrypted = tempPath("tmp_envelope_first.psybackup");
+  const auto secondEncrypted = tempPath("tmp_envelope_second.psybackup");
+  const auto firstRestored = tempPath("tmp_envelope_first_restored.zip");
+  const auto secondRestored = tempPath("tmp_envelope_second_restored.zip");
+  const auto envelope = recoveryEnvelope();
+  removeIfExists(firstRestored);
+  removeIfExists(secondRestored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(firstPlain, firstEncrypted, envelope,
+                                                fixedMasterKey())
+                  .ok);
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(secondPlain, secondEncrypted, envelope,
+                                                fixedMasterKey())
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(firstEncrypted, firstRestored,
+                                                "correct horse battery staple")
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(secondEncrypted, secondRestored,
+                                                "correct horse battery staple")
+                  .ok);
+  EXPECT_EQ(readFile(firstRestored), readFile(firstPlain));
+  EXPECT_EQ(readFile(secondRestored), readFile(secondPlain));
+
+  Poco::File(firstPlain).remove();
+  Poco::File(secondPlain).remove();
+  Poco::File(firstEncrypted).remove();
+  Poco::File(secondEncrypted).remove();
+  Poco::File(firstRestored).remove();
+  Poco::File(secondRestored).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsMalformedRecoveryEnvelopeWithoutWritingOutput) {
+  const auto plain = writeTempFile("tmp_bad_envelope.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_bad_envelope.psybackup");
+  removeIfExists(encrypted);
+  pcm::backup::RecoveryEnvelope malformed;
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, encrypted, malformed,
+                                                 fixedMasterKey())
+                   .ok);
+  EXPECT_FALSE(Poco::File(encrypted).exists());
+
+  Poco::File(plain).remove();
 }
 
 TEST(EncryptedContainerTest, RejectsWrongPasswordWithoutWritingPlaintext) {
@@ -258,9 +477,9 @@ TEST(EncryptedContainerTest, RejectsUnsupportedVersionWithoutWritingPlaintext) {
                                                 "correct horse battery staple", key)
                   .ok);
   auto contents = readFile(encrypted);
-  const auto version = contents.find("\"container_version\":1");
+  const auto version = contents.find("\"container_version\":2");
   ASSERT_NE(version, std::string::npos);
-  contents[version + std::string{"\"container_version\":"}.size()] = '2';
+  contents[version + std::string{"\"container_version\":"}.size()] = '3';
   overwriteFile(encrypted, contents);
 
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
@@ -491,6 +710,35 @@ TEST(BackupServiceTest, EncryptedBackupHidesZipAndValidatesAfterDecryption) {
   removeIfExists(backupPath);
   Poco::File(Poco::Path(Poco::Path::current())
                  .append("tmp_encrypted_backup_source"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, RequiresExactlyOneEncryptionRecoveryMethod) {
+  auto db = makeTestDatabase("tmp_encryption_recovery_method_source");
+  const auto backupPath = tempPath("tmp_encryption_recovery_method.psybackup");
+  removeIfExists(backupPath);
+
+  pcm::backup::BackupOptions missingRecoveryMethod;
+  missingRecoveryMethod.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey()};
+  const auto missingResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, missingRecoveryMethod);
+  EXPECT_FALSE(missingResult.ok);
+  EXPECT_FALSE(Poco::File(backupPath).exists());
+
+  pcm::backup::BackupOptions ambiguousRecoveryMethod;
+  ambiguousRecoveryMethod.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = "correct horse battery staple",
+      .recovery_envelope = recoveryEnvelope(),
+  };
+  const auto ambiguousResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, ambiguousRecoveryMethod);
+  EXPECT_FALSE(ambiguousResult.ok);
+  EXPECT_FALSE(Poco::File(backupPath).exists());
+
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_encryption_recovery_method_source"))
       .remove(true);
 }
 
@@ -886,6 +1134,56 @@ TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
   Poco::File(targetPath).remove(true);
   Poco::File(Poco::Path(Poco::Path::current())
                  .append("tmp_restore_encrypted_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresLegacyV1EncryptedBackupWithRecoveryPassword) {
+  auto sourceDb = makeTestDatabase("tmp_restore_legacy_encrypted_source");
+  DuckClient client;
+  client.name = std::string{"Legacy Encrypted Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto plainBackupPath = Poco::Path(Poco::Path::current())
+                                   .append("tmp_restore_legacy_plain.psybackup")
+                                   .toString();
+  const auto encryptedBackupPath = Poco::Path(Poco::Path::current())
+                                       .append("tmp_restore_legacy_encrypted.psybackup")
+                                       .toString();
+  removeIfExists(plainBackupPath);
+  removeIfExists(encryptedBackupPath);
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, plainBackupPath).ok);
+  ASSERT_TRUE(writeLegacyV1EncryptedBackup(
+      plainBackupPath, encryptedBackupPath, "correct horse battery staple", fixedMasterKey()));
+
+  const auto validation = pcm::backup::BackupValidator{}.validate(
+      encryptedBackupPath, "correct horse battery staple");
+  ASSERT_TRUE(validation.ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_legacy_encrypted_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.recovery_password = "correct horse battery staple";
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      encryptedBackupPath, targetPath, restoreOptions);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Legacy Encrypted Restore";
+  }));
+
+  removeIfExists(plainBackupPath);
+  removeIfExists(encryptedBackupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_legacy_encrypted_source"))
       .remove(true);
 }
 
@@ -1501,9 +1799,13 @@ TEST(AutoBackupDueTest, EncryptedAutoBackupIsSkippedWhenKeyUnavailable) {
   pcm::app_settings::setAutoBackupLastRunAtMs(0);
   pcm::app_settings::setAutoBackupDestination(QString::fromStdString(destination));
   pcm::app_settings::setBackupEncryptionEnabled(true);
+  const auto workspaceUuid =
+      QString::fromStdString(database->get_application_metadata().workspace_uuid);
+  ASSERT_FALSE(workspaceUuid.isEmpty());
   pcm::app_settings::setBackupEncryptionKeychainEntry(
-      pcm::backup::workspaceBackupKeychainEntry(QString::fromStdString(
-          database->get_application_metadata().workspace_uuid)));
+      pcm::backup::workspaceBackupKeychainEntry(workspaceUuid));
+  pcm::app_settings::setBackupEncryptionRecoveryEnvelope(
+      QString::fromStdString(pcm::backup::serialize_recovery_envelope(recoveryEnvelope())));
   scheduler.runAsync();
 
   EXPECT_FALSE(pcm::backup::automaticEncryptedBackupAllowed(
@@ -1518,33 +1820,62 @@ TEST(AutoBackupDueTest, EncryptedAutoBackupIsSkippedWhenKeyUnavailable) {
       .remove(true);
 }
 
-TEST(AutoBackupDueTest, EncryptedAutoBackupUsesKeyWhenAvailable) {
+TEST(AutoBackupDueTest, EncryptedAutoBackupUsesStoredEnvelopeWithoutSessionPassword) {
+  auto &application = testApplication();
   BackupSettingsGuard settingsGuard;
+  const auto destination = tempPath("tmp_auto_backup_key_available");
+  if (Poco::File(destination).exists()) {
+    Poco::File(destination).remove(true);
+  }
+  ASSERT_TRUE(QDir().mkpath(pcm::app_settings::attachmentsStorageRoot()));
   auto database = std::make_shared<pcm::database::Database>(
       makeTestDatabase("tmp_auto_backup_key_available_db"));
   InMemoryCredentialStore credentialStore;
   pcm::backup::AutoBackupScheduler scheduler(database, nullptr, &credentialStore);
   bool finished = false;
+  bool ok = false;
   QString error;
   QObject::connect(&scheduler, &pcm::backup::AutoBackupScheduler::backupFinished,
-                   [&finished, &error](const bool, const QString &resultError) {
+                   [&finished, &ok, &error](const bool result, const QString &resultError) {
                      finished = true;
+                     ok = result;
                      error = resultError;
                    });
 
   pcm::app_settings::setAutoBackupEnabled(true);
   pcm::app_settings::setAutoBackupLastRunAtMs(0);
+  pcm::app_settings::setAutoBackupDestination(QString::fromStdString(destination));
   pcm::app_settings::setBackupEncryptionEnabled(true);
+  const auto workspaceUuid =
+      QString::fromStdString(database->get_application_metadata().workspace_uuid);
+  ASSERT_FALSE(workspaceUuid.isEmpty());
   pcm::app_settings::setBackupEncryptionKeychainEntry(
-      pcm::backup::workspaceBackupKeychainEntry(QString::fromStdString(
-          database->get_application_metadata().workspace_uuid)));
+      pcm::backup::workspaceBackupKeychainEntry(workspaceUuid));
+  pcm::app_settings::setBackupEncryptionRecoveryEnvelope(
+      QString::fromStdString(pcm::backup::serialize_recovery_envelope(recoveryEnvelope())));
+
   scheduler.runAsync();
+  QElapsedTimer timeout;
+  timeout.start();
+  while (!finished && timeout.elapsed() < 10'000) {
+    application.processEvents(QEventLoop::AllEvents, 25);
+    QThread::msleep(5);
+  }
 
   EXPECT_TRUE(pcm::backup::automaticEncryptedBackupAllowed(
       true, pcm::backup::BackupKeySource::Keychain));
   EXPECT_EQ(credentialStore.readCalls, 1);
   EXPECT_TRUE(finished);
-  EXPECT_EQ(error, QStringLiteral("encrypted automatic backup requires a recovery password"));
+  EXPECT_TRUE(ok) << error.toStdString();
+  EXPECT_TRUE(error.isEmpty());
+  const QDir backupDirectory(QString::fromStdString(destination));
+  const auto entries = backupDirectory.entryList({"*.psybackup"}, QDir::Files);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_TRUE(pcm::backup::BackupValidator{}
+                  .validate(backupDirectory.filePath(entries.front()).toStdString(),
+                            "correct horse battery staple")
+                  .ok);
+  Poco::File(destination).remove(true);
   Poco::File(Poco::Path(Poco::Path::current())
                  .append("tmp_auto_backup_key_available_db")
                  .toString())

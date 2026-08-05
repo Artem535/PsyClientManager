@@ -20,14 +20,18 @@ namespace pcm::backup {
 namespace {
 
 constexpr std::string_view kMagic = "PCMENC01";
-constexpr std::uint32_t kContainerVersion = 1;
+constexpr std::uint32_t kLegacyContainerVersion = 1;
+constexpr std::uint32_t kCurrentContainerVersion = 2;
+constexpr std::uint32_t kRecoveryEnvelopeVersion = 1;
 constexpr std::uint32_t kMaxHeaderSize = 16 * 1024;
 constexpr std::uint32_t kChunkSize = 64 * 1024;
 constexpr std::uint64_t kMaxKdfMemory = crypto_pwhash_MEMLIMIT_MODERATE;
 constexpr std::uint64_t kMaxKdfOperations = crypto_pwhash_OPSLIMIT_MODERATE;
 
-struct HeaderForWrap {
-  std::uint32_t container_version = kContainerVersion;
+// The v1 layout and its JSON field order are part of the encrypted backup
+// format. Keep it separate from v2: it is serialized as authenticated data.
+struct LegacyHeaderForWrap {
+  std::uint32_t container_version = kLegacyContainerVersion;
   std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
   std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
   std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
@@ -37,8 +41,8 @@ struct HeaderForWrap {
   std::uint32_t chunk_size = kChunkSize;
 };
 
-struct ContainerHeader {
-  std::uint32_t container_version = kContainerVersion;
+struct LegacyContainerHeader {
+  std::uint32_t container_version = kLegacyContainerVersion;
   std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
   std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
   std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
@@ -47,6 +51,32 @@ struct ContainerHeader {
   std::string stream_header;
   std::uint32_t chunk_size = kChunkSize;
   std::string wrapped_master_key;
+};
+
+struct ContainerHeader {
+  std::uint32_t container_version = kCurrentContainerVersion;
+  std::uint32_t envelope_version = kRecoveryEnvelopeVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
+  std::string stream_header;
+  std::uint32_t chunk_size = kChunkSize;
+  std::string wrapped_master_key;
+};
+
+struct ContainerVersion {
+  std::uint32_t container_version = 0;
+};
+
+struct RecoveryEnvelopeForWrap {
+  std::uint32_t envelope_version = kRecoveryEnvelopeVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
 };
 
 CryptoResult failure(std::string error) {
@@ -105,7 +135,30 @@ bool readUint32(std::istream *input, std::uint32_t *value) {
   return true;
 }
 
-HeaderForWrap headerForWrap(const ContainerHeader &header) {
+RecoveryEnvelope envelopeFromHeader(const ContainerHeader &header) {
+  return {.envelope_version = header.envelope_version,
+          .kdf_algorithm = header.kdf_algorithm,
+          .kdf_opslimit = header.kdf_opslimit,
+          .kdf_memlimit = header.kdf_memlimit,
+          .salt = header.salt,
+          .wrap_nonce = header.wrap_nonce,
+          .wrapped_master_key = header.wrapped_master_key};
+}
+
+RecoveryEnvelopeForWrap envelopeForWrap(const RecoveryEnvelope &envelope) {
+  return {.envelope_version = envelope.envelope_version,
+          .kdf_algorithm = envelope.kdf_algorithm,
+          .kdf_opslimit = envelope.kdf_opslimit,
+          .kdf_memlimit = envelope.kdf_memlimit,
+          .salt = envelope.salt,
+          .wrap_nonce = envelope.wrap_nonce};
+}
+
+std::string wrapAdditionalData(const RecoveryEnvelope &envelope) {
+  return std::string{kMagic} + rfl::json::write(envelopeForWrap(envelope));
+}
+
+LegacyHeaderForWrap legacyHeaderForWrap(const LegacyContainerHeader &header) {
   return {.container_version = header.container_version,
           .kdf_algorithm = header.kdf_algorithm,
           .kdf_opslimit = header.kdf_opslimit,
@@ -116,18 +169,49 @@ HeaderForWrap headerForWrap(const ContainerHeader &header) {
           .chunk_size = header.chunk_size};
 }
 
-std::string wrapAdditionalData(const ContainerHeader &header) {
-  return std::string{kMagic} + rfl::json::write(headerForWrap(header));
+std::string legacyWrapAdditionalData(const LegacyContainerHeader &header) {
+  return std::string{kMagic} + rfl::json::write(legacyHeaderForWrap(header));
 }
 
-bool validHeader(const ContainerHeader &header) {
-  return header.container_version == kContainerVersion &&
+bool validEnvelope(const RecoveryEnvelope &envelope) {
+  std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
+  std::array<unsigned char,
+             crypto_aead_xchacha20poly1305_ietf_ABYTES + MasterKey{}.bytes.size()>
+      wrappedMasterKey{};
+  return envelope.envelope_version == kRecoveryEnvelopeVersion &&
+         envelope.kdf_algorithm == crypto_pwhash_ALG_ARGON2ID13 &&
+         envelope.kdf_opslimit >= crypto_pwhash_OPSLIMIT_INTERACTIVE &&
+         envelope.kdf_opslimit <= kMaxKdfOperations &&
+         envelope.kdf_memlimit >= crypto_pwhash_MEMLIMIT_INTERACTIVE &&
+         envelope.kdf_memlimit <= kMaxKdfMemory && decode(envelope.salt, &salt) &&
+         decode(envelope.wrap_nonce, &wrapNonce) &&
+         decode(envelope.wrapped_master_key, &wrappedMasterKey);
+}
+
+bool validLegacyHeader(const LegacyContainerHeader &header) {
+  std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
+  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
+  std::array<unsigned char,
+             crypto_aead_xchacha20poly1305_ietf_ABYTES + MasterKey{}.bytes.size()>
+      wrappedMasterKey{};
+  return header.container_version == kLegacyContainerVersion &&
          header.kdf_algorithm == crypto_pwhash_ALG_ARGON2ID13 &&
          header.kdf_opslimit >= crypto_pwhash_OPSLIMIT_INTERACTIVE &&
          header.kdf_opslimit <= kMaxKdfOperations &&
          header.kdf_memlimit >= crypto_pwhash_MEMLIMIT_INTERACTIVE &&
-         header.kdf_memlimit <= kMaxKdfMemory && header.chunk_size > 0 &&
-         header.chunk_size <= kChunkSize;
+         header.kdf_memlimit <= kMaxKdfMemory && decode(header.salt, &salt) &&
+         decode(header.wrap_nonce, &wrapNonce) &&
+         decode(header.stream_header, &streamHeader) && header.chunk_size > 0 &&
+         header.chunk_size <= kChunkSize && decode(header.wrapped_master_key, &wrappedMasterKey);
+}
+
+bool validHeader(const ContainerHeader &header) {
+  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
+  return header.container_version == kCurrentContainerVersion &&
+         validEnvelope(envelopeFromHeader(header)) && decode(header.stream_header, &streamHeader) &&
+         header.chunk_size > 0 && header.chunk_size <= kChunkSize;
 }
 
 bool deriveWrappingKey(std::string_view password,
@@ -218,25 +302,21 @@ BackupContainerKind detect_backup_container(const std::string &path) {
   return BackupContainerKind::Unknown;
 }
 
-CryptoResult encrypt_backup_file(const std::string &zip_path,
-                                 const std::string &output_path,
-                                 std::string_view recovery_password,
-                                 const MasterKey &master_key) {
+CryptoResult create_recovery_envelope(std::string_view recovery_password,
+                                      const MasterKey &master_key,
+                                      RecoveryEnvelope *envelope) {
   if (!sodiumReady()) {
     return failure("crypto library is unavailable");
+  }
+  if (envelope == nullptr) {
+    return failure("recovery envelope output is required");
   }
   if (recovery_password.size() < 12) {
     return failure("recovery password must contain at least 12 characters");
   }
 
-  std::ifstream input(zip_path, std::ios::binary);
-  if (!input) {
-    return failure("cannot read backup archive");
-  }
-
   std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
   std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
-  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
   std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_KEYBYTES> wrappingKey{};
   std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_ABYTES + MasterKey{}.bytes.size()>
       wrappedMasterKey{};
@@ -245,24 +325,19 @@ CryptoResult encrypt_backup_file(const std::string &zip_path,
   randombytes_buf(salt.data(), salt.size());
   randombytes_buf(wrapNonce.data(), wrapNonce.size());
 
-  ContainerHeader header;
-  header.salt = encode(salt);
-  header.wrap_nonce = encode(wrapNonce);
-
-  if (!deriveWrappingKey(recovery_password, salt, header.kdf_opslimit,
-                         header.kdf_memlimit, &wrappingKey)) {
+  RecoveryEnvelope created;
+  created.envelope_version = kRecoveryEnvelopeVersion;
+  created.kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  created.kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  created.kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  created.salt = encode(salt);
+  created.wrap_nonce = encode(wrapNonce);
+  if (!deriveWrappingKey(recovery_password, salt, created.kdf_opslimit,
+                         created.kdf_memlimit, &wrappingKey)) {
     return failure("cannot derive backup encryption key");
   }
 
-  crypto_secretstream_xchacha20poly1305_state streamState{};
-  SodiumMemzeroGuard streamStateGuard(&streamState, sizeof(streamState));
-  if (crypto_secretstream_xchacha20poly1305_init_push(&streamState, streamHeader.data(),
-                                                       master_key.bytes.data()) != 0) {
-    return failure("cannot initialize backup encryption");
-  }
-  header.stream_header = encode(streamHeader);
-  const auto wrapAd = wrapAdditionalData(header);
-
+  const auto wrapAd = wrapAdditionalData(created);
   unsigned long long wrappedSize = 0;
   if (crypto_aead_xchacha20poly1305_ietf_encrypt(
           wrappedMasterKey.data(), &wrappedSize, master_key.bytes.data(),
@@ -272,8 +347,81 @@ CryptoResult encrypt_backup_file(const std::string &zip_path,
       wrappedSize != wrappedMasterKey.size()) {
     return failure("cannot wrap backup encryption key");
   }
-  header.wrapped_master_key = encode(wrappedMasterKey);
+  created.wrapped_master_key = encode(wrappedMasterKey);
+  *envelope = std::move(created);
+  return success();
+}
 
+CryptoResult validate_recovery_envelope(const RecoveryEnvelope &envelope) {
+  if (!sodiumReady()) {
+    return failure("crypto library is unavailable");
+  }
+  return validEnvelope(envelope) ? success() : failure("invalid recovery envelope");
+}
+
+std::string serialize_recovery_envelope(const RecoveryEnvelope &envelope) {
+  return rfl::json::write(envelope);
+}
+
+std::optional<RecoveryEnvelope>
+deserialize_recovery_envelope(const std::string_view serialized_envelope) {
+  const auto parsed = rfl::json::read<RecoveryEnvelope>(serialized_envelope);
+  if (!parsed || !validEnvelope(parsed.value())) {
+    return std::nullopt;
+  }
+  return parsed.value();
+}
+
+CryptoResult encrypt_backup_file(const std::string &zip_path,
+                                 const std::string &output_path,
+                                 std::string_view recovery_password,
+                                 const MasterKey &master_key) {
+  RecoveryEnvelope recoveryEnvelope;
+  const auto created =
+      create_recovery_envelope(recovery_password, master_key, &recoveryEnvelope);
+  if (!created.ok) {
+    return created;
+  }
+  return encrypt_backup_file(zip_path, output_path, recoveryEnvelope, master_key);
+}
+
+CryptoResult encrypt_backup_file(const std::string &zip_path,
+                                 const std::string &output_path,
+                                 const RecoveryEnvelope &recovery_envelope,
+                                 const MasterKey &master_key) {
+  if (!sodiumReady()) {
+    return failure("crypto library is unavailable");
+  }
+  if (!validEnvelope(recovery_envelope)) {
+    return failure("invalid recovery envelope");
+  }
+
+  std::ifstream input(zip_path, std::ios::binary);
+  if (!input) {
+    return failure("cannot read backup archive");
+  }
+
+  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
+  ContainerHeader header{
+      .container_version = kCurrentContainerVersion,
+      .envelope_version = recovery_envelope.envelope_version,
+      .kdf_algorithm = recovery_envelope.kdf_algorithm,
+      .kdf_opslimit = recovery_envelope.kdf_opslimit,
+      .kdf_memlimit = recovery_envelope.kdf_memlimit,
+      .salt = recovery_envelope.salt,
+      .wrap_nonce = recovery_envelope.wrap_nonce,
+      .stream_header = {},
+      .chunk_size = kChunkSize,
+      .wrapped_master_key = recovery_envelope.wrapped_master_key,
+  };
+
+  crypto_secretstream_xchacha20poly1305_state streamState{};
+  SodiumMemzeroGuard streamStateGuard(&streamState, sizeof(streamState));
+  if (crypto_secretstream_xchacha20poly1305_init_push(&streamState, streamHeader.data(),
+                                                       master_key.bytes.data()) != 0) {
+    return failure("cannot initialize backup encryption");
+  }
+  header.stream_header = encode(streamHeader);
   const auto serializedHeader = rfl::json::write(header);
   if (serializedHeader.size() > kMaxHeaderSize) {
     return failure("encrypted backup header is too large");
@@ -353,11 +501,12 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
   if (input.gcount() != static_cast<std::streamsize>(serializedHeader.size())) {
     return failure("cannot decrypt encrypted backup");
   }
-  const auto parsedHeader = rfl::json::read<ContainerHeader>(serializedHeader);
-  if (!parsedHeader || !validHeader(parsedHeader.value())) {
+  const auto parsedVersion = rfl::json::read<ContainerVersion>(serializedHeader);
+  if (!parsedVersion ||
+      (parsedVersion.value().container_version != kLegacyContainerVersion &&
+       parsedVersion.value().container_version != kCurrentContainerVersion)) {
     return failure("cannot decrypt encrypted backup");
   }
-  const auto &header = parsedHeader.value();
 
   std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
   std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
@@ -369,15 +518,47 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
   SodiumMemzeroGuard wrappingKeyGuard(wrappingKey.data(), wrappingKey.size());
   SodiumMemzeroGuard wrappedMasterKeyGuard(wrappedMasterKey.data(), wrappedMasterKey.size());
   SodiumMemzeroGuard masterKeyGuard(masterKey.bytes.data(), masterKey.bytes.size());
-  if (!decode(header.salt, &salt) || !decode(header.wrap_nonce, &wrapNonce) ||
-      !decode(header.stream_header, &streamHeader) ||
-      !decode(header.wrapped_master_key, &wrappedMasterKey) ||
-      !deriveWrappingKey(recovery_password, salt, header.kdf_opslimit,
-                         header.kdf_memlimit, &wrappingKey)) {
+  std::uint32_t chunkSize = 0;
+  std::string wrapAd;
+
+  if (parsedVersion.value().container_version == kLegacyContainerVersion) {
+    const auto parsedHeader = rfl::json::read<LegacyContainerHeader>(serializedHeader);
+    if (!parsedHeader || !validLegacyHeader(parsedHeader.value())) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    const auto &header = parsedHeader.value();
+    if (!decode(header.salt, &salt) || !decode(header.wrap_nonce, &wrapNonce) ||
+        !decode(header.stream_header, &streamHeader) ||
+        !decode(header.wrapped_master_key, &wrappedMasterKey) ||
+        !deriveWrappingKey(recovery_password, salt, header.kdf_opslimit,
+                           header.kdf_memlimit, &wrappingKey)) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    chunkSize = header.chunk_size;
+    wrapAd = legacyWrapAdditionalData(header);
+  } else {
+    const auto parsedHeader = rfl::json::read<ContainerHeader>(serializedHeader);
+    if (!parsedHeader || !validHeader(parsedHeader.value())) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    const auto &header = parsedHeader.value();
+    const auto recoveryEnvelope = envelopeFromHeader(header);
+    if (!decode(recoveryEnvelope.salt, &salt) ||
+        !decode(recoveryEnvelope.wrap_nonce, &wrapNonce) ||
+        !decode(header.stream_header, &streamHeader) ||
+        !decode(recoveryEnvelope.wrapped_master_key, &wrappedMasterKey) ||
+        !deriveWrappingKey(recovery_password, salt, recoveryEnvelope.kdf_opslimit,
+                           recoveryEnvelope.kdf_memlimit, &wrappingKey)) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    chunkSize = header.chunk_size;
+    wrapAd = wrapAdditionalData(recoveryEnvelope);
+  }
+
+  if (chunkSize == 0) {
     return failure("cannot decrypt encrypted backup");
   }
 
-  const auto wrapAd = wrapAdditionalData(header);
   unsigned long long keySize = 0;
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(
           masterKey.bytes.data(), &keySize, nullptr, wrappedMasterKey.data(),
@@ -402,9 +583,9 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
   }
 
   bool foundFinalRecord = false;
-  std::vector<unsigned char> ciphertext(header.chunk_size +
+  std::vector<unsigned char> ciphertext(chunkSize +
                                          crypto_secretstream_xchacha20poly1305_ABYTES);
-  std::vector<unsigned char> plaintext(header.chunk_size);
+  std::vector<unsigned char> plaintext(chunkSize);
   while (!foundFinalRecord) {
     std::uint32_t cipherSize = 0;
     if (!readUint32(&input, &cipherSize) || cipherSize < crypto_secretstream_xchacha20poly1305_ABYTES ||

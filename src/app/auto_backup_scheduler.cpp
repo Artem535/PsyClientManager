@@ -22,10 +22,10 @@ class AutoBackupWorker final : public QObject {
 public:
   AutoBackupWorker(std::shared_ptr<database::Database> db, QString destinationPath,
                    QString attachmentsRoot, std::optional<MasterKey> masterKey,
-                   QString recoveryPassword)
+                   std::optional<RecoveryEnvelope> recoveryEnvelope)
       : mDb(std::move(db)), mDestinationPath(std::move(destinationPath)),
         mAttachmentsRoot(std::move(attachmentsRoot)), mMasterKey(std::move(masterKey)),
-        mRecoveryPassword(std::move(recoveryPassword)) {}
+        mRecoveryEnvelope(std::move(recoveryEnvelope)) {}
 
 public slots:
   void run() {
@@ -35,7 +35,7 @@ public slots:
     if (mMasterKey.has_value()) {
       options.encryption = BackupEncryptionOptions{
           .master_key = mMasterKey,
-          .recovery_password = mRecoveryPassword.toStdString(),
+          .recovery_envelope = mRecoveryEnvelope,
       };
     }
     const auto result =
@@ -51,7 +51,7 @@ private:
   QString mDestinationPath;
   QString mAttachmentsRoot;
   std::optional<MasterKey> mMasterKey;
-  QString mRecoveryPassword;
+  std::optional<RecoveryEnvelope> mRecoveryEnvelope;
 };
 
 } // namespace
@@ -89,6 +89,14 @@ void AutoBackupScheduler::runAsync() {
   mDestinationDir = app_settings::autoBackupDestination();
 
   if (app_settings::backupEncryptionEnabled()) {
+    mRecoveryEnvelope = deserialize_recovery_envelope(
+        app_settings::backupEncryptionRecoveryEnvelope().toStdString());
+    if (!mRecoveryEnvelope.has_value()) {
+      finishBackup(false,
+                   QStringLiteral("encrypted automatic backup recovery envelope is unavailable"),
+                   mDestinationDir);
+      return;
+    }
     const auto metadata = mDb->get_application_metadata();
     mWorkspaceUuid = QString::fromStdString(metadata.workspace_uuid);
     const auto expectedEntry = workspaceBackupKeychainEntry(mWorkspaceUuid);
@@ -103,11 +111,6 @@ void AutoBackupScheduler::runAsync() {
   }
 
   startBackupWorker();
-}
-
-void AutoBackupScheduler::setRecoveryPasswordForCurrentSession(
-    QString recoveryPassword) {
-  mRecoveryPassword = std::move(recoveryPassword);
 }
 
 void AutoBackupScheduler::onWorkspaceMasterKeyRead(const bool ok,
@@ -126,12 +129,6 @@ void AutoBackupScheduler::onWorkspaceMasterKeyRead(const bool ok,
                  mDestinationDir);
     return;
   }
-  if (mRecoveryPassword.isEmpty()) {
-    finishBackup(false, QStringLiteral("encrypted automatic backup requires a recovery password"),
-                 mDestinationDir);
-    return;
-  }
-
   startBackupWorker(key);
 }
 
@@ -146,7 +143,7 @@ void AutoBackupScheduler::startBackupWorker(std::optional<MasterKey> masterKey) 
   auto *thread = new QThread(this);
   auto *worker = new AutoBackupWorker(mDb, destinationPath,
                                       app_settings::attachmentsStorageRoot(),
-                                      std::move(masterKey), mRecoveryPassword);
+                                      std::move(masterKey), mRecoveryEnvelope);
   worker->moveToThread(thread);
 
   connect(thread, &QThread::started, worker, &AutoBackupWorker::run);
