@@ -29,6 +29,7 @@
 #include <QStandardPaths>
 #include <QTextEdit>
 #include <QThread>
+#include <memory>
 #include <QTimeEdit>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -892,11 +893,12 @@ void SettingsDialog::validateBackup() {
   mBackupProgressBar->setVisible(true);
 
   auto *thread = new QThread(this);
-  auto *worker = new ValidateWorker(backupPath);
-  worker->moveToThread(thread);
+  auto worker = std::make_unique<ValidateWorker>(backupPath);
+  auto *workerObject = worker.get();
+  workerObject->moveToThread(thread);
 
-  connect(thread, &QThread::started, worker, &ValidateWorker::run);
-  connect(worker, &ValidateWorker::finished, this,
+  connect(thread, &QThread::started, workerObject, &ValidateWorker::run);
+  connect(workerObject, &ValidateWorker::finished, this,
           [this](const bool ok, const QStringList &errors) {
             mBackupStatusLabel->setVisible(false);
             mBackupProgressBar->setVisible(false);
@@ -916,9 +918,10 @@ void SettingsDialog::validateBackup() {
               QMessageBox::warning(this, tr("Backup Invalid"), message);
             }
           });
-  connect(worker, &ValidateWorker::finished, thread, &QThread::quit);
-  connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+  connect(workerObject, &ValidateWorker::finished, thread, &QThread::quit);
+  connect(thread, &QThread::finished, workerObject, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  worker.release();
   thread->start();
 }
 
@@ -961,11 +964,12 @@ void SettingsDialog::restoreBackup() {
   mBackupProgressBar->setVisible(true);
 
   auto *thread = new QThread(this);
-  auto *worker = new ValidateWorker(backupPath, std::move(recoveryPassword));
-  worker->moveToThread(thread);
+  auto worker = std::make_unique<ValidateWorker>(backupPath, std::move(recoveryPassword));
+  auto *workerObject = worker.get();
+  workerObject->moveToThread(thread);
 
-  connect(thread, &QThread::started, worker, &ValidateWorker::run);
-  connect(worker, &ValidateWorker::finished, this,
+  connect(thread, &QThread::started, workerObject, &ValidateWorker::run);
+  connect(workerObject, &ValidateWorker::finished, this,
           [this, backupPath](const bool ok, const QStringList &errors) {
             mBackupStatusLabel->setVisible(false);
             mBackupProgressBar->setVisible(false);
@@ -1015,9 +1019,10 @@ void SettingsDialog::restoreBackup() {
                    "complete the restore."));
             QApplication::quit();
           });
-  connect(worker, &ValidateWorker::finished, thread, &QThread::quit);
-  connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+  connect(workerObject, &ValidateWorker::finished, thread, &QThread::quit);
+  connect(thread, &QThread::finished, workerObject, &QObject::deleteLater);
   connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  worker.release();
   thread->start();
 }
 

@@ -108,6 +108,34 @@ int Application::run(int argc, char *argv[]) {
                               << localeName;
   }
 
+  restorePendingBackup();
+
+  mDb = std::make_shared<database::Database>(mConf);
+
+  mAutoBackupScheduler =
+      std::make_unique<pcm::backup::AutoBackupScheduler>(mDb);
+  mAutoBackupScheduler->start();
+
+  mMainWindow = std::make_unique<MainWindow>();
+  mClientModel = std::make_shared<QClientModel>(mDb);
+
+  mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
+  mMainWindow->addClientInfoPage(mClientModel);
+  mMainWindow->addAnalyticsPage(mDb);
+  mMainWindow->addClientCardPage(mDb);
+  mMainWindow->addClientNotesPage(mDb);
+  mMainWindow->setDatabase(mDb);
+  mMainWindow->connectSignals();
+  mMainWindow->installEventFilter(this);
+  connectSignals();
+  initializeNotifications();
+
+  mMainWindow->show();
+
+  return app.exec();
+}
+
+void Application::restorePendingBackup() {
   const auto markerPath = Poco::Path(mConf.config_pth.value())
                               .makeParent()
                               .append("pending-restore.json")
@@ -162,29 +190,6 @@ int Application::run(int argc, char *argv[]) {
     }
   }
 
-  mDb = std::make_shared<database::Database>(mConf);
-
-  mAutoBackupScheduler =
-      std::make_unique<pcm::backup::AutoBackupScheduler>(mDb);
-  mAutoBackupScheduler->start();
-
-  mMainWindow = std::make_unique<MainWindow>();
-  mClientModel = std::make_shared<QClientModel>(mDb);
-
-  mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
-  mMainWindow->addClientInfoPage(mClientModel);
-  mMainWindow->addAnalyticsPage(mDb);
-  mMainWindow->addClientCardPage(mDb);
-  mMainWindow->addClientNotesPage(mDb);
-  mMainWindow->setDatabase(mDb);
-  mMainWindow->connectSignals();
-  mMainWindow->installEventFilter(this);
-  connectSignals();
-  initializeNotifications();
-
-  mMainWindow->show();
-
-  return app.exec();
 }
 
 bool Application::eventFilter(QObject *watched, QEvent *event) {

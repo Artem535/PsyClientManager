@@ -16,7 +16,7 @@ namespace detail {
 
 class NormalizedBackupFile {
 public:
-  NormalizedBackupFile(std::string zip_path, std::string scratch_path = {});
+  explicit NormalizedBackupFile(std::string zip_path, std::string scratch_path = {});
   ~NormalizedBackupFile();
 
   NormalizedBackupFile(const NormalizedBackupFile &) = delete;

@@ -237,6 +237,9 @@ class TemporaryOutput {
   explicit TemporaryOutput(const std::string &outputPath)
       : path_(outputPath + ".partial-" + randomSuffix()) {}
 
+  TemporaryOutput(const TemporaryOutput &) = delete;
+  TemporaryOutput &operator=(const TemporaryOutput &) = delete;
+
   ~TemporaryOutput() {
     if (!published_) {
       std::error_code error;
@@ -264,12 +267,22 @@ class TemporaryOutput {
 
 class SodiumMemzeroGuard {
  public:
-  SodiumMemzeroGuard(void *data, std::size_t size) : data_(data), size_(size) {}
+  SodiumMemzeroGuard(unsigned char *data, std::size_t size) : data_(data), size_(size) {}
+
+  template <std::size_t Size>
+  explicit SodiumMemzeroGuard(std::array<unsigned char, Size> &data)
+      : data_(data.data()), size_(data.size()) {}
+
+  explicit SodiumMemzeroGuard(crypto_secretstream_xchacha20poly1305_state &state)
+      : data_(reinterpret_cast<unsigned char *>(&state)), size_(sizeof(state)) {}
+
+  SodiumMemzeroGuard(const SodiumMemzeroGuard &) = delete;
+  SodiumMemzeroGuard &operator=(const SodiumMemzeroGuard &) = delete;
 
   ~SodiumMemzeroGuard() { sodium_memzero(data_, size_); }
 
  private:
-  void *data_;
+  unsigned char *data_;
   std::size_t size_;
 };
 
@@ -280,6 +293,111 @@ bool writeRecord(std::ostream *output, const unsigned char *ciphertext,
   output->write(encodedSize.data(), encodedSize.size());
   output->write(reinterpret_cast<const char *>(ciphertext), size);
   return static_cast<bool>(*output);
+}
+
+bool decodeHeaderAndDeriveKey(
+    const std::string &serialized_header, std::string_view recovery_password,
+    std::array<unsigned char, crypto_pwhash_SALTBYTES> *salt,
+    std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> *wrap_nonce,
+    std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> *stream_header,
+    std::array<unsigned char,
+               crypto_aead_xchacha20poly1305_ietf_ABYTES + MasterKey{}.bytes.size()>
+        *wrapped_master_key,
+    std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_KEYBYTES> *wrapping_key,
+    std::uint32_t *chunk_size, std::string *wrap_additional_data) {
+  const auto parsedVersion = rfl::json::read<ContainerVersion>(serialized_header);
+  if (!parsedVersion) {
+    return false;
+  }
+  if (parsedVersion.value().container_version == kLegacyContainerVersion) {
+    const auto header = rfl::json::read<LegacyContainerHeader>(serialized_header);
+    if (!header || !validLegacyHeader(header.value()) ||
+        !decode(header.value().salt, salt) || !decode(header.value().wrap_nonce, wrap_nonce) ||
+        !decode(header.value().stream_header, stream_header) ||
+        !decode(header.value().wrapped_master_key, wrapped_master_key) ||
+        !deriveWrappingKey(recovery_password, *salt, header.value().kdf_opslimit,
+                           header.value().kdf_memlimit, wrapping_key)) {
+      return false;
+    }
+    *chunk_size = header.value().chunk_size;
+    *wrap_additional_data = legacyWrapAdditionalData(header.value());
+    return true;
+  }
+  if (parsedVersion.value().container_version != kCurrentContainerVersion) {
+    return false;
+  }
+
+  const auto header = rfl::json::read<ContainerHeader>(serialized_header);
+  if (!header || !validHeader(header.value())) {
+    return false;
+  }
+  const auto envelope = envelopeFromHeader(header.value());
+  if (!decode(envelope.salt, salt) || !decode(envelope.wrap_nonce, wrap_nonce) ||
+      !decode(header.value().stream_header, stream_header) ||
+      !decode(envelope.wrapped_master_key, wrapped_master_key) ||
+      !deriveWrappingKey(recovery_password, *salt, envelope.kdf_opslimit,
+                         envelope.kdf_memlimit, wrapping_key)) {
+    return false;
+  }
+  *chunk_size = header.value().chunk_size;
+  *wrap_additional_data = wrapAdditionalData(envelope);
+  return true;
+}
+
+CryptoResult decryptPayload(
+    std::istream *input, const std::string &zip_path, const std::string &serialized_header,
+    const std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> &stream_header,
+    std::uint32_t chunk_size, const MasterKey &master_key) {
+  crypto_secretstream_xchacha20poly1305_state streamState{};
+  SodiumMemzeroGuard streamStateGuard(streamState);
+  if (crypto_secretstream_xchacha20poly1305_init_pull(&streamState, stream_header.data(),
+                                                       master_key.bytes.data()) != 0) {
+    return failure("cannot decrypt encrypted backup");
+  }
+
+  TemporaryOutput temporary(zip_path);
+  std::ofstream output(temporary.path(), std::ios::binary | std::ios::trunc);
+  if (!output) {
+    return failure("cannot decrypt encrypted backup");
+  }
+  bool foundFinalRecord = false;
+  std::vector<unsigned char> ciphertext(chunk_size +
+                                         crypto_secretstream_xchacha20poly1305_ABYTES);
+  std::vector<unsigned char> plaintext(chunk_size);
+  while (!foundFinalRecord) {
+    std::uint32_t cipherSize = 0;
+    if (!readUint32(input, &cipherSize) ||
+        cipherSize < crypto_secretstream_xchacha20poly1305_ABYTES ||
+        cipherSize > ciphertext.size()) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    input->read(reinterpret_cast<char *>(ciphertext.data()), cipherSize);
+    if (input->gcount() != static_cast<std::streamsize>(cipherSize)) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    unsigned long long plaintextSize = 0;
+    unsigned char tag = 0;
+    if (crypto_secretstream_xchacha20poly1305_pull(
+            &streamState, plaintext.data(), &plaintextSize, &tag, ciphertext.data(), cipherSize,
+            reinterpret_cast<const unsigned char *>(serialized_header.data()),
+            serialized_header.size()) != 0 ||
+        plaintextSize > plaintext.size() ||
+        (tag != crypto_secretstream_xchacha20poly1305_TAG_MESSAGE &&
+         tag != crypto_secretstream_xchacha20poly1305_TAG_FINAL)) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    output.write(reinterpret_cast<const char *>(plaintext.data()), plaintextSize);
+    if (!output) {
+      return failure("cannot decrypt encrypted backup");
+    }
+    foundFinalRecord = tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL;
+  }
+  if (input->peek() != std::char_traits<char>::eof()) {
+    return failure("cannot decrypt encrypted backup");
+  }
+  output.close();
+  return output && temporary.publish(zip_path) ? success()
+                                                : failure("cannot decrypt encrypted backup");
 }
 
 } // namespace
@@ -416,7 +534,7 @@ CryptoResult encrypt_backup_file(const std::string &zip_path,
   };
 
   crypto_secretstream_xchacha20poly1305_state streamState{};
-  SodiumMemzeroGuard streamStateGuard(&streamState, sizeof(streamState));
+  SodiumMemzeroGuard streamStateGuard(streamState);
   if (crypto_secretstream_xchacha20poly1305_init_push(&streamState, streamHeader.data(),
                                                        master_key.bytes.data()) != 0) {
     return failure("cannot initialize backup encryption");
@@ -501,13 +619,6 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
   if (input.gcount() != static_cast<std::streamsize>(serializedHeader.size())) {
     return failure("cannot decrypt encrypted backup");
   }
-  const auto parsedVersion = rfl::json::read<ContainerVersion>(serializedHeader);
-  if (!parsedVersion ||
-      (parsedVersion.value().container_version != kLegacyContainerVersion &&
-       parsedVersion.value().container_version != kCurrentContainerVersion)) {
-    return failure("cannot decrypt encrypted backup");
-  }
-
   std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
   std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
   std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
@@ -521,41 +632,10 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
   std::uint32_t chunkSize = 0;
   std::string wrapAd;
 
-  if (parsedVersion.value().container_version == kLegacyContainerVersion) {
-    const auto parsedHeader = rfl::json::read<LegacyContainerHeader>(serializedHeader);
-    if (!parsedHeader || !validLegacyHeader(parsedHeader.value())) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    const auto &header = parsedHeader.value();
-    if (!decode(header.salt, &salt) || !decode(header.wrap_nonce, &wrapNonce) ||
-        !decode(header.stream_header, &streamHeader) ||
-        !decode(header.wrapped_master_key, &wrappedMasterKey) ||
-        !deriveWrappingKey(recovery_password, salt, header.kdf_opslimit,
-                           header.kdf_memlimit, &wrappingKey)) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    chunkSize = header.chunk_size;
-    wrapAd = legacyWrapAdditionalData(header);
-  } else {
-    const auto parsedHeader = rfl::json::read<ContainerHeader>(serializedHeader);
-    if (!parsedHeader || !validHeader(parsedHeader.value())) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    const auto &header = parsedHeader.value();
-    const auto recoveryEnvelope = envelopeFromHeader(header);
-    if (!decode(recoveryEnvelope.salt, &salt) ||
-        !decode(recoveryEnvelope.wrap_nonce, &wrapNonce) ||
-        !decode(header.stream_header, &streamHeader) ||
-        !decode(recoveryEnvelope.wrapped_master_key, &wrappedMasterKey) ||
-        !deriveWrappingKey(recovery_password, salt, recoveryEnvelope.kdf_opslimit,
-                           recoveryEnvelope.kdf_memlimit, &wrappingKey)) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    chunkSize = header.chunk_size;
-    wrapAd = wrapAdditionalData(recoveryEnvelope);
-  }
-
-  if (chunkSize == 0) {
+  if (!decodeHeaderAndDeriveKey(serializedHeader, recovery_password, &salt, &wrapNonce,
+                                &streamHeader, &wrappedMasterKey, &wrappingKey, &chunkSize,
+                                &wrapAd) ||
+      chunkSize == 0) {
     return failure("cannot decrypt encrypted backup");
   }
 
@@ -569,57 +649,10 @@ CryptoResult decrypt_backup_file(const std::string &input_path,
     return failure("cannot decrypt encrypted backup");
   }
 
-  crypto_secretstream_xchacha20poly1305_state streamState{};
-  SodiumMemzeroGuard streamStateGuard(&streamState, sizeof(streamState));
-  if (crypto_secretstream_xchacha20poly1305_init_pull(&streamState, streamHeader.data(),
-                                                       masterKey.bytes.data()) != 0) {
-    return failure("cannot decrypt encrypted backup");
-  }
-
-  TemporaryOutput temporary(zip_path);
-  std::ofstream output(temporary.path(), std::ios::binary | std::ios::trunc);
-  if (!output) {
-    return failure("cannot decrypt encrypted backup");
-  }
-
-  bool foundFinalRecord = false;
-  std::vector<unsigned char> ciphertext(chunkSize +
-                                         crypto_secretstream_xchacha20poly1305_ABYTES);
-  std::vector<unsigned char> plaintext(chunkSize);
-  while (!foundFinalRecord) {
-    std::uint32_t cipherSize = 0;
-    if (!readUint32(&input, &cipherSize) || cipherSize < crypto_secretstream_xchacha20poly1305_ABYTES ||
-        cipherSize > ciphertext.size()) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    input.read(reinterpret_cast<char *>(ciphertext.data()), cipherSize);
-    if (input.gcount() != static_cast<std::streamsize>(cipherSize)) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    unsigned long long plaintextSize = 0;
-    unsigned char tag = 0;
-    if (crypto_secretstream_xchacha20poly1305_pull(
-            &streamState, plaintext.data(), &plaintextSize, &tag, ciphertext.data(), cipherSize,
-            reinterpret_cast<const unsigned char *>(serializedHeader.data()),
-            serializedHeader.size()) != 0 ||
-        plaintextSize > plaintext.size() ||
-        (tag != crypto_secretstream_xchacha20poly1305_TAG_MESSAGE &&
-         tag != crypto_secretstream_xchacha20poly1305_TAG_FINAL)) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    output.write(reinterpret_cast<const char *>(plaintext.data()), plaintextSize);
-    if (!output) {
-      return failure("cannot decrypt encrypted backup");
-    }
-    foundFinalRecord = tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL;
-  }
-  if (input.peek() != std::char_traits<char>::eof()) {
-    return failure("cannot decrypt encrypted backup");
-  }
-
-  output.close();
-  if (!output || !temporary.publish(zip_path)) {
-    return failure("cannot decrypt encrypted backup");
+  const auto result = decryptPayload(&input, zip_path, serializedHeader, streamHeader, chunkSize,
+                                     masterKey);
+  if (!result.ok) {
+    return result;
   }
   if (key_from_password != nullptr) {
     *key_from_password = masterKey;

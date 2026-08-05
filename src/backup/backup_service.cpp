@@ -74,22 +74,32 @@ std::vector<BackupEntry> collectEntries(const std::string &scratchDir) {
   return entries;
 }
 
+BackupResult validateEncryptionOptions(const BackupOptions &options) {
+  if (!options.encryption.has_value()) {
+    return {true, {}};
+  }
+
+  const auto &encryption = *options.encryption;
+  const bool hasPassword = encryption.recovery_password.has_value();
+  const bool hasEnvelope = encryption.recovery_envelope.has_value();
+  if (!encryption.master_key.has_value() || hasPassword == hasEnvelope) {
+    return {false, "backup encryption requires a master key and exactly one recovery method"};
+  }
+  if (hasEnvelope && !validate_recovery_envelope(*encryption.recovery_envelope).ok) {
+    return {false, "backup encryption recovery envelope is invalid"};
+  }
+  return {true, {}};
+}
+
 } // namespace
 
 BackupResult BackupService::create_backup(const database::Database &db,
                                           const std::string &destination_path,
                                           const BackupOptions &options) {
   try {
-    if (options.encryption.has_value()) {
-      const auto &encryption = *options.encryption;
-      const bool hasPassword = encryption.recovery_password.has_value();
-      const bool hasEnvelope = encryption.recovery_envelope.has_value();
-      if (!encryption.master_key.has_value() || hasPassword == hasEnvelope) {
-        return {false, "backup encryption requires a master key and exactly one recovery method"};
-      }
-      if (hasEnvelope && !validate_recovery_envelope(*encryption.recovery_envelope).ok) {
-        return {false, "backup encryption recovery envelope is invalid"};
-      }
+    const auto encryptionValidation = validateEncryptionOptions(options);
+    if (!encryptionValidation.ok) {
+      return encryptionValidation;
     }
 
     const auto uuid =

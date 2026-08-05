@@ -80,10 +80,18 @@ pcm::backup::MasterKey fixedMasterKey() {
   return key;
 }
 
+std::string testRecoveryPhrase() {
+  return std::string(24, 'r');
+}
+
+std::string otherRecoveryPhrase() {
+  return std::string(24, 'x');
+}
+
 pcm::backup::RecoveryEnvelope recoveryEnvelope() {
   pcm::backup::RecoveryEnvelope envelope;
   const auto result = pcm::backup::create_recovery_envelope(
-      "correct horse battery staple", fixedMasterKey(), &envelope);
+      testRecoveryPhrase(), fixedMasterKey(), &envelope);
   if (!result.ok) {
     throw std::runtime_error(result.error);
   }
@@ -294,12 +302,12 @@ TEST(EncryptedContainerTest, RoundTripsZipWithRecoveryPassword) {
   const auto key = fixedMasterKey();
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   EXPECT_EQ(pcm::backup::detect_backup_container(encrypted),
             pcm::backup::BackupContainerKind::Encrypted);
   ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                "correct horse battery staple")
+                                                testRecoveryPhrase())
                   .ok);
   EXPECT_EQ(readFile(restored), readFile(plain));
 
@@ -326,10 +334,10 @@ TEST(EncryptedContainerTest, ReusesRecoveryEnvelopeAcrossIndependentBackups) {
                                                 fixedMasterKey())
                   .ok);
   ASSERT_TRUE(pcm::backup::decrypt_backup_file(firstEncrypted, firstRestored,
-                                                "correct horse battery staple")
+                                                testRecoveryPhrase())
                   .ok);
   ASSERT_TRUE(pcm::backup::decrypt_backup_file(secondEncrypted, secondRestored,
-                                                "correct horse battery staple")
+                                                testRecoveryPhrase())
                   .ok);
   EXPECT_EQ(readFile(firstRestored), readFile(firstPlain));
   EXPECT_EQ(readFile(secondRestored), readFile(secondPlain));
@@ -364,10 +372,10 @@ TEST(EncryptedContainerTest, RejectsWrongPasswordWithoutWritingPlaintext) {
   removeIfExists(restored);
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                 "wrong recovery password")
+                                                 otherRecoveryPhrase())
                    .ok);
   EXPECT_FALSE(Poco::File(restored).exists());
 
@@ -383,7 +391,7 @@ TEST(EncryptedContainerTest, RejectsCiphertextTampering) {
   removeIfExists(restored);
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   std::fstream ciphertext(encrypted, std::ios::binary | std::ios::in | std::ios::out);
   ASSERT_TRUE(ciphertext);
@@ -396,7 +404,7 @@ TEST(EncryptedContainerTest, RejectsCiphertextTampering) {
   ciphertext.close();
 
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                 "correct horse battery staple")
+                                                 testRecoveryPhrase())
                    .ok);
   EXPECT_FALSE(Poco::File(restored).exists());
 
@@ -424,7 +432,7 @@ TEST(EncryptedContainerTest, PreservesExistingOutputWhenPublishingFails) {
   output.createDirectory();
 
   EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, outputDirectory,
-                                                 "correct horse battery staple", key)
+                                                 testRecoveryPhrase(), key)
                    .ok);
   EXPECT_TRUE(output.exists());
   EXPECT_TRUE(output.isDirectory());
@@ -440,10 +448,10 @@ TEST(EncryptedContainerTest, ReplacesExistingRegularOutputFile) {
   const auto key = fixedMasterKey();
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                "correct horse battery staple")
+                                                testRecoveryPhrase())
                   .ok);
   EXPECT_EQ(readFile(restored), readFile(plain));
 
@@ -459,7 +467,7 @@ TEST(EncryptedContainerTest, RejectsOversizedHeaderWithoutWritingPlaintext) {
   overwriteFile(encrypted, "PCMENC01\x01\x40\x00\x00");
 
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                 "correct horse battery staple")
+                                                 testRecoveryPhrase())
                    .ok);
   EXPECT_FALSE(Poco::File(restored).exists());
 
@@ -474,7 +482,7 @@ TEST(EncryptedContainerTest, RejectsUnsupportedVersionWithoutWritingPlaintext) {
   removeIfExists(restored);
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   auto contents = readFile(encrypted);
   const auto version = contents.find("\"container_version\":2");
@@ -483,7 +491,7 @@ TEST(EncryptedContainerTest, RejectsUnsupportedVersionWithoutWritingPlaintext) {
   overwriteFile(encrypted, contents);
 
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                 "correct horse battery staple")
+                                                 testRecoveryPhrase())
                    .ok);
   EXPECT_FALSE(Poco::File(restored).exists());
 
@@ -499,7 +507,7 @@ TEST(EncryptedContainerTest, RejectsTruncatedFinalRecordWithoutWritingPlaintext)
   removeIfExists(restored);
 
   ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
-                                                "correct horse battery staple", key)
+                                                testRecoveryPhrase(), key)
                   .ok);
   auto contents = readFile(encrypted);
   ASSERT_FALSE(contents.empty());
@@ -507,7 +515,7 @@ TEST(EncryptedContainerTest, RejectsTruncatedFinalRecordWithoutWritingPlaintext)
   overwriteFile(encrypted, contents);
 
   EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
-                                                 "correct horse battery staple")
+                                                 testRecoveryPhrase())
                    .ok);
   EXPECT_FALSE(Poco::File(restored).exists());
 
@@ -695,7 +703,7 @@ TEST(BackupServiceTest, EncryptedBackupHidesZipAndValidatesAfterDecryption) {
   pcm::backup::BackupOptions options;
   options.encryption = pcm::backup::BackupEncryptionOptions{
       .master_key = fixedMasterKey(),
-      .recovery_password = "correct horse battery staple"};
+      .recovery_password = testRecoveryPhrase()};
   const auto backupResult =
       pcm::backup::BackupService{}.create_backup(db, backupPath, options);
   ASSERT_TRUE(backupResult.ok) << backupResult.error;
@@ -703,7 +711,7 @@ TEST(BackupServiceTest, EncryptedBackupHidesZipAndValidatesAfterDecryption) {
             pcm::backup::BackupContainerKind::Encrypted);
 
   const auto validation = pcm::backup::BackupValidator{}.validate(
-      backupPath, "correct horse battery staple");
+      backupPath, testRecoveryPhrase());
   EXPECT_TRUE(validation.ok);
   EXPECT_TRUE(validation.errors.empty());
 
@@ -729,7 +737,7 @@ TEST(BackupServiceTest, RequiresExactlyOneEncryptionRecoveryMethod) {
   pcm::backup::BackupOptions ambiguousRecoveryMethod;
   ambiguousRecoveryMethod.encryption = pcm::backup::BackupEncryptionOptions{
       .master_key = fixedMasterKey(),
-      .recovery_password = "correct horse battery staple",
+      .recovery_password = testRecoveryPhrase(),
       .recovery_envelope = recoveryEnvelope(),
   };
   const auto ambiguousResult =
@@ -1105,7 +1113,7 @@ TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
   pcm::backup::BackupOptions backupOptions;
   backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
       .master_key = fixedMasterKey(),
-      .recovery_password = "correct horse battery staple"};
+      .recovery_password = testRecoveryPhrase()};
   ASSERT_TRUE(pcm::backup::BackupService{}
                   .create_backup(sourceDb, backupPath, backupOptions)
                   .ok);
@@ -1117,7 +1125,7 @@ TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
     Poco::File(targetPath).remove(true);
   }
   pcm::backup::RestoreOptions restoreOptions;
-  restoreOptions.recovery_password = "correct horse battery staple";
+  restoreOptions.recovery_password = testRecoveryPhrase();
   const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
       backupPath, targetPath, restoreOptions);
   ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
@@ -1153,10 +1161,10 @@ TEST(RestoreServiceTest, RestoresLegacyV1EncryptedBackupWithRecoveryPassword) {
   removeIfExists(encryptedBackupPath);
   ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, plainBackupPath).ok);
   ASSERT_TRUE(writeLegacyV1EncryptedBackup(
-      plainBackupPath, encryptedBackupPath, "correct horse battery staple", fixedMasterKey()));
+      plainBackupPath, encryptedBackupPath, testRecoveryPhrase(), fixedMasterKey()));
 
   const auto validation = pcm::backup::BackupValidator{}.validate(
-      encryptedBackupPath, "correct horse battery staple");
+      encryptedBackupPath, testRecoveryPhrase());
   ASSERT_TRUE(validation.ok);
 
   const auto targetPath = Poco::Path(Poco::Path::current())
@@ -1166,7 +1174,7 @@ TEST(RestoreServiceTest, RestoresLegacyV1EncryptedBackupWithRecoveryPassword) {
     Poco::File(targetPath).remove(true);
   }
   pcm::backup::RestoreOptions restoreOptions;
-  restoreOptions.recovery_password = "correct horse battery staple";
+  restoreOptions.recovery_password = testRecoveryPhrase();
   const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
       encryptedBackupPath, targetPath, restoreOptions);
   ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
@@ -1200,7 +1208,7 @@ TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
   pcm::backup::BackupOptions backupOptions;
   backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
       .master_key = fixedMasterKey(),
-      .recovery_password = "correct horse battery staple"};
+      .recovery_password = testRecoveryPhrase()};
   ASSERT_TRUE(pcm::backup::BackupService{}
                   .create_backup(sourceDb, backupPath, backupOptions)
                   .ok);
@@ -1216,7 +1224,7 @@ TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
   }
 
   pcm::backup::RestoreOptions restoreOptions;
-  restoreOptions.recovery_password = "wrong recovery password";
+  restoreOptions.recovery_password = otherRecoveryPhrase();
   const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
       backupPath, targetPath, restoreOptions);
   EXPECT_FALSE(restoreResult.ok);
@@ -1265,7 +1273,7 @@ TEST(RestoreServiceTest,
   backupOptions.attachments_root = sourceAttachments;
   backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
       .master_key = fixedMasterKey(),
-      .recovery_password = "correct horse battery staple"};
+      .recovery_password = testRecoveryPhrase()};
   ASSERT_TRUE(pcm::backup::BackupService{}
                   .create_backup(sourceDb, backupPath, backupOptions)
                   .ok);
@@ -1302,7 +1310,7 @@ TEST(RestoreServiceTest,
 
   pcm::backup::RestoreOptions restoreOptions;
   restoreOptions.attachments_root = targetAttachments;
-  restoreOptions.recovery_password = "correct horse battery staple";
+  restoreOptions.recovery_password = testRecoveryPhrase();
   const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
       backupPath, targetPath, restoreOptions);
   EXPECT_FALSE(restoreResult.ok);
@@ -1873,7 +1881,7 @@ TEST(AutoBackupDueTest, EncryptedAutoBackupUsesStoredEnvelopeWithoutSessionPassw
   ASSERT_EQ(entries.size(), 1);
   EXPECT_TRUE(pcm::backup::BackupValidator{}
                   .validate(backupDirectory.filePath(entries.front()).toStdString(),
-                            "correct horse battery staple")
+                            testRecoveryPhrase())
                   .ok);
   Poco::File(destination).remove(true);
   Poco::File(Poco::Path(Poco::Path::current())
