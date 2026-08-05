@@ -38,6 +38,7 @@
 #include "restore_service.h"
 #include "app_settings.h"
 #include "app_lock_service.h"
+#include "app_lock_controller.h"
 
 namespace {
 
@@ -128,6 +129,13 @@ TEST(AppLockServiceTest, VerifiesConfiguredPinAndRejectsDifferentPin) {
   EXPECT_TRUE(service.verify("123456"));
   EXPECT_FALSE(service.verify("654321"));
   EXPECT_TRUE(service.isConfigured());
+}
+
+TEST(AppLockControllerTest, LocksAfterConfiguredIdleTimeout) {
+  pcm::AppLockController controller{1};
+  controller.recordActivity(0);
+  EXPECT_FALSE(controller.shouldLock(59'999));
+  EXPECT_TRUE(controller.shouldLock(60'000));
 }
 
 struct LegacyHeaderForWrapFixture {

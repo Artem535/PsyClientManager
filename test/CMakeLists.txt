@@ -72,6 +72,7 @@ add_executable(PsyClientManager_backup_tests
     ../src/app/backup_encryption_policy.cpp
     ../src/app/credential_store.cpp
     ../src/app/app_lock_service.cpp
+    ../src/app/app_lock_controller.cpp
 )
 target_link_libraries(PsyClientManager_backup_tests PRIVATE
     GTest::gtest

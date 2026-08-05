@@ -18,6 +18,7 @@ qt_add_library(${TARGET_NAME} STATIC
         backup_encryption_policy.cpp
         credential_store.cpp
         app_lock_service.cpp
+        app_lock_controller.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE
