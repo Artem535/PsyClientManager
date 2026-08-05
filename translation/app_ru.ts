@@ -1453,8 +1453,80 @@ See you!</source>
         <translation>За сколько минут до сеанса нужно показать напоминание.</translation>
     </message>
     <message>
+        <source>Privacy</source>
+        <translation>Конфиденциальность</translation>
+    </message>
+    <message>
+        <source>Change PIN or password</source>
+        <translation>Изменить PIN-код или пароль</translation>
+    </message>
+    <message>
+        <source> sec</source>
+        <translation> сек.</translation>
+    </message>
+    <message>
+        <source>Lock application</source>
+        <translation>Блокировка приложения</translation>
+    </message>
+    <message>
+        <source>Require a PIN or password after inactivity or from the system tray.</source>
+        <translation>Запрашивать PIN-код или пароль после бездействия или при блокировке из системного трея.</translation>
+    </message>
+    <message>
+        <source>Lock after</source>
+        <translation>Блокировать через</translation>
+    </message>
+    <message>
+        <source>Time without keyboard or mouse activity.</source>
+        <translation>Время без активности клавиатуры или мыши.</translation>
+    </message>
+    <message>
+        <source>Clear copied meeting details</source>
+        <translation>Очищать скопированные данные встречи</translation>
+    </message>
+    <message>
+        <source>Clear meeting links and invitations copied by the application.</source>
+        <translation>Очищать ссылки и приглашения на встречу, скопированные приложением.</translation>
+    </message>
+    <message>
+        <source>Clear after</source>
+        <translation>Очищать через</translation>
+    </message>
+    <message>
+        <source>Delay before copied meeting details are removed.</source>
+        <translation>Задержка перед удалением скопированных данных встречи.</translation>
+    </message>
+    <message>
         <source>Timeline colors</source>
         <translation>Цвета таймлайна</translation>
+    </message>
+    <message>
+        <source>Set application lock</source>
+        <translation>Настроить блокировку приложения</translation>
+    </message>
+    <message>
+        <source>Enter a PIN of at least 6 digits or a password of at least 12 characters.</source>
+        <translation>Введите PIN-код не менее чем из 6 цифр или пароль не менее чем из 12 символов.</translation>
+    </message>
+    <message>
+        <source>Confirm application lock</source>
+        <translation>Подтвердите блокировку приложения</translation>
+    </message>
+    <message>
+        <source>Enter the same PIN or password again.</source>
+        <translation>Введите тот же PIN-код или пароль ещё раз.</translation>
+    </message>
+    <message>
+        <source>Application lock</source>
+        <translation>Блокировка приложения</translation>
+    </message>
+    <message>
+        <source>The PIN or password entries do not match.</source>
+        <translation>PIN-код или пароль не совпадают.</translation>
+    </message>
+    <message>
+        <source>Use a PIN of at least 6 digits or a password of at least 12 characters.</source>
+        <translation>Используйте PIN-код не менее чем из 6 цифр или пароль не менее чем из 12 символов.</translation>
     </message>
     <message>
         <source>Create Backup</source>
@@ -1638,6 +1710,29 @@ See you!</source>
     </message>
 </context>
 <context>
+    <name>pcm::AppLockDialog</name>
+    <message>
+        <source>Unlock PsyClientManager</source>
+        <translation>Разблокировать PsyClientManager</translation>
+    </message>
+    <message>
+        <source>Application is locked</source>
+        <translation>Приложение заблокировано</translation>
+    </message>
+    <message>
+        <source>Enter your PIN or password to continue.</source>
+        <translation>Введите PIN-код или пароль, чтобы продолжить.</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Разблокировать</translation>
+    </message>
+    <message>
+        <source>Incorrect PIN or password.</source>
+        <translation>Неверный PIN-код или пароль.</translation>
+    </message>
+</context>
+<context>
     <name>pcm::Application</name>
     <message>
         <source>Encrypted Backup</source>
@@ -1708,6 +1803,10 @@ Your previous data was kept.</source>
     <message>
         <source>Open</source>
         <translation>Открыть</translation>
+    </message>
+    <message>
+        <source>Lock app</source>
+        <translation>Заблокировать приложение</translation>
     </message>
     <message>
         <source>Quit</source>
