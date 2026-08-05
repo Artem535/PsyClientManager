@@ -38,17 +38,14 @@ set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
 set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
 set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
 set(LIBSECRET_SUPPORT ON CACHE BOOL "" FORCE)
-# QtKeychain is linked into PsyClientManager but is not part of its installable
-# product. Its Fedora runtime package is declared in the RPM requirements.
-set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_Declare(
   qtkeychain
   URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.14.3.tar.gz
   URL_HASH SHA512=d1d87553db94bf54da1373016a847476e6cd608db6d427ed72532658e2272501daf45d7c9976efdde2f26ab3810ba9dbfec2518d46dee5a76ecaa369bfee2e4a
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(qtkeychain)
-set(CMAKE_SKIP_INSTALL_RULES OFF)
 
 set(QLEMENTINE_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/apply_qlementine_patch.cmake")
 execute_process(
@@ -81,9 +78,9 @@ add_custom_target(apply_qlementine_patch
 
 set(QLEMENTINE_SANDBOX OFF CACHE BOOL "" FORCE)
 set(QLEMENTINE_SHOWCASE OFF CACHE BOOL "" FORCE)
-set(CMAKE_SKIP_INSTALL_RULES ON)
-add_subdirectory(third_party/qlementine)
-set(CMAKE_SKIP_INSTALL_RULES OFF)
+# These are build dependencies. Their own runtime packages satisfy the RPM;
+# their headers, CMake metadata, and libraries must not be installed with us.
+add_subdirectory(third_party/qlementine EXCLUDE_FROM_ALL)
 
 qt_add_library(qcustomplot STATIC
     third_party/qcustomplot/qcustomplot.cpp
