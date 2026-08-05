@@ -335,7 +335,17 @@ jobs:
         run: |
           cpack --config build-release/CPackConfig.cmake --generator RPM --verbose
           rpm -qip build-release/packages/*.rpm
+          rpm -qp --requires build-release/packages/*.rpm
           rpm -qlp build-release/packages/*.rpm
+          if rpm -qlp build-release/packages/*.rpm | grep -E '^/usr/(lib|lib64)/|/plugins/'; then
+            echo "::error::RPM must not bundle runtime libraries or Qt plugins"
+            exit 1
+          fi
+          rpm -qp --requires build-release/packages/*.rpm | grep -Fx 'qt6-qtbase >= 6.8'
+          rpm -qp --requires build-release/packages/*.rpm | grep -Fx 'qt6-qtbase-gui'
+          rpm -qp --requires build-release/packages/*.rpm | grep -Fx 'qt6-qtsvg'
+          rpm -qp --requires build-release/packages/*.rpm | grep -Fx 'qt6-qtwayland'
+          rpm -qp --requires build-release/packages/*.rpm | grep -Fx 'qtkeychain-qt6'
 
       - name: Upload Linux package
         if: runner.os == 'Linux'

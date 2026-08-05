@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.28 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.29 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)
@@ -179,12 +179,16 @@ if(UNIX AND NOT APPLE)
   )
 endif()
 
-qt_generate_deploy_app_script(
-    TARGET PsyClientManager
-    OUTPUT_SCRIPT deploy_runtime_dependencies_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_runtime_dependencies_script})
+# Portable runtimes bundle their dependencies separately. Linux RPM packages must
+# rely on the distribution packages declared below instead of embedding Qt.
+if(NOT (UNIX AND NOT APPLE))
+  qt_generate_deploy_app_script(
+      TARGET PsyClientManager
+      OUTPUT_SCRIPT deploy_runtime_dependencies_script
+      NO_UNSUPPORTED_PLATFORM_ERROR
+  )
+  install(SCRIPT ${deploy_runtime_dependencies_script})
+endif()
 
 set(CPACK_PACKAGE_NAME "PsyClientManager")
 set(CPACK_PACKAGE_VENDOR "PsyClientManager")
@@ -205,6 +209,8 @@ elseif(UNIX AND NOT APPLE)
   set(CPACK_RPM_PACKAGE_URL "https://github.com/Artem535/PsyClientManager")
   set(CPACK_RPM_PACKAGE_DESCRIPTION
       "Local-first desktop workspace for calendar scheduling, client management, and session tracking.")
+  set(CPACK_RPM_PACKAGE_REQUIRES
+      "qt6-qtbase >= 6.8, qt6-qtbase-gui, qt6-qtsvg, qt6-qtwayland, qtkeychain-qt6")
 endif()
 
 include(CPack)

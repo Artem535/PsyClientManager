@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.29] - 2026-08-05
+
+### Changed
+
+- Linux RPM packages now use Fedora runtime dependencies through DNF instead
+  of bundling Qt, QtKeychain, and platform plugins inside the RPM.
+
 ## [0.1.28] - 2026-08-05
 
 ### Added
