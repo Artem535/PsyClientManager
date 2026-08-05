@@ -118,7 +118,7 @@ jobs:
       - name: Export Qt environment (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install autoconf automake
+          brew install autoconf automake libtool
           echo "Qt6_DIR=${QT_ROOT_DIR}/lib/cmake/Qt6" >> "$GITHUB_ENV"
           echo "CMAKE_PREFIX_PATH=${QT_ROOT_DIR}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
           echo "${QT_ROOT_DIR}/bin" >> "$GITHUB_PATH"
