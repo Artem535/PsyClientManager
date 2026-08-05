@@ -1452,8 +1452,80 @@ See you!</translation>
         <translation>How many minutes before the session the reminder should appear.</translation>
     </message>
     <message>
+        <source>Privacy</source>
+        <translation>Privacy</translation>
+    </message>
+    <message>
+        <source>Change PIN or password</source>
+        <translation>Change PIN or password</translation>
+    </message>
+    <message>
+        <source> sec</source>
+        <translation> sec</translation>
+    </message>
+    <message>
+        <source>Lock application</source>
+        <translation>Lock application</translation>
+    </message>
+    <message>
+        <source>Require a PIN or password after inactivity or from the system tray.</source>
+        <translation>Require a PIN or password after inactivity or from the system tray.</translation>
+    </message>
+    <message>
+        <source>Lock after</source>
+        <translation>Lock after</translation>
+    </message>
+    <message>
+        <source>Time without keyboard or mouse activity.</source>
+        <translation>Time without keyboard or mouse activity.</translation>
+    </message>
+    <message>
+        <source>Clear copied meeting details</source>
+        <translation>Clear copied meeting details</translation>
+    </message>
+    <message>
+        <source>Clear meeting links and invitations copied by the application.</source>
+        <translation>Clear meeting links and invitations copied by the application.</translation>
+    </message>
+    <message>
+        <source>Clear after</source>
+        <translation>Clear after</translation>
+    </message>
+    <message>
+        <source>Delay before copied meeting details are removed.</source>
+        <translation>Delay before copied meeting details are removed.</translation>
+    </message>
+    <message>
         <source>Timeline colors</source>
         <translation>Timeline colors</translation>
+    </message>
+    <message>
+        <source>Set application lock</source>
+        <translation>Set application lock</translation>
+    </message>
+    <message>
+        <source>Enter a PIN of at least 6 digits or a password of at least 12 characters.</source>
+        <translation>Enter a PIN of at least 6 digits or a password of at least 12 characters.</translation>
+    </message>
+    <message>
+        <source>Confirm application lock</source>
+        <translation>Confirm application lock</translation>
+    </message>
+    <message>
+        <source>Enter the same PIN or password again.</source>
+        <translation>Enter the same PIN or password again.</translation>
+    </message>
+    <message>
+        <source>Application lock</source>
+        <translation>Application lock</translation>
+    </message>
+    <message>
+        <source>The PIN or password entries do not match.</source>
+        <translation>The PIN or password entries do not match.</translation>
+    </message>
+    <message>
+        <source>Use a PIN of at least 6 digits or a password of at least 12 characters.</source>
+        <translation>Use a PIN of at least 6 digits or a password of at least 12 characters.</translation>
     </message>
     <message>
         <source>Create Backup</source>
@@ -1637,6 +1709,29 @@ See you!</translation>
     </message>
 </context>
 <context>
+    <name>pcm::AppLockDialog</name>
+    <message>
+        <source>Unlock PsyClientManager</source>
+        <translation>Unlock PsyClientManager</translation>
+    </message>
+    <message>
+        <source>Application is locked</source>
+        <translation>Application is locked</translation>
+    </message>
+    <message>
+        <source>Enter your PIN or password to continue.</source>
+        <translation>Enter your PIN or password to continue.</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Unlock</translation>
+    </message>
+    <message>
+        <source>Incorrect PIN or password.</source>
+        <translation>Incorrect PIN or password.</translation>
+    </message>
+</context>
+<context>
     <name>pcm::Application</name>
     <message>
         <source>Encrypted Backup</source>
@@ -1707,6 +1802,10 @@ Your previous data was kept.</translation>
     <message>
         <source>Open</source>
         <translation>Open</translation>
+    </message>
+    <message>
+        <source>Lock app</source>
+        <translation>Lock app</translation>
     </message>
     <message>
         <source>Quit</source>

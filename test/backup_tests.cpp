@@ -37,6 +37,8 @@
 #include "encrypted_container.h"
 #include "restore_service.h"
 #include "app_settings.h"
+#include "app_lock_service.h"
+#include "app_lock_controller.h"
 
 namespace {
 
@@ -117,6 +119,38 @@ pcm::backup::RecoveryEnvelope recoveryEnvelope() {
 constexpr std::string_view kLegacyContainerMagic = "PCMENC01";
 constexpr std::uint32_t kLegacyContainerVersion = 1;
 constexpr std::uint32_t kLegacyChunkSize = 64 * 1024;
+
+TEST(AppLockServiceTest, VerifiesConfiguredPinAndRejectsDifferentPin) {
+  QSettings settings{"PsyClientManagerTest", "AppLockServiceTest"};
+  settings.clear();
+  pcm::AppLockService service{&settings};
+
+  ASSERT_TRUE(service.configure("123456"));
+  EXPECT_TRUE(service.verify("123456"));
+  EXPECT_FALSE(service.verify("654321"));
+  EXPECT_TRUE(service.isConfigured());
+}
+
+TEST(AppLockControllerTest, LocksAfterConfiguredIdleTimeout) {
+  pcm::AppLockController controller{1};
+  controller.recordActivity(0);
+  EXPECT_FALSE(controller.shouldLock(59'999));
+  EXPECT_TRUE(controller.shouldLock(60'000));
+}
+
+TEST(AppLockControllerTest, KeepsManualLockUntilExplicitUnlock) {
+  pcm::AppLockController controller{0};
+  controller.recordActivity(0);
+  controller.lockNow();
+
+  EXPECT_TRUE(controller.isLocked());
+  controller.recordActivity(10);
+  EXPECT_TRUE(controller.isLocked());
+
+  controller.unlock(20);
+  EXPECT_FALSE(controller.isLocked());
+  EXPECT_FALSE(controller.shouldLock(20));
+}
 
 struct LegacyHeaderForWrapFixture {
   std::uint32_t container_version = kLegacyContainerVersion;

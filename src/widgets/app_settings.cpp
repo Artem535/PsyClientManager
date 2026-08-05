@@ -13,6 +13,10 @@ constexpr auto kPreventEventOverlapsKey = "event/preventOverlaps";
 constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
 constexpr auto kNotificationsEnabledKey = "notification/enabled";
 constexpr auto kNotificationLeadMinutesKey = "notification/leadMinutes";
+constexpr auto kAppLockTimeoutMinutesKey = "privacy/appLockTimeoutMinutes";
+constexpr auto kClearSensitiveClipboardKey = "privacy/clearSensitiveClipboard";
+constexpr auto kSensitiveClipboardClearDelaySecondsKey =
+    "privacy/sensitiveClipboardClearDelaySeconds";
 constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
 constexpr auto kPersonalEventColorKey = "timeline/personalEventColor";
@@ -71,6 +75,9 @@ int defaultBufferAfterMinutesValue() { return 0; }
 int defaultNotificationLeadMinutesValue() {
   return 30;
 }
+
+int defaultAppLockTimeoutMinutesValue() { return 10; }
+int defaultSensitiveClipboardClearDelaySecondsValue() { return 60; }
 
 QString defaultMeetingInviteTemplateValue() {
   return QObject::tr("Hello, {client_name}!\n\n"
@@ -147,6 +154,38 @@ int notificationLeadMinutes() {
 void setNotificationLeadMinutes(const int minutes) {
   QSettings settings;
   settings.setValue(kNotificationLeadMinutesKey, minutes);
+}
+
+int appLockTimeoutMinutes() {
+  QSettings settings;
+  return settings.value(kAppLockTimeoutMinutesKey,
+                        defaultAppLockTimeoutMinutesValue()).toInt();
+}
+
+void setAppLockTimeoutMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kAppLockTimeoutMinutesKey, minutes);
+}
+
+bool clearSensitiveClipboard() {
+  QSettings settings;
+  return settings.value(kClearSensitiveClipboardKey, true).toBool();
+}
+
+void setClearSensitiveClipboard(const bool enabled) {
+  QSettings settings;
+  settings.setValue(kClearSensitiveClipboardKey, enabled);
+}
+
+int sensitiveClipboardClearDelaySeconds() {
+  QSettings settings;
+  return settings.value(kSensitiveClipboardClearDelaySecondsKey,
+                        defaultSensitiveClipboardClearDelaySecondsValue()).toInt();
+}
+
+void setSensitiveClipboardClearDelaySeconds(const int seconds) {
+  QSettings settings;
+  settings.setValue(kSensitiveClipboardClearDelaySecondsKey, seconds);
 }
 
 QString languageCode() {

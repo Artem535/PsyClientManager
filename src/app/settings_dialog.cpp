@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStandardPaths>
@@ -172,6 +173,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<pcm::database::Database> db,
                                QWidget *parent)
     : QDialog(parent), mDb(std::move(db)) {
   mCredentialStore = new pcm::backup::QtKeychainCredentialStore(this);
+  mAppLockService = std::make_unique<pcm::AppLockService>();
   setupUi();
   loadSettings();
   connectSignals();
@@ -381,6 +383,36 @@ void SettingsDialog::setupUi() {
                      tr("How many minutes before the session the reminder should appear."),
                      mNotificationLeadMinutesSpinBox, notificationsBox));
   generalSettingsLayout->addWidget(notificationsBox);
+
+  auto *privacyBox = new QGroupBox(tr("Privacy"), generalPage);
+  auto *privacyLayout = new QVBoxLayout(privacyBox);
+  privacyLayout->setContentsMargins(16, 16, 16, 16);
+  privacyLayout->setSpacing(14);
+  mAppLockEnabledSwitch = new oclero::qlementine::Switch(privacyBox);
+  mAppLockTimeoutSpinBox = new QSpinBox(privacyBox);
+  mAppLockTimeoutSpinBox->setRange(1, 24 * 60);
+  mAppLockTimeoutSpinBox->setSuffix(tr(" min"));
+  mChangeAppLockCredentialButton = new QPushButton(tr("Change PIN or password"), privacyBox);
+  mClearSensitiveClipboardSwitch = new oclero::qlementine::Switch(privacyBox);
+  mSensitiveClipboardDelaySpinBox = new QSpinBox(privacyBox);
+  mSensitiveClipboardDelaySpinBox->setRange(5, 10 * 60);
+  mSensitiveClipboardDelaySpinBox->setSuffix(tr(" sec"));
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Lock application"),
+      tr("Require a PIN or password after inactivity or from the system tray."),
+      mAppLockEnabledSwitch, privacyBox));
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Lock after"), tr("Time without keyboard or mouse activity."),
+      mAppLockTimeoutSpinBox, privacyBox));
+  privacyLayout->addWidget(mChangeAppLockCredentialButton, 0, Qt::AlignRight);
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Clear copied meeting details"),
+      tr("Clear meeting links and invitations copied by the application."),
+      mClearSensitiveClipboardSwitch, privacyBox));
+  privacyLayout->addWidget(makeSettingRow(
+      tr("Clear after"), tr("Delay before copied meeting details are removed."),
+      mSensitiveClipboardDelaySpinBox, privacyBox));
+  generalSettingsLayout->addWidget(privacyBox);
   generalSettingsLayout->addStretch();
 
   auto *eventsBox = new QGroupBox(tr("Timeline colors"), eventsPage);
@@ -496,6 +528,17 @@ void SettingsDialog::loadSettings() const {
       pcm::app_settings::notificationLeadMinutes());
   mNotificationLeadMinutesSpinBox->setEnabled(
       mNotificationsEnabledSwitch->isChecked());
+  const bool appLockEnabled = mAppLockService->isConfigured();
+  mAppLockEnabledSwitch->setChecked(appLockEnabled);
+  mAppLockTimeoutSpinBox->setValue(pcm::app_settings::appLockTimeoutMinutes());
+  mAppLockTimeoutSpinBox->setEnabled(appLockEnabled);
+  mChangeAppLockCredentialButton->setEnabled(appLockEnabled);
+  mClearSensitiveClipboardSwitch->setChecked(
+      pcm::app_settings::clearSensitiveClipboard());
+  mSensitiveClipboardDelaySpinBox->setValue(
+      pcm::app_settings::sensitiveClipboardClearDelaySeconds());
+  mSensitiveClipboardDelaySpinBox->setEnabled(
+      mClearSensitiveClipboardSwitch->isChecked());
   mAutoBackupEnabledSwitch->setChecked(pcm::app_settings::autoBackupEnabled());
   mAutoBackupIntervalSpinBox->setValue(pcm::app_settings::autoBackupIntervalDays());
   mAutoBackupKeepCountSpinBox->setValue(pcm::app_settings::autoBackupKeepCount());
@@ -526,7 +569,7 @@ void SettingsDialog::loadSettings() const {
       pcm::app_settings::meetingInviteTemplate());
 }
 
-void SettingsDialog::connectSignals() const {
+void SettingsDialog::connectSignals() {
   connect(mButtonBox, &QDialogButtonBox::rejected, this, &QDialog::accept);
   connect(mSettingsSections, &oclero::qlementine::SegmentedControl::currentIndexChanged,
           this, [this]() {
@@ -562,6 +605,34 @@ void SettingsDialog::connectSignals() const {
   connect(mNotificationLeadMinutesSpinBox, &QSpinBox::valueChanged, this,
           [](const int minutes) {
             pcm::app_settings::setNotificationLeadMinutes(minutes);
+          });
+  connect(mAppLockEnabledSwitch, &QAbstractButton::toggled, this,
+          [this](const bool enabled) {
+            if (enabled && !mAppLockService->isConfigured()) {
+              configureAppLock();
+              const QSignalBlocker blocker(mAppLockEnabledSwitch);
+              mAppLockEnabledSwitch->setChecked(mAppLockService->isConfigured());
+            } else if (!enabled && mAppLockService->isConfigured()) {
+              mAppLockService->disable();
+            }
+            const bool configured = mAppLockService->isConfigured();
+            mAppLockTimeoutSpinBox->setEnabled(configured);
+            mChangeAppLockCredentialButton->setEnabled(configured);
+          });
+  connect(mAppLockTimeoutSpinBox, &QSpinBox::valueChanged, this,
+          [](const int minutes) {
+            pcm::app_settings::setAppLockTimeoutMinutes(minutes);
+          });
+  connect(mChangeAppLockCredentialButton, &QPushButton::clicked, this,
+          [this]() { configureAppLock(); });
+  connect(mClearSensitiveClipboardSwitch, &QAbstractButton::toggled, this,
+          [this](const bool enabled) {
+            pcm::app_settings::setClearSensitiveClipboard(enabled);
+            mSensitiveClipboardDelaySpinBox->setEnabled(enabled);
+          });
+  connect(mSensitiveClipboardDelaySpinBox, &QSpinBox::valueChanged, this,
+          [](const int seconds) {
+            pcm::app_settings::setSensitiveClipboardClearDelaySeconds(seconds);
           });
   connect(mAutoBackupEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool checked) {
@@ -625,6 +696,38 @@ void SettingsDialog::connectSignals() const {
     pcm::app_settings::setMeetingInviteTemplate(
         mMeetingInviteTemplateEdit->toPlainText());
   });
+}
+
+void SettingsDialog::configureAppLock() {
+  bool accepted = false;
+  QString credential = QInputDialog::getText(
+      this, tr("Set application lock"),
+      tr("Enter a PIN of at least 6 digits or a password of at least 12 characters."),
+      QLineEdit::Password, {}, &accepted);
+  if (!accepted) {
+    return;
+  }
+  auto confirmation = QInputDialog::getText(
+      this, tr("Confirm application lock"), tr("Enter the same PIN or password again."),
+      QLineEdit::Password, {}, &accepted);
+  if (!accepted || credential != confirmation) {
+    QMessageBox::warning(this, tr("Application lock"),
+                         tr("The PIN or password entries do not match."));
+    credential.fill(QChar{});
+    confirmation.fill(QChar{});
+    return;
+  }
+  auto credentialBytes = credential.toUtf8();
+  const bool configured = mAppLockService->configure(
+      std::string_view{credentialBytes.constData(),
+                       static_cast<std::size_t>(credentialBytes.size())});
+  credentialBytes.fill('\0');
+  credential.fill(QChar{});
+  confirmation.fill(QChar{});
+  if (!configured) {
+    QMessageBox::warning(this, tr("Application lock"),
+                         tr("Use a PIN of at least 6 digits or a password of at least 12 characters."));
+  }
 }
 
 void SettingsDialog::openDatabaseFolder() const {

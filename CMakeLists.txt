@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.27 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.28 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)

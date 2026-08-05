@@ -1,9 +1,8 @@
 #include "meeting_utils.h"
 
 #include "app_settings.h"
+#include "sensitive_clipboard.h"
 
-#include <QApplication>
-#include <QClipboard>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QLocale>
@@ -38,9 +37,7 @@ void openMeetingUrl(const QString &url, QWidget *parent) {
 }
 
 void copyMeetingUrl(const QString &url) {
-  if (auto *clipboard = QApplication::clipboard()) {
-    clipboard->setText(url.trimmed());
-  }
+  pcm::clipboard::copySensitiveText(url.trimmed());
 }
 
 QString buildMeetingInviteText(const QString &meetingUrl, const QString &clientName,
@@ -60,10 +57,8 @@ QString buildMeetingInviteText(const QString &meetingUrl, const QString &clientN
 
 void copyMeetingInvite(const QString &meetingUrl, const QString &clientName,
                        const qint64 startDateTimeUtcMs) {
-  if (auto *clipboard = QApplication::clipboard()) {
-    clipboard->setText(buildMeetingInviteText(meetingUrl, clientName,
-                                              startDateTimeUtcMs));
-  }
+  pcm::clipboard::copySensitiveText(
+      buildMeetingInviteText(meetingUrl, clientName, startDateTimeUtcMs));
 }
 
 } // namespace pcm::meeting

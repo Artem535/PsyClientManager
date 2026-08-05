@@ -10,11 +10,15 @@
 #include <memory>
 
 #include "auto_backup_scheduler.h"
+#include "app_lock_controller.h"
+#include "app_lock_service.h"
 #include "config.h"
 #include "database.h"
 #include "main_window.h"
 #include "qclient_model.h"
 #include "event_info.h"
+
+class QAction;
 
 namespace pcm {
 
@@ -40,6 +44,9 @@ private:
   QString notificationTitleForEvent(const DuckEvent &event) const;
   QString notificationBodyForEvent(const DuckEvent &event) const;
   void initializeNotifications();
+  void initializeAppLock();
+  void checkAppLock();
+  void lockApplication();
   void notifyUpcomingSeriesOccurrences(int64_t nowMs, int64_t windowEndMs);
   void restorePendingBackup();
 
@@ -47,7 +54,12 @@ private:
   std::shared_ptr<database::Database> mDb;
   std::shared_ptr<QClientModel> mClientModel;
   std::unique_ptr<QSystemTrayIcon> mTrayIcon;
+  QAction *mLockAppAction = nullptr;
   QTimer mNotificationTimer;
+  QTimer mAppLockTimer;
+  std::unique_ptr<AppLockService> mAppLockService;
+  std::unique_ptr<AppLockController> mAppLockController;
+  bool mAppLockDialogVisible = false;
   std::unique_ptr<pcm::backup::AutoBackupScheduler> mAutoBackupScheduler;
   bool mIsQuitting = false;
   bool mTrayCloseHintShown = false;

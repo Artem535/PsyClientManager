@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(TARGET_NAME ${PROJECT_NAME}_app)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(unofficial-sodium CONFIG REQUIRED)
 
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
@@ -16,6 +17,9 @@ qt_add_library(${TARGET_NAME} STATIC
         auto_backup_scheduler.cpp
         backup_encryption_policy.cpp
         credential_store.cpp
+        app_lock_service.cpp
+        app_lock_controller.cpp
+        app_lock_dialog.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE
@@ -56,6 +60,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         qlementine
         Qt6::Widgets
         qt6keychain
+        unofficial-sodium::sodium
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE
