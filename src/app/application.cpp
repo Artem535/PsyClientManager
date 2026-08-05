@@ -13,6 +13,7 @@
 #include <QStringList>
 #include <QTimeZone>
 #include <QTranslator>
+#include <QWidget>
 #include <QIcon>
 #include <QInputDialog>
 #include <QLineEdit>
@@ -197,6 +198,11 @@ void Application::restorePendingBackup() {
 }
 
 bool Application::eventFilter(QObject *watched, QEvent *event) {
+  if (watched == mMainWindow.get() && event != nullptr &&
+      event->type() == QEvent::Resize && mAppLockOverlay != nullptr) {
+    mAppLockOverlay->setGeometry(mMainWindow->rect());
+  }
+
   if (watched == mMainWindow.get() && event != nullptr &&
       event->type() == QEvent::Close && !mIsQuitting) {
     if (mTrayIcon) {
@@ -395,10 +401,22 @@ void Application::lockApplication() {
   }
   mAppLockController->lockNow();
   mAppLockDialogVisible = true;
+
+  mAppLockOverlay = new QWidget(mMainWindow.get());
+  mAppLockOverlay->setObjectName(QStringLiteral("appLockOverlay"));
+  mAppLockOverlay->setAttribute(Qt::WA_StyledBackground);
+  mAppLockOverlay->setGeometry(mMainWindow->rect());
+  mAppLockOverlay->setStyleSheet("background-color: #20242e;");
+  mAppLockOverlay->show();
+  mAppLockOverlay->raise();
+  restoreMainWindow();
+
   AppLockDialog dialog{*mAppLockService, mMainWindow.get()};
   if (dialog.exec() == QDialog::Accepted) {
     mAppLockController->unlock(QDateTime::currentMSecsSinceEpoch());
   }
+  delete mAppLockOverlay;
+  mAppLockOverlay = nullptr;
   mAppLockDialogVisible = false;
 }
 
