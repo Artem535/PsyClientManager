@@ -19,6 +19,7 @@
 #include "event_info.h"
 
 class QAction;
+class QWidget;
 
 namespace pcm {
 
@@ -59,6 +60,7 @@ private:
   QTimer mAppLockTimer;
   std::unique_ptr<AppLockService> mAppLockService;
   std::unique_ptr<AppLockController> mAppLockController;
+  QWidget *mAppLockOverlay = nullptr;
   bool mAppLockDialogVisible = false;
   std::unique_ptr<pcm::backup::AutoBackupScheduler> mAutoBackupScheduler;
   bool mIsQuitting = false;
