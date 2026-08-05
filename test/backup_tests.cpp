@@ -37,6 +37,7 @@
 #include "encrypted_container.h"
 #include "restore_service.h"
 #include "app_settings.h"
+#include "app_lock_service.h"
 
 namespace {
 
@@ -117,6 +118,17 @@ pcm::backup::RecoveryEnvelope recoveryEnvelope() {
 constexpr std::string_view kLegacyContainerMagic = "PCMENC01";
 constexpr std::uint32_t kLegacyContainerVersion = 1;
 constexpr std::uint32_t kLegacyChunkSize = 64 * 1024;
+
+TEST(AppLockServiceTest, VerifiesConfiguredPinAndRejectsDifferentPin) {
+  QSettings settings{"PsyClientManagerTest", "AppLockServiceTest"};
+  settings.clear();
+  pcm::AppLockService service{&settings};
+
+  ASSERT_TRUE(service.configure("123456"));
+  EXPECT_TRUE(service.verify("123456"));
+  EXPECT_FALSE(service.verify("654321"));
+  EXPECT_TRUE(service.isConfigured());
+}
 
 struct LegacyHeaderForWrapFixture {
   std::uint32_t container_version = kLegacyContainerVersion;
