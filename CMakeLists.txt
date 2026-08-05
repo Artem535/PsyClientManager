@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.28 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.29 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)
@@ -43,6 +43,7 @@ FetchContent_Declare(
   URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.14.3.tar.gz
   URL_HASH SHA512=d1d87553db94bf54da1373016a847476e6cd608db6d427ed72532658e2272501daf45d7c9976efdde2f26ab3810ba9dbfec2518d46dee5a76ecaa369bfee2e4a
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(qtkeychain)
 
@@ -77,7 +78,9 @@ add_custom_target(apply_qlementine_patch
 
 set(QLEMENTINE_SANDBOX OFF CACHE BOOL "" FORCE)
 set(QLEMENTINE_SHOWCASE OFF CACHE BOOL "" FORCE)
-add_subdirectory(third_party/qlementine)
+# These are build dependencies. Their own runtime packages satisfy the RPM;
+# their headers, CMake metadata, and libraries must not be installed with us.
+add_subdirectory(third_party/qlementine EXCLUDE_FROM_ALL)
 
 qt_add_library(qcustomplot STATIC
     third_party/qcustomplot/qcustomplot.cpp
@@ -179,12 +182,16 @@ if(UNIX AND NOT APPLE)
   )
 endif()
 
-qt_generate_deploy_app_script(
-    TARGET PsyClientManager
-    OUTPUT_SCRIPT deploy_runtime_dependencies_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_runtime_dependencies_script})
+# Portable runtimes bundle their dependencies separately. Linux RPM packages must
+# rely on the distribution packages declared below instead of embedding Qt.
+if(NOT (UNIX AND NOT APPLE))
+  qt_generate_deploy_app_script(
+      TARGET PsyClientManager
+      OUTPUT_SCRIPT deploy_runtime_dependencies_script
+      NO_UNSUPPORTED_PLATFORM_ERROR
+  )
+  install(SCRIPT ${deploy_runtime_dependencies_script})
+endif()
 
 set(CPACK_PACKAGE_NAME "PsyClientManager")
 set(CPACK_PACKAGE_VENDOR "PsyClientManager")
@@ -205,6 +212,8 @@ elseif(UNIX AND NOT APPLE)
   set(CPACK_RPM_PACKAGE_URL "https://github.com/Artem535/PsyClientManager")
   set(CPACK_RPM_PACKAGE_DESCRIPTION
       "Local-first desktop workspace for calendar scheduling, client management, and session tracking.")
+  set(CPACK_RPM_PACKAGE_REQUIRES
+      "qt6-qtbase >= 6.8, qt6-qtbase-gui, qt6-qtsvg, qt6-qtwayland, qtkeychain-qt6")
 endif()
 
 include(CPack)
