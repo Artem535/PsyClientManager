@@ -88,6 +88,22 @@ std::string otherRecoveryPhrase() {
   return std::string(24, 'x');
 }
 
+bool createEncryptedBackup(const pcm::database::Database &database,
+                           const std::string &backup_path) {
+  pcm::backup::BackupOptions options;
+  options.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = testRecoveryPhrase()};
+  return pcm::backup::BackupService{}.create_backup(database, backup_path, options).ok;
+}
+
+pcm::backup::RestoreResult restoreWithRecoveryPhrase(const std::string &backup_path,
+                                                     const std::string &target_path) {
+  pcm::backup::RestoreOptions options;
+  options.recovery_password = testRecoveryPhrase();
+  return pcm::backup::RestoreService{}.restore_backup(backup_path, target_path, options);
+}
+
 pcm::backup::RecoveryEnvelope recoveryEnvelope() {
   pcm::backup::RecoveryEnvelope envelope;
   const auto result = pcm::backup::create_recovery_envelope(
@@ -1110,13 +1126,7 @@ TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
                               .append("tmp_restore_encrypted.psybackup")
                               .toString();
   removeIfExists(backupPath);
-  pcm::backup::BackupOptions backupOptions;
-  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
-      .master_key = fixedMasterKey(),
-      .recovery_password = testRecoveryPhrase()};
-  ASSERT_TRUE(pcm::backup::BackupService{}
-                  .create_backup(sourceDb, backupPath, backupOptions)
-                  .ok);
+  ASSERT_TRUE(createEncryptedBackup(sourceDb, backupPath));
 
   const auto targetPath = Poco::Path(Poco::Path::current())
                               .append("tmp_restore_encrypted_target")
@@ -1124,10 +1134,7 @@ TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
   if (Poco::File(targetPath).exists()) {
     Poco::File(targetPath).remove(true);
   }
-  pcm::backup::RestoreOptions restoreOptions;
-  restoreOptions.recovery_password = testRecoveryPhrase();
-  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
-      backupPath, targetPath, restoreOptions);
+  const auto restoreResult = restoreWithRecoveryPhrase(backupPath, targetPath);
   ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
 
   pcm::config::Config targetConfig{
@@ -1205,13 +1212,7 @@ TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
                               .append("tmp_restore_wrong_password.psybackup")
                               .toString();
   removeIfExists(backupPath);
-  pcm::backup::BackupOptions backupOptions;
-  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
-      .master_key = fixedMasterKey(),
-      .recovery_password = testRecoveryPhrase()};
-  ASSERT_TRUE(pcm::backup::BackupService{}
-                  .create_backup(sourceDb, backupPath, backupOptions)
-                  .ok);
+  ASSERT_TRUE(createEncryptedBackup(sourceDb, backupPath));
 
   const auto targetPath = Poco::Path(Poco::Path::current())
                               .append("tmp_restore_wrong_password_target")
