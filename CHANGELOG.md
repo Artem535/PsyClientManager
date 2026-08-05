@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.26] - 2026-08-05
+
+### Added
+
+- Encrypted `.psybackup` files can now be enabled in Settings with a recovery
+  password. The backup key is kept in the operating system keychain, allowing
+  later manual and automatic encrypted backups without retaining the password.
+- Encrypted backups are validated with their recovery password before restore
+  is staged. After restart, PsyClientManager requests the password again in
+  memory to complete the restore; it is never written to the restore marker.
+
 ## [0.1.25] - 2026-08-04
 
 ### Changed

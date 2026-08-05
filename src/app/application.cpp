@@ -1,4 +1,5 @@
 #include "application.h"
+#include "../backup/encrypted_container.h"
 #include "../backup/restore_service.h"
 #include "../event_view/recurrence_utils.h"
 #include "../widgets/app_settings.h"
@@ -12,7 +13,15 @@
 #include <QTimeZone>
 #include <QTranslator>
 #include <QIcon>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <oclero/qlementine.hpp>
+
+#include <sodium.h>
+
+#include <algorithm>
+#include <optional>
+#include <string>
 
 Q_LOGGING_CATEGORY(logApplication, "pcm.Application")
 
@@ -20,6 +29,16 @@ namespace pcm {
 
 namespace {
 constexpr int kNotificationPollIntervalMs = 30 * 1000;
+
+void clearSensitiveText(QString *text) {
+  text->fill(QChar{});
+  text->clear();
+}
+
+void clearSensitiveString(std::string *text) {
+  sodium_memzero(text->data(), text->size());
+  text->clear();
+}
 }
 
 Application::Application() = default;
@@ -30,7 +49,7 @@ int Application::run(int argc, char *argv[]) {
   app.setOrganizationName("PsyClientManager");
   app.setApplicationName("PsyClientManager");
   app.setApplicationDisplayName("PsyClientManager");
-  app.setApplicationVersion("0.1.25");
+  app.setApplicationVersion("0.1.26");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
   app.setStyle(style);
@@ -89,28 +108,7 @@ int Application::run(int argc, char *argv[]) {
                               << localeName;
   }
 
-  const auto markerPath = Poco::Path(mConf.config_pth.value())
-                              .makeParent()
-                              .append("pending-restore.json")
-                              .toString();
-  if (const auto marker = pcm::backup::read_pending_restore_marker(markerPath)) {
-    pcm::backup::RestoreService service;
-    pcm::backup::RestoreOptions options;
-    options.attachments_root =
-        pcm::app_settings::attachmentsStorageRoot().toStdString();
-    const auto result = service.restore_backup(
-        marker->backup_path, mConf.db_conf.value_.db_pth.toString(), options);
-    pcm::backup::remove_pending_restore_marker(markerPath);
-    if (result.ok) {
-      QMessageBox::information(nullptr, tr("Restore Complete"),
-                               tr("The backup was restored successfully."));
-    } else {
-      QMessageBox::warning(
-          nullptr, tr("Restore Failed"),
-          tr("The restore could not be completed:\n%1\n\nYour previous "
-             "data was kept.").arg(QString::fromStdString(result.error)));
-    }
-  }
+  restorePendingBackup();
 
   mDb = std::make_shared<database::Database>(mConf);
 
@@ -135,6 +133,63 @@ int Application::run(int argc, char *argv[]) {
   mMainWindow->show();
 
   return app.exec();
+}
+
+void Application::restorePendingBackup() {
+  const auto markerPath = Poco::Path(mConf.config_pth.value())
+                              .makeParent()
+                              .append("pending-restore.json")
+                              .toString();
+  if (const auto marker = pcm::backup::read_pending_restore_marker(markerPath)) {
+    std::optional<std::string> recoveryPassword;
+    bool restoreCancelled = false;
+    if (pcm::backup::detect_backup_container(marker->backup_path) ==
+        pcm::backup::BackupContainerKind::Encrypted) {
+      bool accepted = false;
+      QString password = QInputDialog::getText(
+          nullptr, tr("Encrypted Backup"),
+          tr("The backup is encrypted. Enter its recovery password to continue "
+             "the restore."),
+          QLineEdit::Password, {}, &accepted);
+      if (!accepted) {
+        restoreCancelled = true;
+      } else {
+        auto passwordBytes = password.toUtf8();
+        recoveryPassword = std::string(
+            passwordBytes.constData(), static_cast<std::size_t>(passwordBytes.size()));
+        std::fill(passwordBytes.begin(), passwordBytes.end(), '\0');
+      }
+      clearSensitiveText(&password);
+    }
+
+    pcm::backup::RestoreResult result;
+    if (!restoreCancelled) {
+      pcm::backup::RestoreService service;
+      pcm::backup::RestoreOptions options;
+      options.attachments_root =
+          pcm::app_settings::attachmentsStorageRoot().toStdString();
+      options.recovery_password = std::move(recoveryPassword);
+      result = service.restore_backup(
+          marker->backup_path, mConf.db_conf.value_.db_pth.toString(), options);
+      if (options.recovery_password.has_value()) {
+        clearSensitiveString(&*options.recovery_password);
+      }
+    }
+    pcm::backup::remove_pending_restore_marker(markerPath);
+    if (restoreCancelled) {
+      QMessageBox::information(nullptr, tr("Restore Cancelled"),
+                               tr("The restore was cancelled. Your current data was not changed."));
+    } else if (result.ok) {
+      QMessageBox::information(nullptr, tr("Restore Complete"),
+                               tr("The backup was restored successfully."));
+    } else {
+      QMessageBox::warning(
+          nullptr, tr("Restore Failed"),
+          tr("The restore could not be completed:\n%1\n\nYour previous "
+             "data was kept.").arg(QString::fromStdString(result.error)));
+    }
+  }
+
 }
 
 bool Application::eventFilter(QObject *watched, QEvent *event) {

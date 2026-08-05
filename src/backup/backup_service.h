@@ -5,11 +5,19 @@
 #include <string>
 
 #include "database.h"
+#include "encrypted_container.h"
 
 namespace pcm::backup {
 
+struct BackupEncryptionOptions {
+  std::optional<MasterKey> master_key;
+  std::optional<std::string> recovery_password;
+  std::optional<RecoveryEnvelope> recovery_envelope;
+};
+
 struct BackupOptions {
   std::optional<std::string> attachments_root;
+  std::optional<BackupEncryptionOptions> encryption;
 };
 
 struct BackupResult {

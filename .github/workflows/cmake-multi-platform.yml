@@ -83,6 +83,7 @@ jobs:
             libxcb-xkb1 \
             libxkbcommon-dev \
             libxkbcommon-x11-dev \
+            libsecret-1-dev \
             libwayland-client0 \
             libwayland-cursor0 \
             libwayland-egl1 \
@@ -117,6 +118,7 @@ jobs:
       - name: Export Qt environment (macOS)
         if: runner.os == 'macOS'
         run: |
+          brew install autoconf automake libtool
           echo "Qt6_DIR=${QT_ROOT_DIR}/lib/cmake/Qt6" >> "$GITHUB_ENV"
           echo "CMAKE_PREFIX_PATH=${QT_ROOT_DIR}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
           echo "${QT_ROOT_DIR}/bin" >> "$GITHUB_PATH"
@@ -251,6 +253,13 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path build-release/packages/PsyClientManager | Out-Null
           Copy-Item build-release/PsyClientManager.exe build-release/packages/PsyClientManager/
+          $keychainDll = Get-ChildItem build-release/_deps/qtkeychain-build -Recurse -Filter qt6keychain.dll |
+            Select-Object -First 1
+          if ($null -eq $keychainDll) {
+            throw "qt6keychain.dll was not built"
+          }
+          Copy-Item $keychainDll.FullName (Join-Path $env:QT_ROOT_DIR "bin") -Force
+          Copy-Item $keychainDll.FullName build-release/packages/PsyClientManager/ -Force
 
       - name: Run windeployqt
         if: runner.os == 'Windows'

@@ -5,22 +5,38 @@
 #include <Poco/Zip/Compress.h>
 #include <Poco/Zip/Decompress.h>
 #include <Poco/Zip/ZipCommon.h>
+#include <QCoreApplication>
+#include <QDir>
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QThread>
 #include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <optional>
 #include <rfl/json.hpp>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
+#include <sodium.h>
 
 #include "auto_backup_due.h"
+#include "auto_backup_scheduler.h"
+#include "backup_encryption_policy.h"
 #include "backup_manifest.hpp"
 #include "backup_rotation_service.h"
 #include "backup_service.h"
 #include "backup_validator.h"
 #include "checksum_utils.hpp"
 #include "config.h"
+#include "credential_store.h"
 #include "database.h"
+#include "encrypted_container.h"
 #include "restore_service.h"
+#include "app_settings.h"
 
 namespace {
 
@@ -32,7 +48,508 @@ std::string writeTempFile(const std::string &name, const std::string &content) {
   return path;
 }
 
+void overwriteFile(const std::string &path, const std::string &content) {
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  out << content;
+  out.close();
+}
+
+std::string tempPath(const std::string &name) {
+  return Poco::Path(Poco::Path::current()).append(name).toString();
+}
+
+std::string readFile(const std::string &path) {
+  std::ifstream in(path, std::ios::binary);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  return contents.str();
+}
+
+void removeIfExists(const std::string &path) {
+  Poco::File file(path);
+  if (file.exists()) {
+    file.remove();
+  }
+}
+
+pcm::backup::MasterKey fixedMasterKey() {
+  pcm::backup::MasterKey key;
+  for (std::size_t index = 0; index < key.bytes.size(); ++index) {
+    key.bytes[index] = static_cast<unsigned char>(index);
+  }
+  return key;
+}
+
+std::string testRecoveryPhrase() {
+  return std::string(24, 'r');
+}
+
+std::string otherRecoveryPhrase() {
+  return std::string(24, 'x');
+}
+
+bool createEncryptedBackup(const pcm::database::Database &database,
+                           const std::string &backup_path) {
+  pcm::backup::BackupOptions options;
+  options.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = testRecoveryPhrase()};
+  return pcm::backup::BackupService{}.create_backup(database, backup_path, options).ok;
+}
+
+pcm::backup::RestoreResult restoreWithRecoveryPhrase(const std::string &backup_path,
+                                                     const std::string &target_path) {
+  pcm::backup::RestoreOptions options;
+  options.recovery_password = testRecoveryPhrase();
+  return pcm::backup::RestoreService{}.restore_backup(backup_path, target_path, options);
+}
+
+pcm::backup::RecoveryEnvelope recoveryEnvelope() {
+  pcm::backup::RecoveryEnvelope envelope;
+  const auto result = pcm::backup::create_recovery_envelope(
+      testRecoveryPhrase(), fixedMasterKey(), &envelope);
+  if (!result.ok) {
+    throw std::runtime_error(result.error);
+  }
+  return envelope;
+}
+
+constexpr std::string_view kLegacyContainerMagic = "PCMENC01";
+constexpr std::uint32_t kLegacyContainerVersion = 1;
+constexpr std::uint32_t kLegacyChunkSize = 64 * 1024;
+
+struct LegacyHeaderForWrapFixture {
+  std::uint32_t container_version = kLegacyContainerVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
+  std::string stream_header;
+  std::uint32_t chunk_size = kLegacyChunkSize;
+};
+
+struct LegacyContainerHeaderFixture {
+  std::uint32_t container_version = kLegacyContainerVersion;
+  std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;
+  std::uint64_t kdf_opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
+  std::uint64_t kdf_memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+  std::string salt;
+  std::string wrap_nonce;
+  std::string stream_header;
+  std::uint32_t chunk_size = kLegacyChunkSize;
+  std::string wrapped_master_key;
+};
+
+template <std::size_t Size>
+std::string base64Encode(const std::array<unsigned char, Size> &bytes) {
+  std::array<char, sodium_base64_ENCODED_LEN(Size, sodium_base64_VARIANT_ORIGINAL)>
+      encoded{};
+  sodium_bin2base64(encoded.data(), encoded.size(), bytes.data(), bytes.size(),
+                    sodium_base64_VARIANT_ORIGINAL);
+  return encoded.data();
+}
+
+void appendLittleEndianUint32(std::ostream &output, const std::uint32_t value) {
+  for (int offset = 0; offset != 4; ++offset) {
+    output.put(static_cast<char>((value >> (offset * 8)) & 0xff));
+  }
+}
+
+bool writeLegacyV1EncryptedBackup(const std::string &zip_path,
+                                  const std::string &output_path,
+                                  const std::string_view recovery_password,
+                                  const pcm::backup::MasterKey &master_key) {
+  if (sodium_init() < 0) {
+    return false;
+  }
+  std::ifstream input(zip_path, std::ios::binary);
+  if (!input) {
+    return false;
+  }
+
+  std::array<unsigned char, crypto_pwhash_SALTBYTES> salt{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES> wrapNonce{};
+  std::array<unsigned char, crypto_secretstream_xchacha20poly1305_HEADERBYTES> streamHeader{};
+  std::array<unsigned char, crypto_aead_xchacha20poly1305_ietf_KEYBYTES> wrappingKey{};
+  std::array<unsigned char,
+             crypto_aead_xchacha20poly1305_ietf_ABYTES + pcm::backup::MasterKey{}.bytes.size()>
+      wrappedMasterKey{};
+  randombytes_buf(salt.data(), salt.size());
+  randombytes_buf(wrapNonce.data(), wrapNonce.size());
+
+  LegacyContainerHeaderFixture header;
+  header.salt = base64Encode(salt);
+  header.wrap_nonce = base64Encode(wrapNonce);
+  if (crypto_pwhash(wrappingKey.data(), wrappingKey.size(), recovery_password.data(),
+                    recovery_password.size(), salt.data(), header.kdf_opslimit,
+                    header.kdf_memlimit, crypto_pwhash_ALG_ARGON2ID13) != 0) {
+    return false;
+  }
+
+  crypto_secretstream_xchacha20poly1305_state streamState{};
+  if (crypto_secretstream_xchacha20poly1305_init_push(&streamState, streamHeader.data(),
+                                                       master_key.bytes.data()) != 0) {
+    return false;
+  }
+  header.stream_header = base64Encode(streamHeader);
+  const auto wrapHeader = LegacyHeaderForWrapFixture{
+      .container_version = header.container_version,
+      .kdf_algorithm = header.kdf_algorithm,
+      .kdf_opslimit = header.kdf_opslimit,
+      .kdf_memlimit = header.kdf_memlimit,
+      .salt = header.salt,
+      .wrap_nonce = header.wrap_nonce,
+      .stream_header = header.stream_header,
+      .chunk_size = header.chunk_size};
+  const auto wrapAdditionalData = std::string{kLegacyContainerMagic} +
+                                  rfl::json::write(wrapHeader);
+  unsigned long long wrappedSize = 0;
+  if (crypto_aead_xchacha20poly1305_ietf_encrypt(
+          wrappedMasterKey.data(), &wrappedSize, master_key.bytes.data(), master_key.bytes.size(),
+          reinterpret_cast<const unsigned char *>(wrapAdditionalData.data()),
+          wrapAdditionalData.size(), nullptr, wrapNonce.data(), wrappingKey.data()) != 0 ||
+      wrappedSize != wrappedMasterKey.size()) {
+    return false;
+  }
+  header.wrapped_master_key = base64Encode(wrappedMasterKey);
+  const auto serializedHeader = rfl::json::write(header);
+
+  std::ofstream output(output_path, std::ios::binary | std::ios::trunc);
+  if (!output) {
+    return false;
+  }
+  output.write(kLegacyContainerMagic.data(), kLegacyContainerMagic.size());
+  appendLittleEndianUint32(output, static_cast<std::uint32_t>(serializedHeader.size()));
+  output.write(serializedHeader.data(), serializedHeader.size());
+
+  std::vector<unsigned char> plaintext(header.chunk_size);
+  std::vector<unsigned char> ciphertext(header.chunk_size +
+                                         crypto_secretstream_xchacha20poly1305_ABYTES);
+  while (output) {
+    input.read(reinterpret_cast<char *>(plaintext.data()), plaintext.size());
+    const auto plainSize = static_cast<unsigned long long>(input.gcount());
+    if (input.bad() || (!input.eof() && input.fail())) {
+      return false;
+    }
+    const auto tag = input.eof() ? crypto_secretstream_xchacha20poly1305_TAG_FINAL
+                                 : crypto_secretstream_xchacha20poly1305_TAG_MESSAGE;
+    unsigned long long ciphertextSize = 0;
+    if (crypto_secretstream_xchacha20poly1305_push(
+            &streamState, ciphertext.data(), &ciphertextSize, plaintext.data(), plainSize,
+            reinterpret_cast<const unsigned char *>(serializedHeader.data()),
+            serializedHeader.size(), tag) != 0) {
+      return false;
+    }
+    appendLittleEndianUint32(output, static_cast<std::uint32_t>(ciphertextSize));
+    output.write(reinterpret_cast<const char *>(ciphertext.data()), ciphertextSize);
+    if (tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL) {
+      break;
+    }
+  }
+  sodium_memzero(wrappingKey.data(), wrappingKey.size());
+  sodium_memzero(wrappedMasterKey.data(), wrappedMasterKey.size());
+  return static_cast<bool>(output);
+}
+
+QCoreApplication &testApplication() {
+  if (auto *application = QCoreApplication::instance(); application != nullptr) {
+    return *application;
+  }
+  static int argc = 1;
+  static char applicationName[] = "PsyClientManager_backup_tests";
+  static char *argv[] = {applicationName, nullptr};
+  static QCoreApplication application(argc, argv);
+  return application;
+}
+
+class InMemoryCredentialStore final : public pcm::backup::CredentialStore {
+public:
+  bool available = true;
+  int readCalls = 0;
+  pcm::backup::MasterKey masterKey = fixedMasterKey();
+
+  void readWorkspaceMasterKey(const QString &) override {
+    ++readCalls;
+    emit readFinished(available, masterKey,
+                      available ? QString{} : QStringLiteral("system keychain unavailable"));
+  }
+
+  void writeWorkspaceMasterKey(const QString &, const pcm::backup::MasterKey &key) override {
+    masterKey = key;
+    emit writeFinished(true, {});
+  }
+};
+
+class BackupSettingsGuard final {
+public:
+  BackupSettingsGuard()
+      : mAutoBackupEnabled(pcm::app_settings::autoBackupEnabled()),
+        mLastRunAtMs(pcm::app_settings::autoBackupLastRunAtMs()),
+        mDestination(pcm::app_settings::autoBackupDestination()),
+        mEncryptionEnabled(pcm::app_settings::backupEncryptionEnabled()),
+        mKeychainEntry(pcm::app_settings::backupEncryptionKeychainEntry()),
+        mRecoveryEnvelope(pcm::app_settings::backupEncryptionRecoveryEnvelope()) {}
+
+  ~BackupSettingsGuard() {
+    pcm::app_settings::setAutoBackupEnabled(mAutoBackupEnabled);
+    pcm::app_settings::setAutoBackupLastRunAtMs(mLastRunAtMs);
+    pcm::app_settings::setAutoBackupDestination(mDestination);
+    pcm::app_settings::setBackupEncryptionEnabled(mEncryptionEnabled);
+    pcm::app_settings::setBackupEncryptionKeychainEntry(mKeychainEntry);
+    pcm::app_settings::setBackupEncryptionRecoveryEnvelope(mRecoveryEnvelope);
+  }
+
+private:
+  bool mAutoBackupEnabled;
+  qint64 mLastRunAtMs;
+  QString mDestination;
+  bool mEncryptionEnabled;
+  QString mKeychainEntry;
+  QString mRecoveryEnvelope;
+};
+
 } // namespace
+
+TEST(EncryptedContainerTest, RoundTripsZipWithRecoveryPassword) {
+  const auto plain = writeTempFile("tmp_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_encrypted.psybackup");
+  const auto restored = tempPath("tmp_restored.zip");
+  const auto key = fixedMasterKey();
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  EXPECT_EQ(pcm::backup::detect_backup_container(encrypted),
+            pcm::backup::BackupContainerKind::Encrypted);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                testRecoveryPhrase())
+                  .ok);
+  EXPECT_EQ(readFile(restored), readFile(plain));
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+  Poco::File(restored).remove();
+}
+
+TEST(EncryptedContainerTest, ReusesRecoveryEnvelopeAcrossIndependentBackups) {
+  const auto firstPlain = writeTempFile("tmp_envelope_first.zip", "PK\x03\x04first");
+  const auto secondPlain = writeTempFile("tmp_envelope_second.zip", "PK\x03\x04second");
+  const auto firstEncrypted = tempPath("tmp_envelope_first.psybackup");
+  const auto secondEncrypted = tempPath("tmp_envelope_second.psybackup");
+  const auto firstRestored = tempPath("tmp_envelope_first_restored.zip");
+  const auto secondRestored = tempPath("tmp_envelope_second_restored.zip");
+  const auto envelope = recoveryEnvelope();
+  removeIfExists(firstRestored);
+  removeIfExists(secondRestored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(firstPlain, firstEncrypted, envelope,
+                                                fixedMasterKey())
+                  .ok);
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(secondPlain, secondEncrypted, envelope,
+                                                fixedMasterKey())
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(firstEncrypted, firstRestored,
+                                                testRecoveryPhrase())
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(secondEncrypted, secondRestored,
+                                                testRecoveryPhrase())
+                  .ok);
+  EXPECT_EQ(readFile(firstRestored), readFile(firstPlain));
+  EXPECT_EQ(readFile(secondRestored), readFile(secondPlain));
+
+  Poco::File(firstPlain).remove();
+  Poco::File(secondPlain).remove();
+  Poco::File(firstEncrypted).remove();
+  Poco::File(secondEncrypted).remove();
+  Poco::File(firstRestored).remove();
+  Poco::File(secondRestored).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsMalformedRecoveryEnvelopeWithoutWritingOutput) {
+  const auto plain = writeTempFile("tmp_bad_envelope.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_bad_envelope.psybackup");
+  removeIfExists(encrypted);
+  pcm::backup::RecoveryEnvelope malformed;
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, encrypted, malformed,
+                                                 fixedMasterKey())
+                   .ok);
+  EXPECT_FALSE(Poco::File(encrypted).exists());
+
+  Poco::File(plain).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsWrongPasswordWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_wrong_password_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_wrong_password.psybackup");
+  const auto restored = tempPath("tmp_wrong_password_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 otherRecoveryPhrase())
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsCiphertextTampering) {
+  const auto plain = writeTempFile("tmp_tampered_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_tampered.psybackup");
+  const auto restored = tempPath("tmp_tampered_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  std::fstream ciphertext(encrypted, std::ios::binary | std::ios::in | std::ios::out);
+  ASSERT_TRUE(ciphertext);
+  ciphertext.seekg(-1, std::ios::end);
+  char byte = 0;
+  ciphertext.read(&byte, 1);
+  ciphertext.seekp(-1, std::ios::end);
+  byte ^= 0x01;
+  ciphertext.write(&byte, 1);
+  ciphertext.close();
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 testRecoveryPhrase())
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, KeepsPlainZipDetectionCompatible) {
+  const auto plain = writeTempFile("tmp_plain_detection.zip", "PK\x03\x04payload");
+
+  EXPECT_EQ(pcm::backup::detect_backup_container(plain),
+            pcm::backup::BackupContainerKind::PlainZip);
+
+  Poco::File(plain).remove();
+}
+
+TEST(EncryptedContainerTest, PreservesExistingOutputWhenPublishingFails) {
+  const auto plain = writeTempFile("tmp_publish_plain.zip", "PK\x03\x04payload");
+  const auto outputDirectory = tempPath("tmp_publish_output");
+  const auto key = fixedMasterKey();
+  Poco::File output(outputDirectory);
+  if (output.exists()) {
+    output.remove(true);
+  }
+  output.createDirectory();
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, outputDirectory,
+                                                 testRecoveryPhrase(), key)
+                   .ok);
+  EXPECT_TRUE(output.exists());
+  EXPECT_TRUE(output.isDirectory());
+
+  Poco::File(plain).remove();
+  output.remove(true);
+}
+
+TEST(EncryptedContainerTest, ReplacesExistingRegularOutputFile) {
+  const auto plain = writeTempFile("tmp_replace_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_replace.psybackup");
+  const auto restored = writeTempFile("tmp_replace_restored.zip", "old plaintext");
+  const auto key = fixedMasterKey();
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  ASSERT_TRUE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                testRecoveryPhrase())
+                  .ok);
+  EXPECT_EQ(readFile(restored), readFile(plain));
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+  Poco::File(restored).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsOversizedHeaderWithoutWritingPlaintext) {
+  const auto encrypted = tempPath("tmp_oversized_header.psybackup");
+  const auto restored = tempPath("tmp_oversized_header_restored.zip");
+  removeIfExists(restored);
+  overwriteFile(encrypted, "PCMENC01\x01\x40\x00\x00");
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 testRecoveryPhrase())
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsUnsupportedVersionWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_version_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_version.psybackup");
+  const auto restored = tempPath("tmp_version_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  auto contents = readFile(encrypted);
+  const auto version = contents.find("\"container_version\":2");
+  ASSERT_NE(version, std::string::npos);
+  contents[version + std::string{"\"container_version\":"}.size()] = '3';
+  overwriteFile(encrypted, contents);
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 testRecoveryPhrase())
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsTruncatedFinalRecordWithoutWritingPlaintext) {
+  const auto plain = writeTempFile("tmp_truncated_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_truncated.psybackup");
+  const auto restored = tempPath("tmp_truncated_restored.zip");
+  const auto key = fixedMasterKey();
+  removeIfExists(restored);
+
+  ASSERT_TRUE(pcm::backup::encrypt_backup_file(plain, encrypted,
+                                                testRecoveryPhrase(), key)
+                  .ok);
+  auto contents = readFile(encrypted);
+  ASSERT_FALSE(contents.empty());
+  contents.pop_back();
+  overwriteFile(encrypted, contents);
+
+  EXPECT_FALSE(pcm::backup::decrypt_backup_file(encrypted, restored,
+                                                 testRecoveryPhrase())
+                   .ok);
+  EXPECT_FALSE(Poco::File(restored).exists());
+
+  Poco::File(plain).remove();
+  Poco::File(encrypted).remove();
+}
+
+TEST(EncryptedContainerTest, RejectsTooShortPasswordWithoutWritingOutput) {
+  const auto plain = writeTempFile("tmp_short_password_plain.zip", "PK\x03\x04payload");
+  const auto encrypted = tempPath("tmp_short_password.psybackup");
+  const auto key = fixedMasterKey();
+  removeIfExists(encrypted);
+
+  EXPECT_FALSE(pcm::backup::encrypt_backup_file(plain, encrypted, "too short", key).ok);
+  EXPECT_FALSE(Poco::File(encrypted).exists());
+
+  Poco::File(plain).remove();
+}
 
 TEST(ChecksumUtilsTest, Sha256FileMatchesKnownVectors) {
   const auto helloPath = writeTempFile("tmp_sha256_hello.txt", "hello world");
@@ -185,6 +702,67 @@ TEST(BackupServiceTest, CreateBackupDatabaseOnlyProducesValidArchive) {
   extractDirFile.remove(true);
   destFile.remove();
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_dir_backup_db_only"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, EncryptedBackupHidesZipAndValidatesAfterDecryption) {
+  auto db = makeTestDatabase("tmp_encrypted_backup_source");
+  DuckClient client;
+  client.name = std::string{"Encrypted"};
+  ASSERT_GT(db.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_encrypted_backup.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+
+  pcm::backup::BackupOptions options;
+  options.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = testRecoveryPhrase()};
+  const auto backupResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, options);
+  ASSERT_TRUE(backupResult.ok) << backupResult.error;
+  EXPECT_EQ(pcm::backup::detect_backup_container(backupPath),
+            pcm::backup::BackupContainerKind::Encrypted);
+
+  const auto validation = pcm::backup::BackupValidator{}.validate(
+      backupPath, testRecoveryPhrase());
+  EXPECT_TRUE(validation.ok);
+  EXPECT_TRUE(validation.errors.empty());
+
+  removeIfExists(backupPath);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_encrypted_backup_source"))
+      .remove(true);
+}
+
+TEST(BackupServiceTest, RequiresExactlyOneEncryptionRecoveryMethod) {
+  auto db = makeTestDatabase("tmp_encryption_recovery_method_source");
+  const auto backupPath = tempPath("tmp_encryption_recovery_method.psybackup");
+  removeIfExists(backupPath);
+
+  pcm::backup::BackupOptions missingRecoveryMethod;
+  missingRecoveryMethod.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey()};
+  const auto missingResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, missingRecoveryMethod);
+  EXPECT_FALSE(missingResult.ok);
+  EXPECT_FALSE(Poco::File(backupPath).exists());
+
+  pcm::backup::BackupOptions ambiguousRecoveryMethod;
+  ambiguousRecoveryMethod.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = testRecoveryPhrase(),
+      .recovery_envelope = recoveryEnvelope(),
+  };
+  const auto ambiguousResult =
+      pcm::backup::BackupService{}.create_backup(db, backupPath, ambiguousRecoveryMethod);
+  EXPECT_FALSE(ambiguousResult.ok);
+  EXPECT_FALSE(Poco::File(backupPath).exists());
+
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_encryption_recovery_method_source"))
       .remove(true);
 }
 
@@ -535,6 +1113,265 @@ TEST(RestoreServiceTest, RestoresDatabaseSnapshotIntoNewDirectory) {
   Poco::File(backupPath).remove();
   Poco::File(targetPath).remove(true);
   Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresEncryptedBackupWithCorrectPassword) {
+  auto sourceDb = makeTestDatabase("tmp_restore_encrypted_source");
+  DuckClient client;
+  client.name = std::string{"Encrypted Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_encrypted.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  ASSERT_TRUE(createEncryptedBackup(sourceDb, backupPath));
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_encrypted_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  const auto restoreResult = restoreWithRecoveryPhrase(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Encrypted Restore";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_encrypted_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresLegacyV1EncryptedBackupWithRecoveryPassword) {
+  auto sourceDb = makeTestDatabase("tmp_restore_legacy_encrypted_source");
+  DuckClient client;
+  client.name = std::string{"Legacy Encrypted Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto plainBackupPath = Poco::Path(Poco::Path::current())
+                                   .append("tmp_restore_legacy_plain.psybackup")
+                                   .toString();
+  const auto encryptedBackupPath = Poco::Path(Poco::Path::current())
+                                       .append("tmp_restore_legacy_encrypted.psybackup")
+                                       .toString();
+  removeIfExists(plainBackupPath);
+  removeIfExists(encryptedBackupPath);
+  ASSERT_TRUE(pcm::backup::BackupService{}.create_backup(sourceDb, plainBackupPath).ok);
+  ASSERT_TRUE(writeLegacyV1EncryptedBackup(
+      plainBackupPath, encryptedBackupPath, testRecoveryPhrase(), fixedMasterKey()));
+
+  const auto validation = pcm::backup::BackupValidator{}.validate(
+      encryptedBackupPath, testRecoveryPhrase());
+  ASSERT_TRUE(validation.ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_legacy_encrypted_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.recovery_password = testRecoveryPhrase();
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      encryptedBackupPath, targetPath, restoreOptions);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Legacy Encrypted Restore";
+  }));
+
+  removeIfExists(plainBackupPath);
+  removeIfExists(encryptedBackupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_legacy_encrypted_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, WrongPasswordLeavesExistingDatabaseUntouched) {
+  auto sourceDb = makeTestDatabase("tmp_restore_wrong_password_source");
+  DuckClient sourceClient;
+  sourceClient.name = std::string{"Replacement"};
+  ASSERT_GT(sourceDb.add_client(sourceClient), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_wrong_password.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  ASSERT_TRUE(createEncryptedBackup(sourceDb, backupPath));
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_wrong_password_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_wrong_password_target");
+    DuckClient existingClient;
+    existingClient.name = std::string{"Unchanged"};
+    ASSERT_GT(targetDb.add_client(existingClient), 0);
+  }
+
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.recovery_password = otherRecoveryPhrase();
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  EXPECT_FALSE(restoreResult.ok);
+  EXPECT_EQ(restoreResult.error, "backup validation failed: cannot decrypt backup");
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database unchangedDb{targetConfig};
+  const auto clients = unchangedDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Unchanged";
+  }));
+  EXPECT_FALSE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Replacement";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_restore_wrong_password_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest,
+     TamperedEncryptedBackupLeavesExistingDatabaseAndAttachmentsUntouched) {
+  auto sourceDb = makeTestDatabase("tmp_restore_tampered_source");
+  DuckClient sourceClient;
+  sourceClient.name = std::string{"Replacement"};
+  ASSERT_GT(sourceDb.add_client(sourceClient), 0);
+
+  const auto sourceAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_tampered_source_files")
+                                     .toString();
+  if (Poco::File(sourceAttachments).exists()) {
+    Poco::File(sourceAttachments).remove(true);
+  }
+  Poco::File(sourceAttachments).createDirectories();
+  std::ofstream(Poco::Path(sourceAttachments).append("note.txt").toString())
+      << "replacement attachment";
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_tampered.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  pcm::backup::BackupOptions backupOptions;
+  backupOptions.attachments_root = sourceAttachments;
+  backupOptions.encryption = pcm::backup::BackupEncryptionOptions{
+      .master_key = fixedMasterKey(),
+      .recovery_password = testRecoveryPhrase()};
+  ASSERT_TRUE(pcm::backup::BackupService{}
+                  .create_backup(sourceDb, backupPath, backupOptions)
+                  .ok);
+
+  {
+    std::fstream backup(backupPath, std::ios::binary | std::ios::in | std::ios::out);
+    ASSERT_TRUE(backup);
+    backup.seekg(-1, std::ios::end);
+    char byte = 0;
+    backup.read(&byte, 1);
+    backup.seekp(-1, std::ios::end);
+    byte ^= 0x01;
+    backup.write(&byte, 1);
+  }
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_tampered_target")
+                              .toString();
+  {
+    auto targetDb = makeTestDatabase("tmp_restore_tampered_target");
+    DuckClient existingClient;
+    existingClient.name = std::string{"Unchanged"};
+    ASSERT_GT(targetDb.add_client(existingClient), 0);
+  }
+  const auto targetAttachments = Poco::Path(Poco::Path::current())
+                                     .append("tmp_restore_tampered_target_files")
+                                     .toString();
+  if (Poco::File(targetAttachments).exists()) {
+    Poco::File(targetAttachments).remove(true);
+  }
+  Poco::File(targetAttachments).createDirectories();
+  std::ofstream(Poco::Path(targetAttachments).append("note.txt").toString())
+      << "unchanged attachment";
+
+  pcm::backup::RestoreOptions restoreOptions;
+  restoreOptions.attachments_root = targetAttachments;
+  restoreOptions.recovery_password = testRecoveryPhrase();
+  const auto restoreResult = pcm::backup::RestoreService{}.restore_backup(
+      backupPath, targetPath, restoreOptions);
+  EXPECT_FALSE(restoreResult.ok);
+  EXPECT_EQ(restoreResult.error, "backup validation failed: cannot decrypt backup");
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database unchangedDb{targetConfig};
+  const auto clients = unchangedDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Unchanged";
+  }));
+  EXPECT_FALSE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Replacement";
+  }));
+  EXPECT_EQ(readFile(Poco::Path(targetAttachments).append("note.txt").toString()),
+            "unchanged attachment");
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(targetAttachments).remove(true);
+  Poco::File(sourceAttachments).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_tampered_source"))
+      .remove(true);
+}
+
+TEST(RestoreServiceTest, RestoresExistingUnencryptedBackupUnchanged) {
+  auto sourceDb = makeTestDatabase("tmp_restore_plain_source");
+  DuckClient client;
+  client.name = std::string{"Plain Restore"};
+  ASSERT_GT(sourceDb.add_client(client), 0);
+
+  const auto backupPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_plain.psybackup")
+                              .toString();
+  removeIfExists(backupPath);
+  ASSERT_TRUE(
+      pcm::backup::BackupService{}.create_backup(sourceDb, backupPath).ok);
+
+  const auto targetPath = Poco::Path(Poco::Path::current())
+                              .append("tmp_restore_plain_target")
+                              .toString();
+  if (Poco::File(targetPath).exists()) {
+    Poco::File(targetPath).remove(true);
+  }
+  const auto restoreResult =
+      pcm::backup::RestoreService{}.restore_backup(backupPath, targetPath);
+  ASSERT_TRUE(restoreResult.ok) << restoreResult.error;
+
+  pcm::config::Config targetConfig{
+      .db_conf = pcm::config::DatabaseConfig{.db_pth = Poco::Path(targetPath)}};
+  pcm::database::Database restoredDb{targetConfig};
+  const auto clients = restoredDb.get_clients();
+  EXPECT_TRUE(std::any_of(clients.begin(), clients.end(), [](const auto &storedClient) {
+    return storedClient && storedClient->name.value_or("") == "Plain Restore";
+  }));
+
+  removeIfExists(backupPath);
+  Poco::File(targetPath).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current()).append("tmp_restore_plain_source"))
       .remove(true);
 }
 
@@ -946,4 +1783,115 @@ TEST(AutoBackupDueTest, DueOnceIntervalElapsed) {
   const std::int64_t lastRun = 1'700'000'000'000;
   const std::int64_t sevenDaysLater = lastRun + 7LL * 24 * 60 * 60 * 1000;
   EXPECT_TRUE(pcm::backup::isAutoBackupDue(true, lastRun, 7, sevenDaysLater));
+}
+
+TEST(AutoBackupDueTest, EncryptedAutoBackupIsSkippedWhenKeyUnavailable) {
+  BackupSettingsGuard settingsGuard;
+  const auto destination = tempPath("tmp_auto_backup_key_unavailable");
+  if (Poco::File(destination).exists()) {
+    Poco::File(destination).remove(true);
+  }
+  auto database = std::make_shared<pcm::database::Database>(
+      makeTestDatabase("tmp_auto_backup_key_unavailable_db"));
+  InMemoryCredentialStore credentialStore;
+  credentialStore.available = false;
+  pcm::backup::AutoBackupScheduler scheduler(database, nullptr, &credentialStore);
+  bool finished = false;
+  bool ok = true;
+  QObject::connect(&scheduler, &pcm::backup::AutoBackupScheduler::backupFinished,
+                   [&finished, &ok](const bool result, const QString &) {
+                     finished = true;
+                     ok = result;
+                   });
+
+  pcm::app_settings::setAutoBackupEnabled(true);
+  pcm::app_settings::setAutoBackupLastRunAtMs(0);
+  pcm::app_settings::setAutoBackupDestination(QString::fromStdString(destination));
+  pcm::app_settings::setBackupEncryptionEnabled(true);
+  const auto workspaceUuid =
+      QString::fromStdString(database->get_application_metadata().workspace_uuid);
+  ASSERT_FALSE(workspaceUuid.isEmpty());
+  pcm::app_settings::setBackupEncryptionKeychainEntry(
+      pcm::backup::workspaceBackupKeychainEntry(workspaceUuid));
+  pcm::app_settings::setBackupEncryptionRecoveryEnvelope(
+      QString::fromStdString(pcm::backup::serialize_recovery_envelope(recoveryEnvelope())));
+  scheduler.runAsync();
+
+  EXPECT_FALSE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::Unavailable));
+  EXPECT_EQ(credentialStore.readCalls, 1);
+  EXPECT_TRUE(finished);
+  EXPECT_FALSE(ok);
+  EXPECT_FALSE(Poco::File(destination).exists());
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_auto_backup_key_unavailable_db")
+                 .toString())
+      .remove(true);
+}
+
+TEST(AutoBackupDueTest, EncryptedAutoBackupUsesStoredEnvelopeWithoutSessionPassword) {
+  auto &application = testApplication();
+  BackupSettingsGuard settingsGuard;
+  const auto destination = tempPath("tmp_auto_backup_key_available");
+  if (Poco::File(destination).exists()) {
+    Poco::File(destination).remove(true);
+  }
+  ASSERT_TRUE(QDir().mkpath(pcm::app_settings::attachmentsStorageRoot()));
+  auto database = std::make_shared<pcm::database::Database>(
+      makeTestDatabase("tmp_auto_backup_key_available_db"));
+  InMemoryCredentialStore credentialStore;
+  pcm::backup::AutoBackupScheduler scheduler(database, nullptr, &credentialStore);
+  bool finished = false;
+  bool ok = false;
+  QString error;
+  QObject::connect(&scheduler, &pcm::backup::AutoBackupScheduler::backupFinished,
+                   [&finished, &ok, &error](const bool result, const QString &resultError) {
+                     finished = true;
+                     ok = result;
+                     error = resultError;
+                   });
+
+  pcm::app_settings::setAutoBackupEnabled(true);
+  pcm::app_settings::setAutoBackupLastRunAtMs(0);
+  pcm::app_settings::setAutoBackupDestination(QString::fromStdString(destination));
+  pcm::app_settings::setBackupEncryptionEnabled(true);
+  const auto workspaceUuid =
+      QString::fromStdString(database->get_application_metadata().workspace_uuid);
+  ASSERT_FALSE(workspaceUuid.isEmpty());
+  pcm::app_settings::setBackupEncryptionKeychainEntry(
+      pcm::backup::workspaceBackupKeychainEntry(workspaceUuid));
+  pcm::app_settings::setBackupEncryptionRecoveryEnvelope(
+      QString::fromStdString(pcm::backup::serialize_recovery_envelope(recoveryEnvelope())));
+
+  scheduler.runAsync();
+  QElapsedTimer timeout;
+  timeout.start();
+  while (!finished && timeout.elapsed() < 10'000) {
+    application.processEvents(QEventLoop::AllEvents, 25);
+    QThread::msleep(5);
+  }
+
+  EXPECT_TRUE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::Keychain));
+  EXPECT_EQ(credentialStore.readCalls, 1);
+  EXPECT_TRUE(finished);
+  EXPECT_TRUE(ok) << error.toStdString();
+  EXPECT_TRUE(error.isEmpty());
+  const QDir backupDirectory(QString::fromStdString(destination));
+  const auto entries = backupDirectory.entryList({"*.psybackup"}, QDir::Files);
+  ASSERT_EQ(entries.size(), 1);
+  EXPECT_TRUE(pcm::backup::BackupValidator{}
+                  .validate(backupDirectory.filePath(entries.front()).toStdString(),
+                            testRecoveryPhrase())
+                  .ok);
+  Poco::File(destination).remove(true);
+  Poco::File(Poco::Path(Poco::Path::current())
+                 .append("tmp_auto_backup_key_available_db")
+                 .toString())
+      .remove(true);
+}
+
+TEST(AutoBackupDueTest, RecoveryOnlyKeyNeverEnablesAutomaticBackup) {
+  EXPECT_FALSE(pcm::backup::automaticEncryptedBackupAllowed(
+      true, pcm::backup::BackupKeySource::RecoveryOnly));
 }

@@ -63,4 +63,11 @@ void setAutoBackupDestination(const QString &path);
 qint64 autoBackupLastRunAtMs();
 void setAutoBackupLastRunAtMs(qint64 ms);
 
+bool backupEncryptionEnabled();
+void setBackupEncryptionEnabled(bool enabled);
+QString backupEncryptionKeychainEntry();
+void setBackupEncryptionKeychainEntry(const QString &entry);
+QString backupEncryptionRecoveryEnvelope();
+void setBackupEncryptionRecoveryEnvelope(const QString &envelope);
+
 } // namespace pcm::app_settings

@@ -1001,6 +1001,105 @@
     </message>
 </context>
 <context>
+    <name>QKeychain::DeletePasswordJobPrivate</name>
+    <message>
+        <source>Unknown error</source>
+        <translation>Неизвестная ошибка</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Не удалось открыть хранилище: %1; %2</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::JobPrivate</name>
+    <message>
+        <source>Unknown error</source>
+        <translation>Неизвестная ошибка</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Доступ к хранилищу ключей запрещён</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::PlainTextStore</name>
+    <message>
+        <source>Could not store data in settings: access error</source>
+        <translation>Не удалось сохранить данные в настройках: ошибка доступа</translation>
+    </message>
+    <message>
+        <source>Could not store data in settings: format error</source>
+        <translation>Не удалось сохранить данные в настройках: ошибка формата</translation>
+    </message>
+    <message>
+        <source>Could not delete data from settings: access error</source>
+        <translation>Не удалось удалить данные из настроек: ошибка доступа</translation>
+    </message>
+    <message>
+        <source>Could not delete data from settings: format error</source>
+        <translation>Не удалось удалить данные из настроек: ошибка формата</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Запись не найдена</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::ReadPasswordJobPrivate</name>
+    <message>
+        <source>D-Bus is not running</source>
+        <translation>D-Bus не запущен</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Неизвестная ошибка</translation>
+    </message>
+    <message>
+        <source>No keychain service available</source>
+        <translation>Служба хранилища ключей недоступна</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Не удалось открыть хранилище: %1; %2</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Доступ к хранилищу ключей запрещён</translation>
+    </message>
+    <message>
+        <source>Could not determine data type: %1; %2</source>
+        <translation>Не удалось определить тип данных: %1; %2</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Запись не найдена</translation>
+    </message>
+    <message>
+        <source>Unsupported entry type &apos;Map&apos;</source>
+        <translation>Неподдерживаемый тип записи «Map»</translation>
+    </message>
+    <message>
+        <source>Unknown kwallet entry type &apos;%1&apos;</source>
+        <translation>Неизвестный тип записи KWallet «%1»</translation>
+    </message>
+</context>
+<context>
+    <name>QKeychain::WritePasswordJobPrivate</name>
+    <message>
+        <source>D-Bus is not running</source>
+        <translation>D-Bus не запущен</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Неизвестная ошибка</translation>
+    </message>
+    <message>
+        <source>Could not open wallet: %1; %2</source>
+        <translation>Не удалось открыть хранилище: %1; %2</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>: ERROR_TITLE</source>
@@ -1051,6 +1150,50 @@ See you!</source>
     <message>
         <source>This and future events</source>
         <translation>Это и все последующие события</translation>
+    </message>
+    <message>
+        <source>Access to keychain denied</source>
+        <translation>Доступ к хранилищу ключей запрещён</translation>
+    </message>
+    <message>
+        <source>No keyring daemon</source>
+        <translation>Служба связки ключей не запущена</translation>
+    </message>
+    <message>
+        <source>Already unlocked</source>
+        <translation>Уже разблокировано</translation>
+    </message>
+    <message>
+        <source>No such keyring</source>
+        <translation>Связка ключей не найдена</translation>
+    </message>
+    <message>
+        <source>Bad arguments</source>
+        <translation>Некорректные аргументы</translation>
+    </message>
+    <message>
+        <source>I/O error</source>
+        <translation>Ошибка ввода-вывода</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>Отменено</translation>
+    </message>
+    <message>
+        <source>Keyring already exists</source>
+        <translation>Связка ключей уже существует</translation>
+    </message>
+    <message>
+        <source>No match</source>
+        <translation>Совпадений не найдено</translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation>Неизвестная ошибка</translation>
+    </message>
+    <message>
+        <source>Entry not found</source>
+        <translation>Запись не найдена</translation>
     </message>
 </context>
 <context>
@@ -1210,6 +1353,38 @@ See you!</source>
         <translation>Восстановить из резервной копии…</translation>
     </message>
     <message>
+        <source>The recovery password cannot be recovered. Store it safely.</source>
+        <translation>Пароль восстановления нельзя восстановить. Храните его в безопасном месте.</translation>
+    </message>
+    <message>
+        <source>Enable encryption</source>
+        <translation>Включить шифрование</translation>
+    </message>
+    <message>
+        <source>Recovery password</source>
+        <translation>Пароль восстановления</translation>
+    </message>
+    <message>
+        <source>Use at least 12 characters.</source>
+        <translation>Используйте не менее 12 символов.</translation>
+    </message>
+    <message>
+        <source>Confirm recovery password</source>
+        <translation>Подтвердите пароль восстановления</translation>
+    </message>
+    <message>
+        <source>Enter the same password again.</source>
+        <translation>Введите тот же пароль ещё раз.</translation>
+    </message>
+    <message>
+        <source>Encrypt backups</source>
+        <translation>Шифровать резервные копии</translation>
+    </message>
+    <message>
+        <source>Protect new backups with a recovery password and the system keychain.</source>
+        <translation>Защитить новые резервные копии паролем восстановления и системным хранилищем ключей.</translation>
+    </message>
+    <message>
         <source>Automatic Backups</source>
         <translation>Автоматическое резервное копирование</translation>
     </message>
@@ -1294,6 +1469,10 @@ See you!</source>
         <translation>Создание резервной копии…</translation>
     </message>
     <message>
+        <source>Encrypted backup key is unavailable.</source>
+        <translation>Ключ шифрования резервных копий недоступен.</translation>
+    </message>
+    <message>
         <source>Backup Created</source>
         <translation>Резервная копия создана</translation>
     </message>
@@ -1306,6 +1485,26 @@ See you!</source>
     <message>
         <source>Backup Failed</source>
         <translation>Не удалось создать резервную копию</translation>
+    </message>
+    <message>
+        <source>Backup Encryption</source>
+        <translation>Шифрование резервных копий</translation>
+    </message>
+    <message>
+        <source>The recovery password must contain at least 12 characters.</source>
+        <translation>Пароль восстановления должен содержать не менее 12 символов.</translation>
+    </message>
+    <message>
+        <source>Recovery passwords do not match.</source>
+        <translation>Пароли восстановления не совпадают.</translation>
+    </message>
+    <message>
+        <source>Backup encryption is unavailable.</source>
+        <translation>Шифрование резервных копий недоступно.</translation>
+    </message>
+    <message>
+        <source>System keychain is unavailable.</source>
+        <translation>Системное хранилище ключей недоступно.</translation>
     </message>
     <message>
         <source>Select Automatic Backup Folder</source>
@@ -1340,6 +1539,14 @@ See you!</source>
     <message>
         <source>Restore Backup</source>
         <translation>Восстановление из резервной копии</translation>
+    </message>
+    <message>
+        <source>Encrypted Backup</source>
+        <translation>Зашифрованная резервная копия</translation>
+    </message>
+    <message>
+        <source>This backup is encrypted. Enter its recovery password to validate it. You will be asked again after the application restarts to complete the restore.</source>
+        <translation>Эта резервная копия зашифрована. Введите пароль восстановления, чтобы проверить её. После перезапуска приложения пароль будет запрошен повторно для завершения восстановления.</translation>
     </message>
     <message>
         <source>Checking backup…</source>
@@ -1432,6 +1639,22 @@ See you!</source>
 </context>
 <context>
     <name>pcm::Application</name>
+    <message>
+        <source>Encrypted Backup</source>
+        <translation>Зашифрованная резервная копия</translation>
+    </message>
+    <message>
+        <source>The backup is encrypted. Enter its recovery password to continue the restore.</source>
+        <translation>Резервная копия зашифрована. Введите пароль восстановления, чтобы продолжить восстановление.</translation>
+    </message>
+    <message>
+        <source>Restore Cancelled</source>
+        <translation>Восстановление отменено</translation>
+    </message>
+    <message>
+        <source>The restore was cancelled. Your current data was not changed.</source>
+        <translation>Восстановление отменено. Текущие данные не изменены.</translation>
+    </message>
     <message>
         <source>Restore Complete</source>
         <translation>Восстановление завершено</translation>

@@ -8,14 +8,43 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.25 LANGUAGES CXX)
+project(PsyClientManager VERSION 0.1.26 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
+include(FetchContent)
 option(PCM_BUILD_TESTS "Build project tests" OFF)
 
 if(Qt6_VERSION VERSION_LESS 6.8.0)
   message(FATAL_ERROR "Qlementine requires Qt 6.8.0 or newer. Detected Qt ${Qt6_VERSION}.")
 endif()
+
+# QtKeychain needs ECM's CMake modules but does not need the full ECM project.
+FetchContent_Declare(
+  pcm_ecm
+  URL https://github.com/KDE/extra-cmake-modules/archive/refs/tags/v5.115.0.tar.gz
+  URL_HASH SHA512=a3f23f74b2c14c1ae059a1c7b1f5011f484699b067903da70a44c792d20edc4f7b4f012af5189fe31de622fe227e648b4d15c8feb359bcd9d8f6fc50822a36bf
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+if(POLICY CMP0169)
+  cmake_policy(SET CMP0169 OLD)
+endif()
+FetchContent_GetProperties(pcm_ecm)
+if(NOT pcm_ecm_POPULATED)
+  FetchContent_Populate(pcm_ecm)
+endif()
+list(PREPEND CMAKE_MODULE_PATH "${pcm_ecm_SOURCE_DIR}/modules")
+
+set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
+set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
+set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
+set(LIBSECRET_SUPPORT ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  qtkeychain
+  URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.14.3.tar.gz
+  URL_HASH SHA512=d1d87553db94bf54da1373016a847476e6cd608db6d427ed72532658e2272501daf45d7c9976efdde2f26ab3810ba9dbfec2518d46dee5a76ecaa369bfee2e4a
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(qtkeychain)
 
 set(QLEMENTINE_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/apply_qlementine_patch.cmake")
 execute_process(

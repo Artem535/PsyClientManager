@@ -41,6 +41,7 @@ private:
   QString notificationBodyForEvent(const DuckEvent &event) const;
   void initializeNotifications();
   void notifyUpcomingSeriesOccurrences(int64_t nowMs, int64_t windowEndMs);
+  void restorePendingBackup();
 
   std::unique_ptr<MainWindow> mMainWindow;
   std::shared_ptr<database::Database> mDb;

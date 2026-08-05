@@ -2,10 +2,13 @@ set(TARGET_NAME ${PROJECT_NAME}_backup)
 
 find_package(Poco REQUIRED COMPONENTS Foundation Zip)
 find_package(reflectcpp CONFIG REQUIRED)
+find_package(unofficial-sodium CONFIG REQUIRED)
 
 add_library(${TARGET_NAME} STATIC
         backup_manifest.hpp
         checksum_utils.hpp
+        encrypted_container.h
+        encrypted_container.cpp
         backup_service.h
         backup_service.cpp
         backup_validator.h
@@ -26,6 +29,7 @@ target_link_libraries(${TARGET_NAME}
   PUBLIC
     ${PROJECT_NAME}_database
     Poco::Foundation
+    unofficial-sodium::sodium
   PRIVATE
     Poco::Zip
     reflectcpp::reflectcpp

@@ -145,7 +145,15 @@ RestoreResult RestoreService::restore_backup(const std::string &backup_path,
                                              const RestoreOptions &options) {
   RestoreResult result;
   try {
-    const auto validation = BackupValidator{}.validate(backup_path);
+    std::string normalizationError;
+    auto normalized = detail::normalize_backup_file(
+        backup_path, options.recovery_password, &normalizationError);
+    if (!normalized.has_value()) {
+      result.error = "backup validation failed: " + normalizationError;
+      return result;
+    }
+
+    const auto validation = BackupValidator{}.validate(normalized->zip_path());
     if (!validation.ok) {
       result.error = "backup validation failed: ";
       for (std::size_t i = 0; i < validation.errors.size(); ++i) {
@@ -163,7 +171,7 @@ RestoreResult RestoreService::restore_backup(const std::string &backup_path,
         Poco::Path(Poco::Path::temp()).append("psyrestore-" + uuid).toString();
     ScratchGuard extractGuard{extractDir};
     Poco::File(extractDir).createDirectories();
-    if (!extractArchive(backup_path, extractDir)) {
+    if (!extractArchive(normalized->zip_path(), extractDir)) {
       result.error = "failed to extract backup archive";
       return result;
     }
