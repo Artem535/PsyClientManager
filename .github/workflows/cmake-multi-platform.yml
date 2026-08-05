@@ -337,7 +337,11 @@ jobs:
           rpm -qip build-release/packages/*.rpm
           rpm -qp --requires build-release/packages/*.rpm
           rpm -qlp build-release/packages/*.rpm
-          if rpm -qlp build-release/packages/*.rpm | grep -E '^/usr/(lib|lib64)/|/plugins/'; then
+          unexpected_rpm_files="$(rpm -qlp build-release/packages/*.rpm |
+            grep -E '^/usr/(lib|lib64)/|/plugins/' |
+            grep -vE '^/usr/lib(64)?/\.build-id/' || true)"
+          if [ -n "$unexpected_rpm_files" ]; then
+            echo "$unexpected_rpm_files"
             echo "::error::RPM must not bundle runtime libraries or Qt plugins"
             exit 1
           fi
