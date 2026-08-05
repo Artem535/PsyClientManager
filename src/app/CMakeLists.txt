@@ -19,6 +19,7 @@ qt_add_library(${TARGET_NAME} STATIC
         credential_store.cpp
         app_lock_service.cpp
         app_lock_controller.cpp
+        app_lock_dialog.cpp
 )
 
 target_include_directories(${TARGET_NAME} PRIVATE

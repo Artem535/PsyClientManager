@@ -138,6 +138,20 @@ TEST(AppLockControllerTest, LocksAfterConfiguredIdleTimeout) {
   EXPECT_TRUE(controller.shouldLock(60'000));
 }
 
+TEST(AppLockControllerTest, KeepsManualLockUntilExplicitUnlock) {
+  pcm::AppLockController controller{0};
+  controller.recordActivity(0);
+  controller.lockNow();
+
+  EXPECT_TRUE(controller.isLocked());
+  controller.recordActivity(10);
+  EXPECT_TRUE(controller.isLocked());
+
+  controller.unlock(20);
+  EXPECT_FALSE(controller.isLocked());
+  EXPECT_FALSE(controller.shouldLock(20));
+}
+
 struct LegacyHeaderForWrapFixture {
   std::uint32_t container_version = kLegacyContainerVersion;
   std::uint32_t kdf_algorithm = crypto_pwhash_ALG_ARGON2ID13;

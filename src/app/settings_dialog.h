@@ -3,6 +3,7 @@
 #include "backup_service.h"
 #include "credential_store.h"
 #include "config.h"
+#include "app_lock_service.h"
 
 #include <QDialog>
 
@@ -43,7 +44,7 @@ public:
 private:
   void setupUi();
   void loadSettings() const;
-  void connectSignals() const;
+  void connectSignals();
   void openDatabaseFolder() const;
   void createBackup();
   void startBackupWorker(
@@ -57,6 +58,7 @@ private:
   void validateBackup();
   void restoreBackup();
   void browseAutoBackupDestination();
+  void configureAppLock();
 
   oclero::qlementine::SegmentedControl *mSettingsSections{nullptr};
   QStackedWidget *mSettingsStack{nullptr};
@@ -81,6 +83,9 @@ private:
   QPushButton *mAutoBackupBrowseButton{nullptr};
   oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};
   QSpinBox *mNotificationLeadMinutesSpinBox{nullptr};
+  oclero::qlementine::Switch *mAppLockEnabledSwitch{nullptr};
+  QSpinBox *mAppLockTimeoutSpinBox{nullptr};
+  QPushButton *mChangeAppLockCredentialButton{nullptr};
   oclero::qlementine::Switch *mPreventOverlapsSwitch{nullptr};
   oclero::qlementine::ColorEditor *mWorkEventColorEditor{nullptr};
   oclero::qlementine::ColorEditor *mPersonalEventColorEditor{nullptr};
@@ -96,6 +101,7 @@ private:
   pcm::config::Config mConfig;
   std::shared_ptr<pcm::database::Database> mDb;
   pcm::backup::CredentialStore *mCredentialStore{nullptr};
+  std::unique_ptr<pcm::AppLockService> mAppLockService;
   QString mPendingManualBackupDestinationPath;
   std::optional<pcm::backup::RecoveryEnvelope> mPendingManualBackupEnvelope;
   std::optional<pcm::backup::MasterKey> mPendingEncryptionKey;

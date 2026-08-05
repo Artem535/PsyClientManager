@@ -1,4 +1,5 @@
 #include "application.h"
+#include "app_lock_dialog.h"
 #include "../backup/encrypted_container.h"
 #include "../backup/restore_service.h"
 #include "../event_view/recurrence_utils.h"
@@ -15,6 +16,7 @@
 #include <QIcon>
 #include <QInputDialog>
 #include <QLineEdit>
+#include <QDateTime>
 #include <oclero/qlementine.hpp>
 
 #include <sodium.h>
@@ -127,7 +129,9 @@ int Application::run(int argc, char *argv[]) {
   mMainWindow->setDatabase(mDb);
   mMainWindow->connectSignals();
   mMainWindow->installEventFilter(this);
+  app.installEventFilter(this);
   connectSignals();
+  initializeAppLock();
   initializeNotifications();
 
   mMainWindow->show();
@@ -205,6 +209,20 @@ bool Application::eventFilter(QObject *watched, QEvent *event) {
         mTrayCloseHintShown = true;
       }
       return true;
+    }
+  }
+
+  if (event != nullptr && mAppLockController && mAppLockService &&
+      mAppLockService->isConfigured() && !mAppLockController->isLocked()) {
+    switch (event->type()) {
+    case QEvent::KeyPress:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove:
+    case QEvent::TouchBegin:
+      mAppLockController->recordActivity(QDateTime::currentMSecsSinceEpoch());
+      break;
+    default:
+      break;
     }
   }
 
@@ -319,9 +337,19 @@ void Application::initializeNotifications() {
 
   auto *trayMenu = new QMenu();
   auto *openAction = trayMenu->addAction(tr("Open"));
+  mLockAppAction = trayMenu->addAction(tr("Lock app"));
   auto *quitAction = trayMenu->addAction(tr("Quit"));
   connect(openAction, &QAction::triggered, this, &Application::restoreMainWindow);
+  mLockAppAction->setEnabled(mAppLockService && mAppLockService->isConfigured());
+  connect(mLockAppAction, &QAction::triggered, this, [this]() {
+    if (mAppLockController && mAppLockService && mAppLockService->isConfigured()) {
+      lockApplication();
+    }
+  });
   connect(quitAction, &QAction::triggered, this, &Application::quitApplication);
+  connect(trayMenu, &QMenu::aboutToShow, this, [this]() {
+    mLockAppAction->setEnabled(mAppLockService && mAppLockService->isConfigured());
+  });
   mTrayIcon->setContextMenu(trayMenu);
   connect(mTrayIcon.get(), &QSystemTrayIcon::activated, this,
           [this](const QSystemTrayIcon::ActivationReason reason) {
@@ -339,6 +367,39 @@ void Application::initializeNotifications() {
   mNotificationTimer.start();
 
   checkUpcomingEventNotifications();
+}
+
+void Application::initializeAppLock() {
+  mAppLockService = std::make_unique<AppLockService>();
+  mAppLockController = std::make_unique<AppLockController>(
+      pcm::app_settings::appLockTimeoutMinutes());
+  mAppLockController->recordActivity(QDateTime::currentMSecsSinceEpoch());
+  mAppLockTimer.setInterval(1000);
+  connect(&mAppLockTimer, &QTimer::timeout, this, &Application::checkAppLock);
+  mAppLockTimer.start();
+}
+
+void Application::checkAppLock() {
+  if (!mAppLockService || !mAppLockController || !mAppLockService->isConfigured()) {
+    return;
+  }
+  mAppLockController->setTimeoutMinutes(pcm::app_settings::appLockTimeoutMinutes());
+  if (mAppLockController->shouldLock(QDateTime::currentMSecsSinceEpoch())) {
+    lockApplication();
+  }
+}
+
+void Application::lockApplication() {
+  if (!mAppLockService || !mAppLockController || mAppLockDialogVisible) {
+    return;
+  }
+  mAppLockController->lockNow();
+  mAppLockDialogVisible = true;
+  AppLockDialog dialog{*mAppLockService, mMainWindow.get()};
+  if (dialog.exec() == QDialog::Accepted) {
+    mAppLockController->unlock(QDateTime::currentMSecsSinceEpoch());
+  }
+  mAppLockDialogVisible = false;
 }
 
 void Application::restoreMainWindow() {

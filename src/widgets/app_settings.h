@@ -18,6 +18,9 @@ void setNotificationsEnabled(bool enabled);
 int notificationLeadMinutes();
 void setNotificationLeadMinutes(int minutes);
 
+int appLockTimeoutMinutes();
+void setAppLockTimeoutMinutes(int minutes);
+
 QString languageCode();
 void setLanguageCode(const QString &languageCode);
 

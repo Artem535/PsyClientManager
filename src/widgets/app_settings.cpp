@@ -13,6 +13,7 @@ constexpr auto kPreventEventOverlapsKey = "event/preventOverlaps";
 constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
 constexpr auto kNotificationsEnabledKey = "notification/enabled";
 constexpr auto kNotificationLeadMinutesKey = "notification/leadMinutes";
+constexpr auto kAppLockTimeoutMinutesKey = "privacy/appLockTimeoutMinutes";
 constexpr auto kLanguageCodeKey = "ui/language";
 constexpr auto kWorkEventColorKey = "timeline/workEventColor";
 constexpr auto kPersonalEventColorKey = "timeline/personalEventColor";
@@ -71,6 +72,8 @@ int defaultBufferAfterMinutesValue() { return 0; }
 int defaultNotificationLeadMinutesValue() {
   return 30;
 }
+
+int defaultAppLockTimeoutMinutesValue() { return 10; }
 
 QString defaultMeetingInviteTemplateValue() {
   return QObject::tr("Hello, {client_name}!\n\n"
@@ -147,6 +150,17 @@ int notificationLeadMinutes() {
 void setNotificationLeadMinutes(const int minutes) {
   QSettings settings;
   settings.setValue(kNotificationLeadMinutesKey, minutes);
+}
+
+int appLockTimeoutMinutes() {
+  QSettings settings;
+  return settings.value(kAppLockTimeoutMinutesKey,
+                        defaultAppLockTimeoutMinutesValue()).toInt();
+}
+
+void setAppLockTimeoutMinutes(const int minutes) {
+  QSettings settings;
+  settings.setValue(kAppLockTimeoutMinutesKey, minutes);
 }
 
 QString languageCode() {
