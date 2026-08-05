@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.27] - 2026-08-05
+
+### Added
+
+- Linux releases now include an RPM package with the application binary,
+  desktop entry, and icon alongside the AppImage.
+
 ## [0.1.26] - 2026-08-05
 
 ### Added
