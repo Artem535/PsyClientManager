@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.30] - 2026-09-08
+
+### Changed
+
+- Updated the product roadmap for embedded Jitsi calls after the stable
+  local-first release, followed by consent-aware recording and local
+  transcription. The plan now defines privacy boundaries, retention rules, and
+  the required integration spike before implementation.
+
 ## [0.1.28] - 2026-08-05
 
 ### Added

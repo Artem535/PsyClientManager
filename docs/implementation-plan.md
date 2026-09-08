@@ -19,9 +19,9 @@
 ## Зависимости этапов
 
 ```text
-0.1.6 stabilization
+0.1.30 current baseline
         ↓
-0.2.0 identity + schema metadata + backup/restore
+0.2.0 core workflow + identity + schema metadata
         ↓
 0.3.0 client history
         ↓
@@ -38,6 +38,10 @@
 0.9.0 release candidate
         ↓
 1.0.0 stable release
+        ↓
+1.1.0 embedded Jitsi sessions
+        ↓
+1.2.0 consent-aware recording and local transcription
 ```
 
 ## Этап 0.1.6 — стабилизация
@@ -83,7 +87,7 @@ settings на Linux; `git diff --check`; production-логи не содержа
 Обновить `CMakeLists.txt`, `src/app/application.cpp`, `CHANGELOG.md`, README и
 сайт. Собрать `build-release` и проверить CI workflow.
 
-## Этап 0.2.0 — identity, schema metadata, backup/restore
+## Этап 0.2.0 — core workflow, identity and schema metadata
 
 ### Task 0.2.1: Ввести идентификаторы workspace и device
 
@@ -106,18 +110,19 @@ attachment и backup. Числовые ключи не удалять. Знач�
 Проверка: тесты миграции с предыдущей схемы, повторный запуск, повреждённая
 исходная версия и backup перед миграцией.
 
-### Task 0.2.3: Реализовать BackupService
+### Task 0.2.3: Усилить контракт BackupService
 
 Файлы: новый сервис в `src/database/` или `src/data_protection/`, тесты в `test/`.
 
-Создать формат `.psybackup` с `manifest.json`, согласованным snapshot DuckDB,
-`attachments/` и `checksums.json`. Использовать временный файл и атомарное
-переименование. Открытый файл DuckDB не копировать напрямую.
+Проверить и закрепить формат `.psybackup` с `manifest.json`, согласованным
+snapshot DuckDB, `attachments/` и `checksums.json` на границе миграций. Использовать
+временный файл и атомарное переименование. Открытый файл DuckDB не копировать
+напрямую.
 
 Проверка: backup базы без вложений, backup с вложениями, checksum mismatch,
 прерванная запись и запрет удаления последней рабочей копии.
 
-### Task 0.2.4: Реализовать RestoreService и validator
+### Task 0.2.4: Усилить RestoreService и validator
 
 Восстанавливать сначала во временный каталог, проверять manifest, schema version,
 checksums и вложения, затем менять рабочий каталог. Перед restore создавать
@@ -250,6 +255,40 @@ restore, encrypted backup, экспорта, удаления/архивиров
 PsyNote, OCR, AI, realtime sync, командные аккаунты и собственный backend не
 являются условиями выпуска.
 
+## После 1.0 — встроенные онлайн-сессии
+
+### Task 1.1.1: Провести Jitsi integration spike
+
+Зафиксировать в ADR поддерживаемую модель развёртывания: настраиваемый
+self-hosted Jitsi или managed deployment. Проверить Qt WebEngine и Jitsi IFrame
+API на Linux, Windows и macOS: аудио, видео, выбор устройств, потерю сети,
+закрытие конференции и освобождение WebEngine-профиля.
+
+Проверка: spike не передаёт имя клиента, заметки или финансовые данные в Jitsi;
+комната не остаётся доступной из памяти приложения после закрытия окна;
+пользователь может продолжить работу с событием при ошибке подключения.
+
+### Task 1.1.2: Реализовать OnlineSessionService
+
+Добавить сервис для создания непредсказуемого room ID, настройки домена,
+безопасного запуска и завершения звонка. Сохранить существующий `meeting_url`
+как fallback для внешних провайдеров. JWT и другие краткоживущие секреты не
+сохранять в базе, backup или логах.
+
+Проверка: событие создаёт и повторно открывает свою Jitsi-комнату, внешний URL
+остаётся работоспособен, а WebEngine-сессия удаляется после звонка.
+
+### Task 1.2.1: Добавить согласие, запись и транскрибацию
+
+Сначала ввести подтверждаемое специалистом согласие на запись и политику
+удаления. Затем добавить метаданные записи и локальную очередь распознавания
+на базе `whisper.cpp`. Транскрипт является редактируемым черновиком, связанным
+с событием; он не становится автоматически клинической заметкой.
+
+Проверка: запись нельзя начать без согласия; отмена транскрибации не повреждает
+исходный файл; удаление соблюдает retention policy; аудио и текст не появляются
+в production-логах.
+
 ## Документы по этапам
 
 - `docs/roadmap.md` — продуктовые цели и последовательность релизов;
@@ -258,7 +297,8 @@ PsyNote, OCR, AI, realtime sync, командные аккаунты и собс
 - `docs/asciidoc/09-recurring-events.adoc` — семантика recurring events;
 - `docs/backup-restore.md` — формат и операции backup/restore для `0.2.0`;
 - `docs/export-format.md` — стабильные export/import форматы для `0.4.0`;
-- ADR по crypto, DuckDB encryption, cloud provider и snapshot sync;
+- ADR по crypto, DuckDB encryption, cloud provider, snapshot sync и Jitsi;
+- `docs/online-sessions.md` — границы данных, согласие, запись и транскрибация;
 - `CHANGELOG.md` и README — пользовательские изменения и release instructions.
 
 ## Definition of Done для задачи
