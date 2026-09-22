@@ -110,6 +110,13 @@ bool QTimelineWidget::hasConflict(const DuckEvent &event) const {
   return mModel && mModel->hasConflict(event);
 }
 
+std::optional<DuckEvent> QTimelineWidget::findConflict(const DuckEvent &event) const {
+  if (!mModel) {
+    return std::nullopt;
+  }
+  return mModel->findConflict(event);
+}
+
 void QTimelineWidget::highlightEvent(const int64_t eventId) const {
   if (mEventView) {
     mEventView->highlightEvent(eventId);

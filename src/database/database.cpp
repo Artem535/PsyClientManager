@@ -986,8 +986,12 @@ Database::get_note_attachments(const int64_t note_id) {
 // }
 
 bool Database::has_conflict(const DuckEvent &event) {
+  return find_conflict(event).has_value();
+}
+
+std::optional<DuckEvent> Database::find_conflict(const DuckEvent &event) {
   if (!event.start_date.has_value() || !event.end_date.has_value()) {
-    return false;
+    return std::nullopt;
   }
 
   duckdb::Connection conn(*mDb);
@@ -997,7 +1001,7 @@ bool Database::has_conflict(const DuckEvent &event) {
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Conflict check failed: " << result->GetError();
-    return false;
+    return std::nullopt;
   }
 
   const auto candidateStart =
@@ -1023,12 +1027,20 @@ bool Database::has_conflict(const DuckEvent &event) {
       const auto existingEffectiveEnd = *existingEnd + bufferAfter * 60'000;
       if (candidateStart < existingEffectiveEnd &&
           candidateEnd > existingEffectiveStart) {
-        return true;
+        const auto conflictingId =
+            db_utils::toOptionalInt32AsInt64(chunk->GetValue(0, index));
+        if (!conflictingId.has_value()) {
+          continue;
+        }
+        if (auto conflictingEvent = get_event(*conflictingId)) {
+          return *conflictingEvent;
+        }
+        return std::nullopt;
       }
     }
   }
 
-  return false;
+  return std::nullopt;
 }
 
 std::vector<DuckEvent>

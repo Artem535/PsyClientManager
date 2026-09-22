@@ -63,7 +63,8 @@ public:
    * @brief Configures widget for usage inside a modal dialog.
    */
   void setDialogMode(bool enabled);
-  void setConflictChecker(std::function<bool(const DuckEvent &)> checker);
+  void setConflictChecker(
+      std::function<std::optional<DuckEvent>(const DuckEvent &)> checker);
 
   /**
    * @brief Checks if the widget is in edit mode.
@@ -136,6 +137,7 @@ private slots:
   void onCopyMeetingInviteClicked();
   void onTimeFromChanged(const QTime &timeFrom);
   void onTimeToChanged(const QTime &timeTo);
+  void onSuggestFreeSlotClicked();
 
 private:
   // --- Initialization ---
@@ -154,6 +156,11 @@ private:
   // --- Validation & Data Collection ---
   bool validateInput();
   [[nodiscard]] DuckEvent collectEventData() const;
+
+  // --- Live conflict warning ---
+  void updateConflictWarning();
+  [[nodiscard]] DuckEvent liveCandidateEvent() const;
+  [[nodiscard]] QString conflictWarningText(const DuckEvent &conflict) const;
 
   // --- UI ---
   std::unique_ptr<Ui::EventDetails> mUI;
@@ -175,6 +182,8 @@ private:
   QWidget *mBuffersWidget = nullptr;
   QSpinBox *mBufferBeforeSpinBox = nullptr;
   QSpinBox *mBufferAfterSpinBox = nullptr;
+  QLabel *mConflictWarningLabel = nullptr;
+  QPushButton *mSuggestFreeSlotButton = nullptr;
 
   // --- Data ---
   QPointer<QEventItem> mCurrentEvent;
@@ -183,5 +192,5 @@ private:
   bool mCreatingNewEvent = false;
   bool mDialogMode = false;
   bool mSaveAccepted = true;
-  std::function<bool(const DuckEvent &)> mConflictChecker;
+  std::function<std::optional<DuckEvent>(const DuckEvent &)> mConflictChecker;
 };

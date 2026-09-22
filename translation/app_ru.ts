@@ -775,6 +775,14 @@
         <translation>Формат сессии</translation>
     </message>
     <message>
+        <source>Overlaps with an existing event, %1.</source>
+        <translation>Пересекается с другим событием, %1.</translation>
+    </message>
+    <message>
+        <source>Overlaps with &quot;%1&quot;, %2.</source>
+        <translation>Пересекается с «%1», %2.</translation>
+    </message>
+    <message>
         <source>Repeat</source>
         <translation>Повтор</translation>
     </message>
@@ -859,6 +867,10 @@
         <translation> мин</translation>
     </message>
     <message>
+        <source>Suggest free slot</source>
+        <translation>Предложить свободное время</translation>
+    </message>
+    <message>
         <source>Repeat end date must not be earlier than the event date.</source>
         <translation>Дата окончания повтора не может быть раньше даты события.</translation>
     </message>
@@ -889,10 +901,6 @@
     <message>
         <source>Online session is enabled, but the meeting link is empty. Save without a link?</source>
         <translation>Онлайн-сессия включена, но ссылка на встречу не указана. Сохранить без ссылки?</translation>
-    </message>
-    <message>
-        <source>The selected time range overlaps an existing event.</source>
-        <translation>Выбранный интервал времени пересекается с существующим событием.</translation>
     </message>
     <message>
         <source>Failed to save event to database</source>

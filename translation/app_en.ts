@@ -774,6 +774,14 @@
         <translation>Session format</translation>
     </message>
     <message>
+        <source>Overlaps with an existing event, %1.</source>
+        <translation>Overlaps with an existing event, %1.</translation>
+    </message>
+    <message>
+        <source>Overlaps with &quot;%1&quot;, %2.</source>
+        <translation>Overlaps with &quot;%1&quot;, %2.</translation>
+    </message>
+    <message>
         <source>Repeat</source>
         <translation>Repeat</translation>
     </message>
@@ -858,6 +866,10 @@
         <translation> min</translation>
     </message>
     <message>
+        <source>Suggest free slot</source>
+        <translation>Suggest free slot</translation>
+    </message>
+    <message>
         <source>Repeat end date must not be earlier than the event date.</source>
         <translation>Repeat end date must not be earlier than the event date.</translation>
     </message>
@@ -888,10 +900,6 @@
     <message>
         <source>Online session is enabled, but the meeting link is empty. Save without a link?</source>
         <translation>Online session is enabled, but the meeting link is empty. Save without a link?</translation>
-    </message>
-    <message>
-        <source>The selected time range overlaps an existing event.</source>
-        <translation>The selected time range overlaps an existing event.</translation>
     </message>
     <message>
         <source>Failed to save event to database</source>

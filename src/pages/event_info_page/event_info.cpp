@@ -192,10 +192,13 @@ void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
 
   auto *detailsWidget = new QEventDetailsWidget(&dialog);
   detailsWidget->setDialogMode(true);
-  detailsWidget->setConflictChecker([this](const DuckEvent &event) {
-    return pcm::app_settings::preventEventOverlaps() && mTimelineWidget &&
-           mTimelineWidget->hasConflict(event);
-  });
+  detailsWidget->setConflictChecker(
+      [this](const DuckEvent &event) -> std::optional<DuckEvent> {
+        if (!pcm::app_settings::preventEventOverlaps() || !mTimelineWidget) {
+          return std::nullopt;
+        }
+        return mTimelineWidget->findConflict(event);
+      });
   layout.addWidget(detailsWidget);
 
   mActiveEventDetailsWidget = detailsWidget;
@@ -233,10 +236,13 @@ void QEventInfoPage::openEventDialog(const std::optional<DuckEvent> &event,
 
   auto *detailsWidget = new QEventDetailsWidget(&dialog);
   detailsWidget->setDialogMode(true);
-  detailsWidget->setConflictChecker([this](const DuckEvent &event) {
-    return pcm::app_settings::preventEventOverlaps() && mTimelineWidget &&
-           mTimelineWidget->hasConflict(event);
-  });
+  detailsWidget->setConflictChecker(
+      [this](const DuckEvent &event) -> std::optional<DuckEvent> {
+        if (!pcm::app_settings::preventEventOverlaps() || !mTimelineWidget) {
+          return std::nullopt;
+        }
+        return mTimelineWidget->findConflict(event);
+      });
   layout.addWidget(detailsWidget);
 
   mActiveEventDetailsWidget = detailsWidget;
