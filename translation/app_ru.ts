@@ -628,6 +628,33 @@
     </message>
 </context>
 <context>
+    <name>Notifications</name>
+    <message>
+        <source>PsyClientManager</source>
+        <translation>PsyClientManager</translation>
+    </message>
+    <message>
+        <source>Upcoming session</source>
+        <translation>Предстоящий сеанс</translation>
+    </message>
+    <message>
+        <source>Scheduled session</source>
+        <translation>Запланированный сеанс</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Сеанс</translation>
+    </message>
+    <message>
+        <source>%1 at %2</source>
+        <translation>%1 в %2</translation>
+    </message>
+    <message>
+        <source>Client: %1</source>
+        <translation>Клиент: %1</translation>
+    </message>
+</context>
+<context>
     <name>QClientDelegate</name>
     <message>
         <source>: VALUE_UNDEFINED</source>
@@ -1445,6 +1472,18 @@ See you!</source>
         <translation> мин</translation>
     </message>
     <message>
+        <source>Full details</source>
+        <translation>Полная информация</translation>
+    </message>
+    <message>
+        <source>Hidden (recommended)</source>
+        <translation>Скрыто (рекомендуется)</translation>
+    </message>
+    <message>
+        <source>Minimal (time only)</source>
+        <translation>Минимум (только время)</translation>
+    </message>
+    <message>
         <source>Session reminders</source>
         <translation>Напоминания о сеансах</translation>
     </message>
@@ -1459,6 +1498,14 @@ See you!</source>
     <message>
         <source>How many minutes before the session the reminder should appear.</source>
         <translation>За сколько минут до сеанса нужно показать напоминание.</translation>
+    </message>
+    <message>
+        <source>Notification content</source>
+        <translation>Содержимое уведомления</translation>
+    </message>
+    <message>
+        <source>How much a reminder reveals on a shared or locked screen. Client name and session title are never shown outside Full details.</source>
+        <translation>Сколько напоминание показывает на общем или заблокированном экране. Имя клиента и тема сеанса не отображаются нигде, кроме режима «Полная информация».</translation>
     </message>
     <message>
         <source>Privacy</source>
@@ -1791,22 +1838,6 @@ Your previous data was kept.</source>
     <message>
         <source>: VALUE_UNDEFINED</source>
         <translation>Не указано</translation>
-    </message>
-    <message>
-        <source>Upcoming session</source>
-        <translation>Предстоящий сеанс</translation>
-    </message>
-    <message>
-        <source>Client: %1</source>
-        <translation>Клиент: %1</translation>
-    </message>
-    <message>
-        <source>Session</source>
-        <translation>Сеанс</translation>
-    </message>
-    <message>
-        <source>%1 at %2</source>
-        <translation>%1 в %2</translation>
     </message>
     <message>
         <source>Open</source>
