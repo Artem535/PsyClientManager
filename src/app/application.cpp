@@ -300,40 +300,33 @@ QString Application::notificationKey(const DuckEvent &event) const {
 }
 
 QString Application::notificationTitleForEvent(const DuckEvent &event) const {
-  return tr("Upcoming session");
+  Q_UNUSED(event);
+  return pcm::notificationTitle(pcm::app_settings::notificationPrivacyMode());
 }
 
 QString Application::notificationBodyForEvent(const DuckEvent &event) const {
   const auto startTime = QDateTime::fromMSecsSinceEpoch(
                              event.start_date.value_or(0), QTimeZone::UTC)
                              .toLocalTime();
-  const QString title = QString::fromStdString(event.name.value_or(""));
-  const QString timeText = QLocale().toString(startTime, "dd.MM.yyyy HH:mm");
 
-  QString clientText;
+  pcm::NotificationEventInfo info;
+  info.title = QString::fromStdString(event.name.value_or(""));
+  info.startTime = startTime;
+  info.isWorkEvent = event.is_work_event;
+
   if (event.is_work_event) {
     if (event.client_name.has_value()) {
-      const auto fullName = QString::fromStdString(*event.client_name).trimmed();
-      if (!fullName.isEmpty()) {
-        clientText = tr("Client: %1").arg(fullName);
-      }
+      info.clientName = QString::fromStdString(*event.client_name).trimmed();
     } else {
       try {
         const auto client = mDb->get_client_by_event(event.id);
-        const auto fullName = pcm::recurrence::fullClientName(client);
-        if (!fullName.isEmpty()) {
-          clientText = tr("Client: %1").arg(fullName);
-        }
+        info.clientName = pcm::recurrence::fullClientName(client);
       } catch (const std::exception &) {
       }
     }
   }
 
-  QString body = tr("%1 at %2").arg(title.isEmpty() ? tr("Session") : title, timeText);
-  if (!clientText.isEmpty()) {
-    body += QStringLiteral("\n") + clientText;
-  }
-  return body;
+  return pcm::notificationBody(pcm::app_settings::notificationPrivacyMode(), info);
 }
 
 void Application::initializeNotifications() {

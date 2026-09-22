@@ -4,6 +4,8 @@
 #include <QString>
 #include <QTime>
 
+#include "notification_text.h"
+
 namespace pcm::app_settings {
 
 bool confirmEventDeletion();
@@ -17,6 +19,8 @@ bool notificationsEnabled();
 void setNotificationsEnabled(bool enabled);
 int notificationLeadMinutes();
 void setNotificationLeadMinutes(int minutes);
+NotificationPrivacyMode notificationPrivacyMode();
+void setNotificationPrivacyMode(NotificationPrivacyMode mode);
 
 int appLockTimeoutMinutes();
 void setAppLockTimeoutMinutes(int minutes);

@@ -374,6 +374,13 @@ void SettingsDialog::setupUi() {
   mNotificationLeadMinutesSpinBox->setMaximum(24 * 60);
   mNotificationLeadMinutesSpinBox->setSingleStep(5);
   mNotificationLeadMinutesSpinBox->setSuffix(tr(" min"));
+  mNotificationPrivacyModeCombo = new QComboBox(notificationsBox);
+  mNotificationPrivacyModeCombo->addItem(tr("Full details"),
+                                         static_cast<int>(pcm::NotificationPrivacyMode::Full));
+  mNotificationPrivacyModeCombo->addItem(tr("Hidden (recommended)"),
+                                         static_cast<int>(pcm::NotificationPrivacyMode::Hidden));
+  mNotificationPrivacyModeCombo->addItem(tr("Minimal (time only)"),
+                                         static_cast<int>(pcm::NotificationPrivacyMode::Minimal));
   notificationsLayout->addWidget(
       makeSettingRow(tr("Session reminders"),
                      tr("Show a desktop notification before a scheduled session starts."),
@@ -382,6 +389,11 @@ void SettingsDialog::setupUi() {
       makeSettingRow(tr("Notify before start"),
                      tr("How many minutes before the session the reminder should appear."),
                      mNotificationLeadMinutesSpinBox, notificationsBox));
+  notificationsLayout->addWidget(makeSettingRow(
+      tr("Notification content"),
+      tr("How much a reminder reveals on a shared or locked screen. Client name and "
+        "session title are never shown outside Full details."),
+      mNotificationPrivacyModeCombo, notificationsBox));
   generalSettingsLayout->addWidget(notificationsBox);
 
   auto *privacyBox = new QGroupBox(tr("Privacy"), generalPage);
@@ -528,6 +540,10 @@ void SettingsDialog::loadSettings() const {
       pcm::app_settings::notificationLeadMinutes());
   mNotificationLeadMinutesSpinBox->setEnabled(
       mNotificationsEnabledSwitch->isChecked());
+  const auto privacyModeIndex = mNotificationPrivacyModeCombo->findData(
+      static_cast<int>(pcm::app_settings::notificationPrivacyMode()));
+  mNotificationPrivacyModeCombo->setCurrentIndex(privacyModeIndex >= 0 ? privacyModeIndex : 0);
+  mNotificationPrivacyModeCombo->setEnabled(mNotificationsEnabledSwitch->isChecked());
   const bool appLockEnabled = mAppLockService->isConfigured();
   mAppLockEnabledSwitch->setChecked(appLockEnabled);
   mAppLockTimeoutSpinBox->setValue(pcm::app_settings::appLockTimeoutMinutes());
@@ -601,10 +617,17 @@ void SettingsDialog::connectSignals() {
           [this](const bool checked) {
             pcm::app_settings::setNotificationsEnabled(checked);
             mNotificationLeadMinutesSpinBox->setEnabled(checked);
+            mNotificationPrivacyModeCombo->setEnabled(checked);
           });
   connect(mNotificationLeadMinutesSpinBox, &QSpinBox::valueChanged, this,
           [](const int minutes) {
             pcm::app_settings::setNotificationLeadMinutes(minutes);
+          });
+  connect(mNotificationPrivacyModeCombo, &QComboBox::currentIndexChanged, this,
+          [this](const int index) {
+            const auto mode = static_cast<pcm::NotificationPrivacyMode>(
+                mNotificationPrivacyModeCombo->itemData(index).toInt());
+            pcm::app_settings::setNotificationPrivacyMode(mode);
           });
   connect(mAppLockEnabledSwitch, &QAbstractButton::toggled, this,
           [this](const bool enabled) {

@@ -11,6 +11,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
         app_settings.cpp
+        notification_text.cpp
         meeting_utils.cpp
         meeting_utils.h
         sensitive_clipboard.cpp

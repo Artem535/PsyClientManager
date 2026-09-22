@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.31] - 2026-09-22
+
+### Added
+
+- Private notification modes for session reminders: Full details (previous
+  behavior), Hidden (generic "Scheduled session" text, no client name or
+  title), and Minimal (time only). Hidden is now the default for fresh
+  installs.
+
 ## [0.1.30] - 2026-09-22
 
 ### Added
