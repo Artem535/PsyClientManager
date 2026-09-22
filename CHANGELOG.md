@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.29] - 2026-09-15
+
+### Fixed
+
+- The application lock no longer leaves client data visible behind the unlock
+  dialog: the main window is now covered by an opaque overlay for the whole
+  time the app is locked, including while it is restored from the tray.
+
 ## [0.1.28] - 2026-08-05
 
 ### Added
