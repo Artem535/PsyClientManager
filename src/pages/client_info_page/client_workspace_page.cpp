@@ -50,7 +50,9 @@ ClientWorkspacePage::ClientWorkspacePage(
 
   connect(mClientNotes, &ClientNotesPage::openClientCardRequested, this,
           [this](const std::optional<DuckClient> &client) {
-            selectClient(client, 0);
+            mClientCard->setClientInfo(client);
+            mDetailTabs->setCurrentIndex(0);
+            mStack->setCurrentIndex(kDetailPage);
           });
   connect(mClientNotes, &ClientNotesPage::openEventRequested, this,
           &ClientWorkspacePage::openEventRequested);

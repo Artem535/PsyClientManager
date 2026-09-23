@@ -31,8 +31,8 @@ QT_END_NAMESPACE
 /**
  * @brief Main application window class.
  *
- * Manages the main UI and switching between different pages like
- * client info, event info, and client card.
+ * Manages the main UI and switching between the Clients, Calendar
+ * (event info), and Analytics pages.
  */
 class MainWindow final : public QMainWindow {
   Q_OBJECT
@@ -55,9 +55,14 @@ public:
   /**
    * @brief Adds the client information page to the application.
    * @param model Shared pointer to the client model.
+   * @param db Shared pointer to the database.
    */
   void addClientInfoPage(std::shared_ptr<QClientModel> model,
                          std::shared_ptr<pcm::database::Database> db);
+  /**
+   * @brief Adds the event information page to the application.
+   * @param model Pointer to the timeline model.
+   */
   void addEventInfoPage(QTimelineModel *model);
   void addAnalyticsPage(std::shared_ptr<pcm::database::Database> db);
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
