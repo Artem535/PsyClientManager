@@ -11,6 +11,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 # Add the library for the app module
 qt_add_library(${TARGET_NAME} STATIC
         client_info.cpp
+        client_workspace_page.cpp
 )
 
 
@@ -23,6 +24,8 @@ add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
         ${PROJECT_NAME}_client_model
+        ${PROJECT_NAME}_client_info_card_page
+        ${PROJECT_NAME}_client_notes_page
 )
 
 # Link Slint to the module
@@ -30,6 +33,8 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
         ${PROJECT_NAME}_client_model
+        ${PROJECT_NAME}_client_info_card_page
+        ${PROJECT_NAME}_client_notes_page
         Qt6::Widgets
 )
 
