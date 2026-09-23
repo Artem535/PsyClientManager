@@ -59,6 +59,7 @@ public slots:
   void selectClient(const std::optional<DuckClient> &client, int tabIndex);
 
 private:
+  QStackedWidget *mStack{nullptr};
   QTabWidget *mDetailTabs{nullptr};
   ClientInfo *mClientList{nullptr};
   QClientInfoCardPage *mClientCard{nullptr};
@@ -66,13 +67,14 @@ private:
 };
 ```
 
-`selectClient(client, tabIndex)` calls `setClientInfo` on both children and
-sets `mDetailTabs->setCurrentIndex(tabIndex)`; it is the single entry point
-used by every existing trigger (`displayButtonClicked` → tab 0,
-`notesButtonClicked` → tab 1, `ClientNotesPage::openClientCardRequested`
-→ tab 0, "Add client" → tab 0 in edit mode). Before any client is selected,
-the detail panel shows a centered placeholder ("Select a client to see
-their details") instead of the tab widget.
+`selectClient(client, tabIndex)` calls `setClientInfo` on both children,
+sets `mDetailTabs->setCurrentIndex(tabIndex)`, and switches `mStack` to the
+detail page; it is the single entry point used by every existing trigger
+(`displayButtonClicked` → tab 0, `notesButtonClicked` → tab 1,
+`ClientNotesPage::openClientCardRequested` → tab 0, "Add client" → tab 0
+in edit mode). The back button switches `mStack` back to the list page
+without clearing the loaded client, so reopening the same client's detail
+(e.g. via "Add client" → cancel → reselect) does not need a reload.
 
 `MainWindow::Pages` shrinks to `clientInfo`, `eventInfo`, `analytics`.
 `setClientNavigationVisible` and the `mPagesIndex`/`checkButton` branches
@@ -84,10 +86,18 @@ grep before removal) and are dropped from the enum.
 
 ## Layout
 
-The list keeps its current width and the "Add client"/search/show-inactive
-header bar. The detail panel takes the remaining horizontal space, matching
-the existing full-page proportions `QClientInfoCardPage` and
-`ClientNotesPage` already use, so neither widget needs internal resizing.
+`QClientDelegate::paint` renders each row of the client list as a full-width
+card (name, contacts, last session, status, inline action icons), sized to
+`option.rect.width()` — it is not designed to fit a narrow master column.
+Rather than shrink it (out of scope: it would need real visual redesign
+work of its own), `ClientWorkspacePage` uses an internal `QStackedWidget`
+with two full-width pages: the existing `ClientInfo` list, and a detail
+page holding the `QTabWidget` (Info/Notes) plus a "Back to clients" button
+above it. Selecting a client switches the internal stack to the detail
+page; the back button (and, once #48/#49 land, any future breadcrumb)
+switches back to the list. Neither `ClientInfo`'s row delegate nor
+`QClientInfoCardPage`/`ClientNotesPage`'s internal layout needs to change —
+each keeps the full page width it already assumes.
 
 ## Out of Scope
 
