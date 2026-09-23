@@ -1568,3 +1568,6 @@ vcpkg_installed/x64-linux/tools/poco/tec
 
 # Local isolated worktrees for parallel feature work
 .worktrees/
+
+# Subagent-driven-development scratch workspace (ledgers, briefs, reports)
+.superpowers/
