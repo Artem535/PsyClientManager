@@ -1565,3 +1565,6 @@ vcpkg_installed/x64-linux/tools/poco/f2cpsp
 vcpkg_installed/x64-linux/tools/poco/poco-arc
 vcpkg_installed/x64-linux/tools/poco/PocoDoc
 vcpkg_installed/x64-linux/tools/poco/tec
+
+# Local isolated worktrees for parallel feature work
+.worktrees/
