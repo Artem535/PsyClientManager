@@ -109,13 +109,17 @@ each keeps the full page width it already assumes.
 
 ## Failure Handling and Tests
 
-`selectClient(std::nullopt, ...)` (e.g. after the selected client is
-removed) hides the detail panel and shows the placeholder rather than
-leaving stale data on the tabs. GoogleTest coverage adds
-`ClientWorkspacePageTest` cases: selecting a client shows the detail panel
-on the requested tab, `notesButtonClicked` opens the Notes tab directly,
-`openClientCardRequested` from Notes switches to the Info tab without
-losing the currently loaded client, and clearing the selection restores the
-placeholder. Existing `ClientInfo`, `QClientInfoCardPage`, and
-`ClientNotesPage` test suites are unaffected since their internals are
-untouched.
+`removeButtonClicked` is only reachable from the list page's row actions,
+never from the detail page, so removing a client never leaves the detail
+page pointed at a stale selection — no extra clearing logic is needed.
+
+No test file in this repo constructs a `QApplication`, so there is no
+existing harness for widget-level GUI tests, and `ClientWorkspacePage` is
+thin routing over three already-tested widgets — introducing new GUI test
+infrastructure for it is out of scope here. It is verified by manual pass
+through `scripts/run-dev-isolated.sh`: select a client from the list (Info
+tab, detail page shown), use its Notes action (Notes tab directly), open
+its card from within Notes (switches to Info tab, same client), use the
+back button (returns to the list), and "Add client" (Info tab, edit mode).
+Existing `ClientInfo`, `QClientInfoCardPage`, and `ClientNotesPage` test
+suites are unaffected since their internals are untouched.
