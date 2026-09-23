@@ -59,6 +59,7 @@ private:
   void refreshQuickSlots() const;
   void refreshDaySummary() const;
   [[nodiscard]] QVector<QPair<QDateTime, QDateTime>> currentBusyIntervals() const;
+  [[nodiscard]] std::optional<DuckEvent> checkEventConflict(const DuckEvent &event) const;
 
   std::unique_ptr<Ui::EventInfo> mUi;
   RoundedCalendarWidget *mCalendarWidget = nullptr;

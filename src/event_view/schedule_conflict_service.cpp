@@ -28,17 +28,22 @@ bool rangesOverlap(const DuckEvent &left, const DuckEvent &right) {
 
 bool hasConflict(const DuckEvent &candidate,
                  const QVector<DuckEvent> &events) {
+  return findConflict(candidate, events).has_value();
+}
+
+std::optional<DuckEvent> findConflict(const DuckEvent &candidate,
+                                      const QVector<DuckEvent> &events) {
   for (const auto &event : events) {
     if (event.id == candidate.id || sameRecurringOccurrence(event, candidate)) {
       continue;
     }
 
     if (rangesOverlap(candidate, event)) {
-      return true;
+      return event;
     }
   }
 
-  return false;
+  return std::nullopt;
 }
 
 } // namespace pcm::schedule

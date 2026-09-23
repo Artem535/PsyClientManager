@@ -313,11 +313,16 @@ void QTimelineModel::updateEvent(const DuckEvent &event, const bool allowOverlap
 }
 
 bool QTimelineModel::hasConflict(const DuckEvent &event) const {
-  if (pcm::schedule::hasConflict(event, mEvents)) {
-    return true;
+  return findConflict(event).has_value();
+}
+
+std::optional<DuckEvent> QTimelineModel::findConflict(const DuckEvent &event) const {
+  if (const auto conflict = pcm::schedule::findConflict(event, mEvents);
+      conflict.has_value()) {
+    return conflict;
   }
 
-  return mDb && mDb->has_conflict(event);
+  return mDb ? mDb->find_conflict(event) : std::nullopt;
 }
 
 const QVector<DuckEvent> &QTimelineModel::events() const {

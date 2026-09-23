@@ -16,6 +16,7 @@
 #include <QSize>
 #include <QSpinBox>
 #include <QTimeZone>
+#include <QVBoxLayout>
 #include <algorithm>
 
 Q_LOGGING_CATEGORY(logEventDetails, "pcm.EventDetails")
@@ -317,6 +318,20 @@ void QEventDetailsWidget::initUi() {
   mUI->formLayout->insertRow(onlineSectionRow + 6, tr("Buffers"),
                              mBuffersWidget);
 
+  auto *conflictWidget = new QWidget(this);
+  auto *conflictLayout = new QVBoxLayout(conflictWidget);
+  conflictLayout->setContentsMargins(0, 0, 0, 0);
+  conflictLayout->setSpacing(6);
+  mConflictWarningLabel = new QLabel(conflictWidget);
+  mConflictWarningLabel->setWordWrap(true);
+  mConflictWarningLabel->setStyleSheet("color: #f0c36d;");
+  mConflictWarningLabel->setVisible(false);
+  mSuggestFreeSlotButton = new QPushButton(tr("Suggest free slot"), conflictWidget);
+  mSuggestFreeSlotButton->setVisible(false);
+  conflictLayout->addWidget(mConflictWarningLabel);
+  conflictLayout->addWidget(mSuggestFreeSlotButton, 0, Qt::AlignLeft);
+  mUI->formLayout->insertRow(onlineSectionRow + 7, QString(), conflictWidget);
+
   mUI->mAddButton->setIcon(QIcon(":/icons/calendar-plus-solid-full.svg"));
   mUI->mAddButton->setIconSize(QSize(16, 16));
   mUI->mChangeButton->setIcon(QIcon(":/icons/user-pen-solid-full.svg"));
@@ -363,7 +378,14 @@ void QEventDetailsWidget::initConnections() {
         selectedWeekdayRule().isEmpty()) {
       selectWeekday(date.dayOfWeek(), true);
     }
+    updateConflictWarning();
   });
+  connect(mBufferBeforeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+          [this](int) { updateConflictWarning(); });
+  connect(mBufferAfterSpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+          [this](int) { updateConflictWarning(); });
+  connect(mSuggestFreeSlotButton, &QPushButton::clicked, this,
+          &QEventDetailsWidget::onSuggestFreeSlotClicked);
 }
 
 void QEventDetailsWidget::initDefaultStyle() {
@@ -481,6 +503,7 @@ void QEventDetailsWidget::loadEvent(QEventItem *event,
   }
 
   updateButtonState();
+  updateConflictWarning();
   onEventTypeToggled(isWorkItem);
   onOnlineSessionToggled(event->isOnline());
   updateCancellationControls();
@@ -652,8 +675,9 @@ void QEventDetailsWidget::rejectPendingSave() {
 }
 
 void QEventDetailsWidget::setConflictChecker(
-    std::function<bool(const DuckEvent &)> checker) {
+    std::function<std::optional<DuckEvent>(const DuckEvent &)> checker) {
   mConflictChecker = std::move(checker);
+  updateConflictWarning();
 }
 
 QEventItem *QEventDetailsWidget::currentEvent() const {
@@ -709,11 +733,11 @@ void QEventDetailsWidget::onApplyClicked() {
 
   if (mCurrentEvent) {
     const auto eventData = mCurrentEvent->toEvent();
-    if (mConflictChecker && mConflictChecker(eventData)) {
-      QMessageBox::warning(
-          this, tr(": ERROR_TITLE"),
-          tr("The selected time range overlaps an existing event."));
-      return;
+    if (mConflictChecker) {
+      if (const auto conflict = mConflictChecker(eventData); conflict.has_value()) {
+        QMessageBox::warning(this, tr(": ERROR_TITLE"), conflictWarningText(*conflict));
+        return;
+      }
     }
   }
 
@@ -849,6 +873,7 @@ void QEventDetailsWidget::onTimeFromChanged(const QTime &timeFrom) {
     mUI->mTimeTo->setTime(timeFrom.addSecs(60)); // At least 1 minute
   }
   updateButtonState();
+  updateConflictWarning();
 }
 
 void QEventDetailsWidget::onTimeToChanged(const QTime &timeTo) {
@@ -856,6 +881,7 @@ void QEventDetailsWidget::onTimeToChanged(const QTime &timeTo) {
     mUI->mTimeFrom->setTime(timeTo.addSecs(-60));
   }
   updateButtonState();
+  updateConflictWarning();
 }
 
 void QEventDetailsWidget::updateButtonState() const {
@@ -979,4 +1005,101 @@ DuckEvent QEventDetailsWidget::collectEventData() const {
   event.buffer_before_minutes = mBufferBeforeSpinBox->value();
   event.buffer_after_minutes = mBufferAfterSpinBox->value();
   return event;
+}
+
+DuckEvent QEventDetailsWidget::liveCandidateEvent() const {
+  DuckEvent event;
+  if (mCurrentEvent) {
+    event.id = mCurrentEvent->getId();
+    const auto persisted = mCurrentEvent->toEvent();
+    event.series_id = persisted.series_id;
+    event.original_occurrence_start = persisted.original_occurrence_start;
+  }
+  event.start_date = QDateTime(mUI->mEventDate->date(), mUI->mTimeFrom->time(),
+                               QTimeZone::systemTimeZone())
+                         .toMSecsSinceEpoch();
+  event.end_date = QDateTime(mUI->mEventDate->date(), mUI->mTimeTo->time(),
+                             QTimeZone::systemTimeZone())
+                       .toMSecsSinceEpoch();
+  event.buffer_before_minutes = mBufferBeforeSpinBox->value();
+  event.buffer_after_minutes = mBufferAfterSpinBox->value();
+  return event;
+}
+
+QString QEventDetailsWidget::conflictWarningText(const DuckEvent &conflict) const {
+  const auto start = QDateTime::fromMSecsSinceEpoch(conflict.start_date.value_or(0),
+                                                     QTimeZone::UTC)
+                         .toLocalTime();
+  const auto end = QDateTime::fromMSecsSinceEpoch(conflict.end_date.value_or(0),
+                                                   QTimeZone::UTC)
+                       .toLocalTime();
+  const QString timeRange = QStringLiteral("%1–%2").arg(
+      start.toString(QStringLiteral("HH:mm")), end.toString(QStringLiteral("HH:mm")));
+  const QString name =
+      QString::fromStdString(conflict.name.value_or(std::string())).trimmed();
+  if (name.isEmpty()) {
+    return tr("Overlaps with an existing event, %1.").arg(timeRange);
+  }
+  return tr("Overlaps with \"%1\", %2.").arg(name, timeRange);
+}
+
+void QEventDetailsWidget::updateConflictWarning() {
+  if (!mConflictWarningLabel || !mSuggestFreeSlotButton) {
+    return;
+  }
+
+  std::optional<DuckEvent> conflict;
+  if (mConflictChecker) {
+    const auto candidate = liveCandidateEvent();
+    if (candidate.start_date.has_value() && candidate.end_date.has_value() &&
+        *candidate.end_date > *candidate.start_date) {
+      conflict = mConflictChecker(candidate);
+    }
+  }
+
+  mConflictWarningLabel->setVisible(conflict.has_value());
+  mSuggestFreeSlotButton->setVisible(conflict.has_value());
+  if (conflict.has_value()) {
+    mConflictWarningLabel->setText(conflictWarningText(*conflict));
+  }
+}
+
+void QEventDetailsWidget::onSuggestFreeSlotClicked() {
+  if (!mConflictChecker) {
+    return;
+  }
+
+  auto candidate = liveCandidateEvent();
+  if (!candidate.start_date.has_value() || !candidate.end_date.has_value()) {
+    return;
+  }
+  const auto durationMs = *candidate.end_date - *candidate.start_date;
+  const auto dayEndMs = QDateTime(mUI->mEventDate->date(), pcm::app_settings::workDayEnd(),
+                                  QTimeZone::systemTimeZone())
+                            .toMSecsSinceEpoch();
+
+  auto cursor = *candidate.start_date;
+  // Bounded walk: each iteration jumps past the conflict it just found, so
+  // this terminates in at most as many steps as there are events that day.
+  for (int iteration = 0; iteration < 100; ++iteration) {
+    candidate.start_date = cursor;
+    candidate.end_date = cursor + durationMs;
+    if (*candidate.end_date > dayEndMs) {
+      return; // No room left in the work day.
+    }
+
+    const auto conflict = mConflictChecker(candidate);
+    if (!conflict.has_value()) {
+      const auto newStart =
+          QDateTime::fromMSecsSinceEpoch(cursor, QTimeZone::UTC).toLocalTime();
+      const auto newEnd =
+          QDateTime::fromMSecsSinceEpoch(*candidate.end_date, QTimeZone::UTC).toLocalTime();
+      mUI->mTimeFrom->setTime(newStart.time());
+      mUI->mTimeTo->setTime(newEnd.time());
+      return;
+    }
+
+    const auto conflictEnd = conflict->end_date.value_or(cursor + durationMs);
+    cursor = conflictEnd + conflict->buffer_after_minutes * 60'000;
+  }
 }

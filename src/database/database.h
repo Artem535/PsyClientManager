@@ -89,6 +89,7 @@ public:
   // std::vector<int64_t> get_event_ids(int64_t date);
 
   bool has_conflict(const DuckEvent &event);
+  std::optional<DuckEvent> find_conflict(const DuckEvent &event);
   std::vector<DuckEvent> get_day_events(const int64_t &start_ms,
                                        const int64_t &end_ms);
   std::vector<DuckEvent> get_upcoming_events(const int64_t &start_ms,

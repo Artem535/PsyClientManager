@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.30] - 2026-09-22
+
+### Added
+
+- The event editor now warns inline when the scheduled time overlaps an
+  existing event (including buffer time), showing the name and time range
+  of the conflicting event, with a "Suggest free slot" button that shifts
+  the event to the next open slot on the same day.
+
 ## [0.1.29] - 2026-09-15
 
 ### Fixed

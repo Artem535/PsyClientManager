@@ -66,3 +66,40 @@ TEST(ScheduleConflictServiceTest, IgnoresMaterializedVersionOfSameOccurrence) {
 
   EXPECT_FALSE(pcm::schedule::hasConflict(candidate, {materialized}));
 }
+
+TEST(ScheduleConflictServiceTest, FindConflictReturnsTheOverlappingEvent) {
+  const auto candidate = eventWithRange(2, 1'500, 2'500);
+  const auto existing = eventWithRange(1, 1'000, 2'000);
+
+  const auto conflict = pcm::schedule::findConflict(candidate, {existing});
+  ASSERT_TRUE(conflict.has_value());
+  EXPECT_EQ(conflict->id, 1);
+}
+
+TEST(ScheduleConflictServiceTest, FindConflictReturnsNulloptWhenNoOverlap) {
+  const auto candidate = eventWithRange(2, 2'000, 3'000);
+  const auto existing = eventWithRange(1, 1'000, 2'000);
+
+  EXPECT_FALSE(pcm::schedule::findConflict(candidate, {existing}).has_value());
+}
+
+TEST(ScheduleConflictServiceTest, FindConflictReturnsFirstOverlapInEventOrder) {
+  const auto candidate = eventWithRange(3, 1'500, 2'500);
+  const auto first = eventWithRange(1, 1'000, 2'000);
+  const auto second = eventWithRange(2, 1'800, 2'800);
+
+  const auto conflict = pcm::schedule::findConflict(candidate, {first, second});
+  ASSERT_TRUE(conflict.has_value());
+  EXPECT_EQ(conflict->id, 1);
+}
+
+TEST(ScheduleConflictServiceTest, FindConflictSkipsSelfAndSameOccurrenceJustLikeHasConflict) {
+  auto candidate = eventWithRange(8, 1'500, 2'500);
+  auto materialized = eventWithRange(9, 1'000, 3'000);
+  candidate.series_id = 42;
+  candidate.original_occurrence_start = 1'500;
+  materialized.series_id = 42;
+  materialized.original_occurrence_start = 1'500;
+
+  EXPECT_FALSE(pcm::schedule::findConflict(candidate, {candidate, materialized}).has_value());
+}
