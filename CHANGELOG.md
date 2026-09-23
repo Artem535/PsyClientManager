@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.32] - 2026-09-23
+
+### Changed
+
+- Simplified the left-nav information architecture: the primary nav now
+  shows only Calendar, Clients, and Analytics, with client Details and
+  Notes reached only via a selected client's workspace page instead of
+  standalone top-level buttons.
+
 ## [0.1.31] - 2026-09-22
 
 ### Added

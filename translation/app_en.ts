@@ -452,6 +452,21 @@
     </message>
 </context>
 <context>
+    <name>ClientWorkspacePage</name>
+    <message>
+        <source>Back to clients</source>
+        <translation>Back to clients</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation>Info</translation>
+    </message>
+    <message>
+        <source>Notes</source>
+        <translation>Notes</translation>
+    </message>
+</context>
+<context>
     <name>DaySummaryWidget</name>
     <message>
         <source>Free all day</source>
@@ -570,14 +585,6 @@
         <translation>Analytics</translation>
     </message>
     <message>
-        <source>: NAV_DETAILS</source>
-        <translation>Details</translation>
-    </message>
-    <message>
-        <source>Notes</source>
-        <translation>Notes</translation>
-    </message>
-    <message>
         <source>Search clients</source>
         <translation>Search clients</translation>
     </message>
@@ -616,10 +623,6 @@
     <message>
         <source>Calendar</source>
         <translation>Calendar</translation>
-    </message>
-    <message>
-        <source>Details</source>
-        <translation>Details</translation>
     </message>
     <message>
         <source>Page</source>

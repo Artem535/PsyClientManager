@@ -452,6 +452,21 @@
     </message>
 </context>
 <context>
+    <name>ClientWorkspacePage</name>
+    <message>
+        <source>Back to clients</source>
+        <translation>Назад к клиентам</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation>Информация</translation>
+    </message>
+    <message>
+        <source>Notes</source>
+        <translation>Заметки</translation>
+    </message>
+</context>
+<context>
     <name>DaySummaryWidget</name>
     <message>
         <source>Free all day</source>
@@ -571,10 +586,6 @@
         <translation>Аналитика</translation>
     </message>
     <message>
-        <source>: NAV_DETAILS</source>
-        <translation>Детали</translation>
-    </message>
-    <message>
         <source>Search clients</source>
         <translation>Поиск клиентов</translation>
     </message>
@@ -585,10 +596,6 @@
     <message>
         <source>Show inactive</source>
         <translation>Показать неактивных</translation>
-    </message>
-    <message>
-        <source>Notes</source>
-        <translation>Заметки</translation>
     </message>
     <message>
         <source>Opened %1</source>
@@ -617,10 +624,6 @@
     <message>
         <source>Calendar</source>
         <translation>Календарь</translation>
-    </message>
-    <message>
-        <source>Details</source>
-        <translation>Детали</translation>
     </message>
     <message>
         <source>Page</source>
