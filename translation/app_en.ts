@@ -627,6 +627,33 @@
     </message>
 </context>
 <context>
+    <name>Notifications</name>
+    <message>
+        <source>PsyClientManager</source>
+        <translation>PsyClientManager</translation>
+    </message>
+    <message>
+        <source>Upcoming session</source>
+        <translation>Upcoming session</translation>
+    </message>
+    <message>
+        <source>Scheduled session</source>
+        <translation>Scheduled session</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Session</translation>
+    </message>
+    <message>
+        <source>%1 at %2</source>
+        <translation>%1 at %2</translation>
+    </message>
+    <message>
+        <source>Client: %1</source>
+        <translation>Client: %1</translation>
+    </message>
+</context>
+<context>
     <name>QClientDelegate</name>
     <message>
         <source>: VALUE_UNDEFINED</source>
@@ -1444,6 +1471,18 @@ See you!</translation>
         <translation> min</translation>
     </message>
     <message>
+        <source>Full details</source>
+        <translation>Full details</translation>
+    </message>
+    <message>
+        <source>Hidden (recommended)</source>
+        <translation>Hidden (recommended)</translation>
+    </message>
+    <message>
+        <source>Minimal (time only)</source>
+        <translation>Minimal (time only)</translation>
+    </message>
+    <message>
         <source>Session reminders</source>
         <translation>Session reminders</translation>
     </message>
@@ -1458,6 +1497,14 @@ See you!</translation>
     <message>
         <source>How many minutes before the session the reminder should appear.</source>
         <translation>How many minutes before the session the reminder should appear.</translation>
+    </message>
+    <message>
+        <source>Notification content</source>
+        <translation>Notification content</translation>
+    </message>
+    <message>
+        <source>How much a reminder reveals on a shared or locked screen. Client name and session title are never shown outside Full details.</source>
+        <translation>How much a reminder reveals on a shared or locked screen. Client name and session title are never shown outside Full details.</translation>
     </message>
     <message>
         <source>Privacy</source>
@@ -1790,22 +1837,6 @@ Your previous data was kept.</translation>
     <message>
         <source>: VALUE_UNDEFINED</source>
         <translation>Undefined</translation>
-    </message>
-    <message>
-        <source>Upcoming session</source>
-        <translation>Upcoming session</translation>
-    </message>
-    <message>
-        <source>Client: %1</source>
-        <translation>Client: %1</translation>
-    </message>
-    <message>
-        <source>Session</source>
-        <translation>Session</translation>
-    </message>
-    <message>
-        <source>%1 at %2</source>
-        <translation>%1 at %2</translation>
     </message>
     <message>
         <source>Open</source>

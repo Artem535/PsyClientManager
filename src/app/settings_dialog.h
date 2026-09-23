@@ -83,6 +83,7 @@ private:
   QPushButton *mAutoBackupBrowseButton{nullptr};
   oclero::qlementine::Switch *mNotificationsEnabledSwitch{nullptr};
   QSpinBox *mNotificationLeadMinutesSpinBox{nullptr};
+  QComboBox *mNotificationPrivacyModeCombo{nullptr};
   oclero::qlementine::Switch *mAppLockEnabledSwitch{nullptr};
   QSpinBox *mAppLockTimeoutSpinBox{nullptr};
   QPushButton *mChangeAppLockCredentialButton{nullptr};

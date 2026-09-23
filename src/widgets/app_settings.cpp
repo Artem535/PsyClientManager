@@ -13,6 +13,7 @@ constexpr auto kPreventEventOverlapsKey = "event/preventOverlaps";
 constexpr auto kShowStatusBarMessagesKey = "ui/showStatusBarMessages";
 constexpr auto kNotificationsEnabledKey = "notification/enabled";
 constexpr auto kNotificationLeadMinutesKey = "notification/leadMinutes";
+constexpr auto kNotificationPrivacyModeKey = "notification/privacyMode";
 constexpr auto kAppLockTimeoutMinutesKey = "privacy/appLockTimeoutMinutes";
 constexpr auto kClearSensitiveClipboardKey = "privacy/clearSensitiveClipboard";
 constexpr auto kSensitiveClipboardClearDelaySecondsKey =
@@ -74,6 +75,10 @@ int defaultBufferAfterMinutesValue() { return 0; }
 
 int defaultNotificationLeadMinutesValue() {
   return 30;
+}
+
+pcm::NotificationPrivacyMode defaultNotificationPrivacyModeValue() {
+  return pcm::NotificationPrivacyMode::Hidden;
 }
 
 int defaultAppLockTimeoutMinutesValue() { return 10; }
@@ -154,6 +159,28 @@ int notificationLeadMinutes() {
 void setNotificationLeadMinutes(const int minutes) {
   QSettings settings;
   settings.setValue(kNotificationLeadMinutesKey, minutes);
+}
+
+NotificationPrivacyMode notificationPrivacyMode() {
+  QSettings settings;
+  const auto stored = settings.value(
+      kNotificationPrivacyModeKey,
+      static_cast<int>(defaultNotificationPrivacyModeValue()));
+  const auto value = stored.toInt();
+  switch (value) {
+  case static_cast<int>(NotificationPrivacyMode::Full):
+    return NotificationPrivacyMode::Full;
+  case static_cast<int>(NotificationPrivacyMode::Minimal):
+    return NotificationPrivacyMode::Minimal;
+  case static_cast<int>(NotificationPrivacyMode::Hidden):
+  default:
+    return NotificationPrivacyMode::Hidden;
+  }
+}
+
+void setNotificationPrivacyMode(const NotificationPrivacyMode mode) {
+  QSettings settings;
+  settings.setValue(kNotificationPrivacyModeKey, static_cast<int>(mode));
 }
 
 int appLockTimeoutMinutes() {

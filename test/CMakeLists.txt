@@ -63,6 +63,21 @@ target_link_libraries(PsyClientManager_change_log_text_tests PRIVATE
 )
 gtest_discover_tests(PsyClientManager_change_log_text_tests)
 
+# Notification text tests
+add_executable(PsyClientManager_notification_text_tests
+    notification_text_tests.cpp
+    ../src/widgets/notification_text.cpp
+)
+target_include_directories(PsyClientManager_notification_text_tests PRIVATE
+    ../src/widgets
+)
+target_link_libraries(PsyClientManager_notification_text_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    Qt6::Core
+)
+gtest_discover_tests(PsyClientManager_notification_text_tests)
+
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
