@@ -36,6 +36,27 @@ ClientWorkspacePage::ClientWorkspacePage(
 
   connect(mBackButton, &QPushButton::clicked, this,
           &ClientWorkspacePage::showList);
+
+  connect(mClientList, &ClientInfo::displayButtonClicked, this,
+          [this](const std::optional<DuckClient> &client) {
+            selectClient(client, 0);
+          });
+  connect(mClientList, &ClientInfo::notesButtonClicked, this,
+          [this](const std::optional<DuckClient> &client) {
+            selectClient(client, 1);
+          });
+  connect(mClientList, &ClientInfo::removeButtonClicked, this,
+          &ClientWorkspacePage::removeButtonClicked);
+
+  connect(mClientNotes, &ClientNotesPage::openClientCardRequested, this,
+          [this](const std::optional<DuckClient> &client) {
+            selectClient(client, 0);
+          });
+  connect(mClientNotes, &ClientNotesPage::openEventRequested, this,
+          &ClientWorkspacePage::openEventRequested);
+
+  connect(mClientCard, &QClientInfoCardPage::provideSaveClient, this,
+          &ClientWorkspacePage::provideSaveClient);
 }
 
 void ClientWorkspacePage::selectClient(
