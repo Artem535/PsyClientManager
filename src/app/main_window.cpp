@@ -51,19 +51,11 @@ MainWindow::MainWindow(QWidget *parent)
       new TabButton(QIcon(":/icons/users-line-solid-full.svg"), tr(": NAV_CLIENTS"), this);
   mBtnAnalytics =
       new TabButton(QIcon(":/icons/chart-area-solid-full.svg"), tr("Analytics"), this);
-  mBtnProfile =
-      new TabButton(QIcon(":/icons/users-gear-solid-full.svg"), tr(": NAV_DETAILS"), this);
-  mBtnNotes =
-      new TabButton(QIcon(":/icons/notes.svg"), tr("Notes"), this);
 
   // Add buttons to the vertical layout
   mUi->verticalLayout->addWidget(mBtnCalendar);
   mUi->verticalLayout->addWidget(mBtnClients);
   mUi->verticalLayout->addWidget(mBtnAnalytics);
-  mUi->verticalLayout->addWidget(mBtnProfile);
-  mUi->verticalLayout->addWidget(mBtnNotes);
-  mBtnProfile->hide();
-  mBtnNotes->hide();
 
   // Add stretch to push buttons to the top
   mUi->verticalLayout->addStretch();
@@ -74,8 +66,9 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 
-void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
-  const auto page = new ClientInfo(std::move(model), this);
+void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model,
+                                   std::shared_ptr<pcm::database::Database> db) {
+  const auto page = new ClientWorkspacePage(std::move(model), std::move(db), this);
   mPages.insertOrAssign(Pages::clientInfo, page);
 
   const int index = mUi->stackedWidget->addWidget(page);
@@ -125,38 +118,17 @@ void MainWindow::addAnalyticsPage(std::shared_ptr<pcm::database::Database> db) {
 }
 
 
-void MainWindow::addClientCardPage(std::shared_ptr<pcm::database::Database> db) {
-  const auto page = new QClientInfoCardPage(std::move(db), this);
-  mPages.insertOrAssign(Pages::clientCard, page);
-
-  const int index = mUi->stackedWidget->addWidget(page);
-  mPagesIndex.insertOrAssign(Pages::clientCard, index);
-}
-
-void MainWindow::addClientNotesPage(std::shared_ptr<pcm::database::Database> db) {
-  const auto page = new ClientNotesPage(std::move(db), this);
-  mPages.insertOrAssign(Pages::clientNotes, page);
-
-  const int index = mUi->stackedWidget->addWidget(page);
-  mPagesIndex.insertOrAssign(Pages::clientNotes, index);
-}
-
 void MainWindow::setDatabase(std::shared_ptr<pcm::database::Database> db) {
   mDb = std::move(db);
 }
 
 
 void MainWindow::connectSignals() {
-  const auto clientInfoPage =
-      dynamic_cast<ClientInfo *>(mPages[Pages::clientInfo]);
-  const auto clientCardPage =
-      dynamic_cast<QClientInfoCardPage *>(mPages[Pages::clientCard]);
-  const auto clientNotesPage =
-      dynamic_cast<ClientNotesPage *>(mPages[Pages::clientNotes]);
+  const auto clientWorkspace =
+      dynamic_cast<ClientWorkspacePage *>(mPages[Pages::clientInfo]);
   const auto eventInfoPage =
       dynamic_cast<QEventInfoPage *>(mPages[Pages::eventInfo]);
 
-  // Connect navigation buttons to switch pages
   connect(mBtnCalendar, &QPushButton::clicked,
           [this]() { showPage(Pages::eventInfo, mBtnCalendar); });
 
@@ -166,63 +138,28 @@ void MainWindow::connectSignals() {
   connect(mBtnAnalytics, &QPushButton::clicked,
           [this]() { showPage(Pages::analytics, mBtnAnalytics); });
 
-  connect(mBtnProfile, &QPushButton::clicked,
-          [this]() { showPage(Pages::clientCard, mBtnProfile); });
-  connect(mBtnNotes, &QPushButton::clicked,
-          [this]() { showPage(Pages::clientNotes, mBtnNotes); });
-
-  // When a client is selected in the list, show its info in the client card page
-  connect(clientInfoPage, &ClientInfo::displayButtonClicked, clientCardPage,
-          &QClientInfoCardPage::setClientInfo);
-
-  // Switch to the client card page after selecting a client
-  connect(clientInfoPage, &ClientInfo::displayButtonClicked,
-          [this]() {
-            setClientNavigationVisible(Pages::clientCard, true);
-            showPage(Pages::clientCard, mBtnProfile);
-          });
-
-  connect(clientInfoPage, &ClientInfo::notesButtonClicked, clientNotesPage,
-          &ClientNotesPage::setClientInfo);
-  connect(clientInfoPage, &ClientInfo::notesButtonClicked, [this]() {
-    setClientNavigationVisible(Pages::clientNotes, true);
-    showPage(Pages::clientNotes, mBtnNotes);
-  });
-
-  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
-          clientCardPage, &QClientInfoCardPage::setClientInfo);
-  connect(clientNotesPage, &ClientNotesPage::openClientCardRequested,
-          [this]() {
-            setClientNavigationVisible(Pages::clientCard, true);
-            showPage(Pages::clientCard, mBtnProfile);
-          });
-
-  connect(clientNotesPage, &ClientNotesPage::openEventRequested,
+  connect(clientWorkspace, &ClientWorkspacePage::openEventRequested,
           [this, eventInfoPage](const int64_t eventId, const qint64 dayMs) {
             eventInfoPage->openEventOnDay(eventId, dayMs);
             showPage(Pages::eventInfo, mBtnCalendar);
           });
 
-  connect(clientInfoPage, &ClientInfo::removeButtonClicked, this,
+  connect(clientWorkspace, &ClientWorkspacePage::removeButtonClicked, this,
           [this](const int64_t clientId) { emit provideRemoveClient(clientId); });
 
-  connect(mClientSearchInput, &QLineEdit::textChanged, clientInfoPage,
-          &ClientInfo::setSearchQuery);
-  connect(mShowInactiveClientsSwitch, &QAbstractButton::toggled, clientInfoPage,
-          &ClientInfo::setShowInactiveClients);
+  connect(mClientSearchInput, &QLineEdit::textChanged,
+          clientWorkspace->clientList(), &ClientInfo::setSearchQuery);
+  connect(mShowInactiveClientsSwitch, &QAbstractButton::toggled,
+          clientWorkspace->clientList(), &ClientInfo::setShowInactiveClients);
 
-  connect(mAddClientButton, &QPushButton::clicked, this, [this, clientCardPage]() {
-    clientCardPage->setClientInfo(std::nullopt);
-    clientCardPage->enterInEditMode();
-    setClientNavigationVisible(Pages::clientCard, true);
-    showPage(Pages::clientCard, mBtnProfile);
+  connect(mAddClientButton, &QPushButton::clicked, this, [this, clientWorkspace]() {
+    clientWorkspace->selectClient(std::nullopt, 0);
+    clientWorkspace->clientCard()->enterInEditMode();
   });
 
-  // Forward the save client signal from the client card to the main window
-  connect(clientCardPage, &QClientInfoCardPage::provideSaveClient,
+  connect(clientWorkspace, &ClientWorkspacePage::provideSaveClient,
           [&](const auto &client) { emit provideSaveClient(client); });
 
-  // Forward the client-event pair save signal from event info to main window
   connect(eventInfoPage, &QEventInfoPage::provideClientEventPairSave,
           [this](const int64_t clientId, const int64_t eventId) {
             emit provideClientEventPairSave(clientId, eventId);
@@ -254,8 +191,6 @@ void MainWindow::checkButton(QPushButton *btn) const {
   mBtnCalendar->setChecked(false);
   mBtnClients->setChecked(false);
   mBtnAnalytics->setChecked(false);
-  mBtnProfile->setChecked(false);
-  mBtnNotes->setChecked(false);
   btn->setChecked(true);
 }
 
@@ -289,24 +224,6 @@ void MainWindow::applyPageCustomWidget(const Pages page) {
     widget->setParent(mUi->pageCustomWidgetHost);
     widget->show();
     mPageCustomWidgetLayout->addWidget(widget);
-  }
-}
-
-void MainWindow::setClientNavigationVisible(const Pages page,
-                                            const bool visible) const {
-  switch (page) {
-    case Pages::clientCard:
-      if (mBtnProfile) {
-        mBtnProfile->setVisible(visible);
-      }
-      break;
-    case Pages::clientNotes:
-      if (mBtnNotes) {
-        mBtnNotes->setVisible(visible);
-      }
-      break;
-    default:
-      break;
   }
 }
 
@@ -378,10 +295,6 @@ QString MainWindow::pageTitle(const Pages page) const {
       return tr("Calendar");
     case Pages::analytics:
       return tr("Analytics");
-    case Pages::clientCard:
-      return tr("Details");
-    case Pages::clientNotes:
-      return tr("Notes");
   }
 
   return tr("Page");
@@ -398,9 +311,9 @@ void MainWindow::refreshPageAppearance() {
     analyticsPage->refresh();
   }
 
-  if (const auto notesPage =
-          dynamic_cast<ClientNotesPage *>(mPages.value(Pages::clientNotes, nullptr))) {
-    notesPage->refresh();
+  if (const auto workspace =
+          dynamic_cast<ClientWorkspacePage *>(mPages.value(Pages::clientInfo, nullptr))) {
+    workspace->clientNotes()->refresh();
   }
 }
 

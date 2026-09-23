@@ -123,10 +123,8 @@ int Application::run(int argc, char *argv[]) {
   mClientModel = std::make_shared<QClientModel>(mDb);
 
   mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
-  mMainWindow->addClientInfoPage(mClientModel);
+  mMainWindow->addClientInfoPage(mClientModel, mDb);
   mMainWindow->addAnalyticsPage(mDb);
-  mMainWindow->addClientCardPage(mDb);
-  mMainWindow->addClientNotesPage(mDb);
   mMainWindow->setDatabase(mDb);
   mMainWindow->connectSignals();
   mMainWindow->installEventFilter(this);

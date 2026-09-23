@@ -1,11 +1,9 @@
 #pragma once
 
 #include "analytics_page.h"
-#include "client_info.h"
-#include "client_notes_page.h"
+#include "client_workspace_page.h"
 #include "event_info.h"
 #include "database.h"
-#include "client_info_card.h"
 #include "settings_dialog.h"
 #include "tab_button.h"
 
@@ -43,7 +41,7 @@ public:
   /**
    * @brief Enum to identify the available pages in the application.
    */
-  enum class Pages { clientInfo, eventInfo, analytics, clientCard, clientNotes };
+  enum class Pages { clientInfo, eventInfo, analytics };
 
   /**
    * @brief Constructor for the MainWindow class.
@@ -58,20 +56,10 @@ public:
    * @brief Adds the client information page to the application.
    * @param model Shared pointer to the client model.
    */
-  void addClientInfoPage(std::shared_ptr<QClientModel> model);
-
-  /**
-   * @brief Adds the event information page to the application.
-   * @param model Pointer to the timeline model.
-   */
+  void addClientInfoPage(std::shared_ptr<QClientModel> model,
+                         std::shared_ptr<pcm::database::Database> db);
   void addEventInfoPage(QTimelineModel *model);
   void addAnalyticsPage(std::shared_ptr<pcm::database::Database> db);
-
-  /**
-   * @brief Adds the client card (details) page to the application.
-   */
-  void addClientCardPage(std::shared_ptr<pcm::database::Database> db);
-  void addClientNotesPage(std::shared_ptr<pcm::database::Database> db);
   void setDatabase(std::shared_ptr<pcm::database::Database> db);
 
   /**
@@ -123,8 +111,6 @@ private:
   TabButton *mBtnCalendar{nullptr};
   TabButton *mBtnClients{nullptr};
   TabButton *mBtnAnalytics{nullptr};
-  TabButton *mBtnProfile{nullptr};
-  TabButton *mBtnNotes{nullptr};
   QWidget *mClientPageActions{nullptr};
   oclero::qlementine::LineEdit *mClientSearchInput{nullptr};
   oclero::qlementine::Switch *mShowInactiveClientsSwitch{nullptr};
@@ -158,7 +144,6 @@ private:
    * @param page Target page.
    */
   void applyPageCustomWidget(Pages page);
-  void setClientNavigationVisible(Pages page, bool visible) const;
   void setupUtilityButtons();
   void openSettingsDialog();
   void openAboutDialog();
