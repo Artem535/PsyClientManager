@@ -129,6 +129,7 @@ private:
   oclero::qlementine::LineEdit *mClientSearchInput{nullptr};
   oclero::qlementine::Switch *mShowInactiveClientsSwitch{nullptr};
   QPushButton *mAddClientButton{nullptr};
+  QPushButton *mBtnBackToClients{nullptr};
   QPushButton *mBtnSettings{nullptr};
   QPushButton *mBtnAbout{nullptr};
   QHBoxLayout *mPageCustomWidgetLayout{nullptr};

@@ -590,6 +590,10 @@
         <translation>Show inactive</translation>
     </message>
     <message>
+        <source>Back to clients</source>
+        <translation>Back to clients</translation>
+    </message>
+    <message>
         <source>Opened %1</source>
         <translation>Opened %1</translation>
     </message>

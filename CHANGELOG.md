@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.32] - 2026-09-24
+
+### Added
+
+- A "Back to clients" button on the Details and Notes pages, for quicker
+  navigation back to the client list.
+
 ## [0.1.31] - 2026-09-22
 
 ### Added
