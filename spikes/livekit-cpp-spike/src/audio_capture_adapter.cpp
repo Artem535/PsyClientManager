@@ -1,3 +1,4 @@
+// Throwaway spike for issue #77 — not production quality.
 #include "audio_capture_adapter.h"
 
 #include <cstdint>
@@ -6,13 +7,20 @@
 
 AudioCaptureAdapter::AudioCaptureAdapter(QObject *parent)
     : QObject(parent),
-      mAudioSource(std::make_shared<livekit::AudioSource>(kSampleRate, kChannels, kFrameMs)),
+      // Third ctor arg is queue_size_ms (AudioSource's internal buffer
+      // window), NOT a frame duration — 0 means real-time capture mode
+      // (captureFrame() is consumed synchronously, no blocking/timeout).
+      // kFrameMs is unrelated and only sizes AudioChunker's frames below.
+      mAudioSource(std::make_shared<livekit::AudioSource>(kSampleRate, kChannels, 0)),
       mChunker(static_cast<std::size_t>(kSampleRate * kFrameMs / 1000), kChannels) {}
 
 AudioCaptureAdapter::~AudioCaptureAdapter() { stop(); }
 
 void AudioCaptureAdapter::start(const QAudioDevice &device) {
   stop();
+  // Discard any partial-frame remainder left over from the previous device
+  // so it isn't prepended to the new device's audio stream.
+  mChunker.reset();
 
   QAudioFormat format;
   format.setSampleRate(kSampleRate);

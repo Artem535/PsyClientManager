@@ -13,10 +13,18 @@ int main(int argc, char *argv[]) {
   livekit::initialize(livekit::LogLevel::Info);
   std::cout << "LiveKit version: " << LIVEKIT_BUILD_VERSION_FULL << std::endl;
 
-  SpikeWindow window;
-  window.show();
-
-  const int result = app.exec();
+  int result = 0;
+  {
+    // SpikeWindow must be destroyed before livekit::shutdown() runs: its
+    // destructor does Room disconnect, track unpublish, and stream close —
+    // all LiveKit FFI calls. Scoping it here guarantees ~SpikeWindow() runs
+    // at the closing brace, strictly before shutdown() below, rather than at
+    // main()'s return (which would be after shutdown() already tore down
+    // the SDK).
+    SpikeWindow window;
+    window.show();
+    result = app.exec();
+  }
 
   livekit::shutdown();
   return result;
