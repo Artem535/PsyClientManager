@@ -18,6 +18,8 @@ add_library(token_backend_lib STATIC
   src/db/sqlite_connection.cpp
   src/db/migrations.cpp
   src/db/accounts_repository.cpp
+  src/db/meetings_repository.cpp
+  src/db/invitations_repository.cpp
   src/crypto/random_token.cpp
   src/crypto/hashing.cpp
   src/crypto/livekit_jwt.cpp

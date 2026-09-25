@@ -8,6 +8,8 @@ add_executable(token_backend_tests
   livekit_jwt_tests.cpp
   accounts_repository_tests.cpp
   static_token_authorizer_tests.cpp
+  meetings_repository_tests.cpp
+  invitations_repository_tests.cpp
 )
 target_link_libraries(token_backend_tests PRIVATE
   token_backend_lib
