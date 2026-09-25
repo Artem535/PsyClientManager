@@ -18,13 +18,16 @@ livekit_sdk_setup(
 )
 find_package(LiveKit CONFIG REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia MultimediaWidgets OpenGLWidgets)
 qt_standard_project_setup()
 
 qt_add_executable(livekit_spike
   src/main.cpp
   src/audio_chunker.cpp
   src/frame_convert.cpp
+  src/video_capture_adapter.cpp
+  src/audio_capture_adapter.cpp
+  src/spike_window.cpp
 )
 
 target_link_libraries(livekit_spike PRIVATE
@@ -33,6 +36,7 @@ target_link_libraries(livekit_spike PRIVATE
   Qt6::Gui
   Qt6::Widgets
   Qt6::Multimedia
+  Qt6::MultimediaWidgets
   Qt6::OpenGLWidgets
 )
 
