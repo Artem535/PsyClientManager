@@ -26,6 +26,7 @@ qt_add_executable(livekit_spike
   src/audio_chunker.cpp
   src/frame_convert.cpp
   src/video_capture_adapter.cpp
+  src/video_capture_worker.cpp
   src/audio_capture_adapter.cpp
   src/remote_video_renderer.cpp
   src/remote_audio_player.cpp
