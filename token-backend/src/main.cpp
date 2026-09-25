@@ -81,7 +81,10 @@ int main(int argc, char **argv) {
         oatpp::network::tcp::server::ConnectionProvider::createShared({"0.0.0.0", port});
 
     oatpp::network::Server server(connectionProvider, connectionHandler);
-    std::cout << "pcm-token-backend listening on :" << port << std::endl;
+    // Startup goes through the same logger as the per-request lines so an
+    // operator reading the log can see where a restart falls among them.
+    OATPP_LOGI("pcm-token-backend", "listening on :%d db=%s ttl=%ds", static_cast<int>(port),
+               config.dbPath.c_str(), config.tokenTtlSeconds);
     server.run();
   }
 
