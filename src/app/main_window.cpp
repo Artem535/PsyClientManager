@@ -65,6 +65,15 @@ MainWindow::MainWindow(QWidget *parent)
   mBtnProfile->hide();
   mBtnNotes->hide();
 
+  mBtnBackToClients = new QPushButton(tr("Back to clients"), this);
+  mBtnBackToClients->setFlat(true);
+  mBtnBackToClients->setCursor(Qt::PointingHandCursor);
+  connect(mBtnBackToClients, &QPushButton::clicked, this, [this]() {
+    setClientNavigationVisible(Pages::clientCard, false);
+    setClientNavigationVisible(Pages::clientNotes, false);
+    showPage(Pages::clientInfo, mBtnClients);
+  });
+
   // Add stretch to push buttons to the top
   mUi->verticalLayout->addStretch();
   setupUtilityButtons();
@@ -131,6 +140,7 @@ void MainWindow::addClientCardPage(std::shared_ptr<pcm::database::Database> db) 
 
   const int index = mUi->stackedWidget->addWidget(page);
   mPagesIndex.insertOrAssign(Pages::clientCard, index);
+  setPageCustomWidget(Pages::clientCard, mBtnBackToClients);
 }
 
 void MainWindow::addClientNotesPage(std::shared_ptr<pcm::database::Database> db) {
@@ -139,6 +149,7 @@ void MainWindow::addClientNotesPage(std::shared_ptr<pcm::database::Database> db)
 
   const int index = mUi->stackedWidget->addWidget(page);
   mPagesIndex.insertOrAssign(Pages::clientNotes, index);
+  setPageCustomWidget(Pages::clientNotes, mBtnBackToClients);
 }
 
 void MainWindow::setDatabase(std::shared_ptr<pcm::database::Database> db) {

@@ -591,6 +591,10 @@
         <translation>Заметки</translation>
     </message>
     <message>
+        <source>Back to clients</source>
+        <translation>Назад к клиентам</translation>
+    </message>
+    <message>
         <source>Opened %1</source>
         <translation>Открыта папка %1</translation>
     </message>
