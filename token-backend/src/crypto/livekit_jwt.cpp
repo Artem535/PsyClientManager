@@ -88,10 +88,20 @@ std::string mintLiveKitJwt(const std::string &apiKey, const std::string &apiSecr
 
   std::string signingInput = base64UrlEncode(header.str()) + "." + base64UrlEncode(payload.str());
 
+  // crypto_auth_hmacsha256() (the one-shot form) requires an exactly
+  // crypto_auth_hmacsha256_KEYBYTES (32-byte) key and reads out of bounds on
+  // anything shorter — LiveKit API secrets are arbitrary-length strings, so
+  // the stateful init/update/final API is used instead: it implements real
+  // HMAC key handling (short keys zero-padded, long keys pre-hashed) for any
+  // key length, matching what a standard HMAC-SHA256 library would produce.
   unsigned char signature[crypto_auth_hmacsha256_BYTES];
-  crypto_auth_hmacsha256(signature, reinterpret_cast<const unsigned char *>(signingInput.data()),
-                          signingInput.size(),
-                          reinterpret_cast<const unsigned char *>(apiSecret.data()));
+  crypto_auth_hmacsha256_state state;
+  crypto_auth_hmacsha256_init(&state, reinterpret_cast<const unsigned char *>(apiSecret.data()),
+                               apiSecret.size());
+  crypto_auth_hmacsha256_update(&state,
+                                 reinterpret_cast<const unsigned char *>(signingInput.data()),
+                                 signingInput.size());
+  crypto_auth_hmacsha256_final(&state, signature);
 
   return signingInput + "." + base64UrlEncode(signature, sizeof(signature));
 }
