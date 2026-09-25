@@ -1493,6 +1493,7 @@ git commit -m "feat(token-backend): add accounts repository, Authorizer seam, an
     Meeting create(AccountId accountId, const std::string &scheduledStart,
                     const std::string &scheduledEnd);
     std::optional<Meeting> findByRef(const std::string &meetingRef);
+    std::optional<Meeting> findById(int64_t meetingId);
     void invalidate(int64_t meetingId);
   private:
     SqliteConnection &conn_;
@@ -1581,6 +1582,16 @@ TEST_F(MeetingsRepositoryTest, InvalidateChangesStatus) {
 TEST_F(MeetingsRepositoryTest, FindByUnknownRefReturnsNullopt) {
   pcm::tokenbackend::MeetingsRepository repo(*conn);
   EXPECT_FALSE(repo.findByRef("mtg_does_not_exist").has_value());
+}
+
+TEST_F(MeetingsRepositoryTest, FindByIdReturnsSameRowAsFindByRef) {
+  pcm::tokenbackend::MeetingsRepository repo(*conn);
+  auto created = repo.create(1, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+
+  auto byId = repo.findById(created.id);
+  ASSERT_TRUE(byId.has_value());
+  EXPECT_EQ(byId->meetingRef, created.meetingRef);
+  EXPECT_EQ(byId->roomName, created.roomName);
 }
 ```
 
@@ -1703,6 +1714,7 @@ public:
   Meeting create(AccountId accountId, const std::string &scheduledStart,
                   const std::string &scheduledEnd);
   std::optional<Meeting> findByRef(const std::string &meetingRef);
+  std::optional<Meeting> findById(int64_t meetingId);
   void invalidate(int64_t meetingId);
 
 private:
@@ -1788,6 +1800,22 @@ std::optional<Meeting> MeetingsRepository::findByRef(const std::string &meetingR
     throw std::runtime_error("failed to prepare meeting lookup");
   }
   sqlite3_bind_text(stmt, 1, meetingRef.c_str(), -1, SQLITE_TRANSIENT);
+
+  std::optional<Meeting> result;
+  if (sqlite3_step(stmt) == SQLITE_ROW) {
+    result = readRow(stmt);
+  }
+  sqlite3_finalize(stmt);
+  return result;
+}
+
+std::optional<Meeting> MeetingsRepository::findById(int64_t meetingId) {
+  sqlite3_stmt *stmt = nullptr;
+  std::string sql = std::string("SELECT ") + kSelectColumns + " FROM meetings WHERE id = ?;";
+  if (sqlite3_prepare_v2(conn_.raw(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+    throw std::runtime_error("failed to prepare meeting lookup by id");
+  }
+  sqlite3_bind_int64(stmt, 1, meetingId);
 
   std::optional<Meeting> result;
   if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -2443,112 +2471,6 @@ Result<TokenResult> MeetingService::issueClientToken(const std::string &invitati
     return {std::nullopt, ServiceError::WrongPasscode};
   }
 
-  auto meeting = meetings_.findByRef(std::to_string(invitation->meetingId));
-  // meetingId is numeric; look up the meeting by scanning is avoided by keeping
-  // the room name on the invitation's meeting row instead. Re-fetch by internal id:
-  Meeting *meetingPtr = nullptr;
-  Meeting meetingRow;
-  {
-    // MeetingsRepository only exposes findByRef, so client-token resolves the
-    // meeting through invitation->meetingId via a dedicated lookup.
-  }
-  (void)meetingPtr;
-  (void)meetingRow;
-
-  auto meetingById = meetings_.findByRef(invitation->status); // placeholder removed below
-  (void)meetingById;
-
-  return {std::nullopt, ServiceError::NotFound};
-}
-
-Result<std::monostate> MeetingService::invalidateMeeting(const std::string &bearerCredential,
-                                                           const std::string &meetingRef) {
-  auto accountId = authorizer_.authorize(bearerCredential);
-  if (!accountId) {
-    return {std::nullopt, ServiceError::Unauthorized};
-  }
-
-  auto meeting = meetings_.findByRef(meetingRef);
-  if (!meeting || meeting->accountId != *accountId) {
-    return {std::nullopt, ServiceError::NotFound};
-  }
-
-  meetings_.invalidate(meeting->id);
-  return {std::monostate{}, std::nullopt};
-}
-
-} // namespace pcm::tokenbackend
-```
-
-This draft does not compile as written — `MeetingsRepository` only exposes
-`findByRef(meetingRef)`, but `issueClientToken` only has `invitation->meetingId`
-(the internal integer id), not the `meeting_ref` string. Fix this properly
-instead of leaving the placeholder above:
-
-- [ ] **Step 6: Add `findById` to `MeetingsRepository` (revisit Task 6 files)**
-
-Add to `src/db/meetings_repository.h`, inside the class:
-
-```cpp
-  std::optional<Meeting> findById(int64_t meetingId);
-```
-
-Add to `src/db/meetings_repository.cpp`:
-
-```cpp
-std::optional<Meeting> MeetingsRepository::findById(int64_t meetingId) {
-  sqlite3_stmt *stmt = nullptr;
-  std::string sql = std::string("SELECT ") + kSelectColumns + " FROM meetings WHERE id = ?;";
-  if (sqlite3_prepare_v2(conn_.raw(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
-    throw std::runtime_error("failed to prepare meeting lookup by id");
-  }
-  sqlite3_bind_int64(stmt, 1, meetingId);
-
-  std::optional<Meeting> result;
-  if (sqlite3_step(stmt) == SQLITE_ROW) {
-    result = readRow(stmt);
-  }
-  sqlite3_finalize(stmt);
-  return result;
-}
-```
-
-Add a corresponding test to `test/meetings_repository_tests.cpp`:
-
-```cpp
-TEST_F(MeetingsRepositoryTest, FindByIdReturnsSameRowAsFindByRef) {
-  pcm::tokenbackend::MeetingsRepository repo(*conn);
-  auto created = repo.create(1, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
-
-  auto byId = repo.findById(created.id);
-  ASSERT_TRUE(byId.has_value());
-  EXPECT_EQ(byId->meetingRef, created.meetingRef);
-}
-```
-
-- [ ] **Step 7: Rewrite `issueClientToken` in `src/service/meeting_service.cpp` using `findById`**
-
-Replace the placeholder body from Step 5 with:
-
-```cpp
-Result<TokenResult> MeetingService::issueClientToken(const std::string &invitationCode,
-                                                       const std::string &passcode) {
-  auto invitation = invitations_.findByCode(invitationCode);
-  if (!invitation) {
-    return {std::nullopt, ServiceError::NotFound};
-  }
-  if (invitation->status != "active") {
-    return {std::nullopt, ServiceError::MeetingWindowClosed};
-  }
-
-  if (!passcodeMatches(passcode, invitation->passcodeHash)) {
-    int attempts = invitations_.recordFailedPasscodeAttempt(invitation->id);
-    if (attempts >= 5) {
-      return {std::nullopt, ServiceError::TooManyAttempts};
-    }
-    return {std::nullopt, ServiceError::WrongPasscode};
-  }
-
   auto meeting = meetings_.findById(invitation->meetingId);
   if (!meeting || meeting->status != "active") {
     return {std::nullopt, ServiceError::MeetingWindowClosed};
@@ -2570,9 +2492,32 @@ Result<TokenResult> MeetingService::issueClientToken(const std::string &invitati
   result.expiresAtUnix = nowSeconds + config_.tokenTtlSeconds;
   return {result, std::nullopt};
 }
+
+Result<std::monostate> MeetingService::invalidateMeeting(const std::string &bearerCredential,
+                                                           const std::string &meetingRef) {
+  auto accountId = authorizer_.authorize(bearerCredential);
+  if (!accountId) {
+    return {std::nullopt, ServiceError::Unauthorized};
+  }
+
+  auto meeting = meetings_.findByRef(meetingRef);
+  if (!meeting || meeting->accountId != *accountId) {
+    return {std::nullopt, ServiceError::NotFound};
+  }
+
+  meetings_.invalidate(meeting->id);
+  return {std::monostate{}, std::nullopt};
+}
+
+} // namespace pcm::tokenbackend
 ```
 
-- [ ] **Step 8: Update `CMakeLists.txt`**
+Note: `issueClientToken` resolves the meeting via `MeetingsRepository::findById`
+(Task 6) using `invitation->meetingId` — the invitation only carries the
+meeting's internal integer id, not its `meeting_ref` string, so `findByRef`
+does not apply here.
+
+- [ ] **Step 6: Update `CMakeLists.txt`**
 
 ```cmake
 add_library(token_backend_lib STATIC
@@ -2592,14 +2537,14 @@ add_library(token_backend_lib STATIC
 )
 ```
 
-- [ ] **Step 9: Build and run tests to verify they pass**
+- [ ] **Step 7: Build and run tests to verify they pass**
 
 Run: `cmake --build token-backend/build && ctest --test-dir token-backend/build --output-on-failure`
 Expected: PASS — including `ClientAndSpecialistTokensShareTheSameRoom` and
 `ClientCanReconnectAfterFirstSuccessfulJoin`, which directly verify the ADR-12
 guarantees.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add token-backend/
@@ -3027,5 +2972,5 @@ git commit -m "docs(token-backend): add Dockerfile, README, and PSY-server deplo
 ## Self-Review Notes
 
 - **Spec coverage:** all four `docs/video-roadmap.md` §5.4 endpoints are implemented (Task 8); the account/`Authorizer` seam from ADR-11 is Task 5; the reusable-invitation, passcode, and fixed-identity guarantees from ADR-12 are enforced in `MeetingService` and directly asserted by `ClientCanReconnectAfterFirstSuccessfulJoin` and `ClientAndSpecialistTokensShareTheSameRoom` (Task 7). Not covered by this plan, by design: TLS (deferred), desktop Settings UI for pasting the credential (belongs to issue #80), and the scheduled-window-based expiry of passcodes beyond "meeting invalidated" (the repository stores `scheduled_start`/`scheduled_end`; wiring a background sweep or an on-read check against "now" is a small follow-up once real appointment data flows in from issue #79 — flag this explicitly rather than silently claim it's done).
-- **Type consistency:** `Result<T>` and `ServiceError` (Task 7) are used identically by both controllers in Task 8; `MeetingsRepository::findById` (added mid-Task-7 to fix a real gap) is reflected in both the header and the test added in the same task.
-- **Placeholder scan:** Task 7 Step 5 intentionally ships a non-compiling first draft of `issueClientToken` and Step 7 replaces it — this mirrors real TDD/refactor flow rather than hiding a mistake, and both steps contain complete, real code, not a "TBD".
+- **Type consistency:** `Result<T>` and `ServiceError` (Task 7) are used identically by both controllers in Task 8; `MeetingsRepository::findById` is defined in Task 6 (header, `.cpp`, and a dedicated test) alongside `findByRef`, since `InvitationsRepository::create`/`findByCode` only ever carry a meeting's internal integer id, not its `meeting_ref` string — `MeetingService::issueClientToken` (Task 7) consumes `findById` directly.
+- **Placeholder scan:** no step ships intentionally-broken or TBD code; every step's listing compiles standalone against the interfaces defined earlier in the plan.
