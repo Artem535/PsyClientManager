@@ -11,6 +11,26 @@
 #include <gtest/gtest.h>
 #include <sodium.h>
 
+#include <chrono>
+#include <ctime>
+
+namespace {
+
+// Mirrors the production nowIso8601() format
+// ("%Y-%m-%dT%H:%M:%SZ", see meetings_repository.cpp) but offset from now, so
+// a test can place a meeting's scheduled window relative to the current time.
+std::string isoFromNow(int64_t offsetSeconds) {
+  auto when = std::chrono::system_clock::now() + std::chrono::seconds(offsetSeconds);
+  std::time_t t = std::chrono::system_clock::to_time_t(when);
+  std::tm tm{};
+  gmtime_r(&t, &tm);
+  char buf[32];
+  std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
+  return buf;
+}
+
+} // namespace
+
 class MeetingServiceTest : public ::testing::Test {
 protected:
   void SetUp() override {
@@ -40,18 +60,21 @@ protected:
   std::unique_ptr<pcm::tokenbackend::MeetingService> service;
   pcm::tokenbackend::Config config{};
   std::string credential;
+
+  // A window that is open right now: started a minute ago, ends in an hour.
+  const std::string windowStart = isoFromNow(-60);
+  const std::string windowEnd = isoFromNow(60 * 60);
 };
 
 TEST_F(MeetingServiceTest, CreateMeetingRejectsBadCredential) {
-  auto result = service->createMeeting("wrong-credential", "2026-10-01T10:00:00Z",
-                                        "2026-10-01T10:50:00Z");
+  auto result = service->createMeeting("wrong-credential", windowStart, windowEnd);
   EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.error, pcm::tokenbackend::ServiceError::Unauthorized);
 }
 
 TEST_F(MeetingServiceTest, CreateMeetingSucceedsWithGoodCredential) {
   auto result =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(result.ok());
   EXPECT_FALSE(result.value->meetingRef.empty());
   EXPECT_FALSE(result.value->invitationCode.empty());
@@ -60,7 +83,7 @@ TEST_F(MeetingServiceTest, CreateMeetingSucceedsWithGoodCredential) {
 
 TEST_F(MeetingServiceTest, SpecialistTokenReturnsSameRoomAsCreatedMeeting) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto token = service->issueSpecialistToken(credential, created.value->meetingRef);
@@ -71,7 +94,7 @@ TEST_F(MeetingServiceTest, SpecialistTokenReturnsSameRoomAsCreatedMeeting) {
 
 TEST_F(MeetingServiceTest, SpecialistTokenRejectsBadCredential) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto token = service->issueSpecialistToken("wrong", created.value->meetingRef);
@@ -81,7 +104,7 @@ TEST_F(MeetingServiceTest, SpecialistTokenRejectsBadCredential) {
 
 TEST_F(MeetingServiceTest, ClientTokenSucceedsWithCorrectCodeAndPasscode) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto token =
@@ -92,7 +115,7 @@ TEST_F(MeetingServiceTest, ClientTokenSucceedsWithCorrectCodeAndPasscode) {
 
 TEST_F(MeetingServiceTest, ClientTokenRejectsWrongPasscodeAndCountsAttempt) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto result = service->issueClientToken(created.value->invitationCode, "000000");
@@ -102,7 +125,7 @@ TEST_F(MeetingServiceTest, ClientTokenRejectsWrongPasscodeAndCountsAttempt) {
 
 TEST_F(MeetingServiceTest, ClientTokenLocksOutAfterFiveWrongPasscodes) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   for (int i = 0; i < 5; ++i) {
@@ -117,7 +140,7 @@ TEST_F(MeetingServiceTest, ClientTokenLocksOutAfterFiveWrongPasscodes) {
 
 TEST_F(MeetingServiceTest, ClientAndSpecialistTokensShareTheSameRoom) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto specialistToken = service->issueSpecialistToken(credential, created.value->meetingRef);
@@ -130,7 +153,7 @@ TEST_F(MeetingServiceTest, ClientAndSpecialistTokensShareTheSameRoom) {
 
 TEST_F(MeetingServiceTest, InvalidateStopsFurtherTokenIssuance) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto invalidateResult = service->invalidateMeeting(credential, created.value->meetingRef);
@@ -147,7 +170,7 @@ TEST_F(MeetingServiceTest, InvalidateStopsFurtherTokenIssuance) {
 
 TEST_F(MeetingServiceTest, ClientCanReconnectAfterFirstSuccessfulJoin) {
   auto created =
-      service->createMeeting(credential, "2026-10-01T10:00:00Z", "2026-10-01T10:50:00Z");
+      service->createMeeting(credential, windowStart, windowEnd);
   ASSERT_TRUE(created.ok());
 
   auto firstJoin =
@@ -158,4 +181,100 @@ TEST_F(MeetingServiceTest, ClientCanReconnectAfterFirstSuccessfulJoin) {
   ASSERT_TRUE(firstJoin.ok());
   ASSERT_TRUE(secondJoin.ok())
       << "invitation code must stay valid for reconnects, not be single-use";
+}
+
+// --- ADR-12 scheduled-window enforcement -----------------------------------
+//
+// The invitation's lifetime is the meeting's scheduled window (start minus a
+// 5-minute pre-join buffer, through end plus a 15-minute grace period), not
+// "until someone invalidates it".
+
+TEST_F(MeetingServiceTest, SpecialistTokenRejectedBeforeThePreJoinBuffer) {
+  auto created =
+      service->createMeeting(credential, isoFromNow(60 * 60), isoFromNow(2 * 60 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto token = service->issueSpecialistToken(credential, created.value->meetingRef);
+  EXPECT_FALSE(token.ok());
+  EXPECT_EQ(token.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
+TEST_F(MeetingServiceTest, ClientTokenRejectedBeforeThePreJoinBuffer) {
+  auto created =
+      service->createMeeting(credential, isoFromNow(60 * 60), isoFromNow(2 * 60 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto token =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  EXPECT_FALSE(token.ok());
+  EXPECT_EQ(token.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
+TEST_F(MeetingServiceTest, SpecialistTokenRejectedAfterTheGracePeriod) {
+  auto created =
+      service->createMeeting(credential, isoFromNow(-2 * 60 * 60), isoFromNow(-60 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto token = service->issueSpecialistToken(credential, created.value->meetingRef);
+  EXPECT_FALSE(token.ok());
+  EXPECT_EQ(token.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
+TEST_F(MeetingServiceTest, ClientTokenRejectedAfterTheGracePeriod) {
+  auto created =
+      service->createMeeting(credential, isoFromNow(-2 * 60 * 60), isoFromNow(-60 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto token =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  EXPECT_FALSE(token.ok());
+  EXPECT_EQ(token.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
+TEST_F(MeetingServiceTest, TokensIssuedInsideTheScheduledWindow) {
+  auto created = service->createMeeting(credential, isoFromNow(-60), isoFromNow(30 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto specialistToken = service->issueSpecialistToken(credential, created.value->meetingRef);
+  ASSERT_TRUE(specialistToken.ok());
+
+  auto clientToken =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  ASSERT_TRUE(clientToken.ok());
+}
+
+TEST_F(MeetingServiceTest, TokensIssuedWithinThePreJoinBuffer) {
+  // Two minutes before start — inside the 5-minute pre-join buffer.
+  auto created = service->createMeeting(credential, isoFromNow(2 * 60), isoFromNow(50 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto clientToken =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  EXPECT_TRUE(clientToken.ok());
+}
+
+TEST_F(MeetingServiceTest, TokensIssuedWithinTheGracePeriod) {
+  // Ended five minutes ago — inside the 15-minute grace period.
+  auto created = service->createMeeting(credential, isoFromNow(-60 * 60), isoFromNow(-5 * 60));
+  ASSERT_TRUE(created.ok());
+
+  auto clientToken =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  EXPECT_TRUE(clientToken.ok());
+}
+
+TEST_F(MeetingServiceTest, ClosedWindowDoesNotBurnAPasscodeAttempt) {
+  auto created =
+      service->createMeeting(credential, isoFromNow(60 * 60), isoFromNow(2 * 60 * 60));
+  ASSERT_TRUE(created.ok());
+
+  for (int i = 0; i < 10; ++i) {
+    auto attempt = service->issueClientToken(created.value->invitationCode, "000000");
+    EXPECT_EQ(attempt.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+  }
+
+  auto invitation = invitations->findByCode(created.value->invitationCode);
+  ASSERT_TRUE(invitation.has_value());
+  EXPECT_EQ(invitation->passcodeAttempts, 0);
+  EXPECT_EQ(invitation->status, "active");
 }

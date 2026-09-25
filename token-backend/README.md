@@ -27,6 +27,31 @@ ctest --test-dir build --output-on-failure
 | `INVITATION_BASE_URL` | no | `https://example.invalid/join/` | Prefix for invitation links; set for real once a domain exists |
 | `TOKEN_TTL_SECONDS` | no | `600` | LiveKit JWT lifetime |
 
+## Invitation lifetime: the meeting's scheduled window
+
+An invitation is **not** valid indefinitely. Per
+`docs/asciidoc/12-invitation-security-model-adr.adoc`, the meeting's scheduled
+window is the invitation's lifetime boundary: tokens are issued only while
+
+```
+scheduledStart - 5 minutes  ≤  now  ≤  scheduledEnd + 15 minutes
+```
+
+The 5-minute pre-join buffer lets a client connect slightly early; the
+15-minute grace period covers sessions that run over and clients who need to
+reconnect right after the scheduled end. Outside that range both
+`specialist-token` and `client-token` return `410 Gone`, even though the
+meeting's status is still `active`.
+
+The invitation code stays reusable *within* that window — it is not consumed
+by the first redemption, so a client who drops can rejoin. Requests outside
+the window are rejected before the passcode is checked, so they do not count
+against the 5-attempt limit.
+
+`scheduledStart`/`scheduledEnd` are stored exactly as supplied at creation and
+parsed as UTC in the `YYYY-MM-DDTHH:MM:SSZ` form. A value that cannot be
+parsed fails closed (the window is treated as shut).
+
 ## First deploy: seed the one account
 
 ```bash

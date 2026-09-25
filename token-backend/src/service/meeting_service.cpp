@@ -3,8 +3,71 @@
 #include "crypto/hashing.h"
 
 #include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <optional>
+#include <sstream>
 
 namespace pcm::tokenbackend {
+
+namespace {
+
+// ADR-12: the invitation's lifetime is the meeting's scheduled window — start
+// minus a short pre-join buffer, through end plus a short grace period — not
+// an indefinite validity that only ends on explicit invalidation.
+constexpr int64_t kPreJoinBufferSeconds = 5 * 60;
+constexpr int64_t kGracePeriodSeconds = 15 * 60;
+
+// Parses the ISO 8601 UTC form the repositories write ("%Y-%m-%dT%H:%M:%SZ",
+// see nowIso8601() in meetings_repository.cpp / invitations_repository.cpp).
+// Anything trailing the seconds field (the "Z", a fractional part) is ignored,
+// so a caller that stored "…T10:00:00" or "…T10:00:00.000Z" still parses.
+std::optional<int64_t> parseIso8601Utc(const std::string &value) {
+  std::tm tm{};
+  std::istringstream in(value);
+  in >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+  if (in.fail()) {
+    return std::nullopt;
+  }
+  // timegm() interprets the fields as UTC; std::mktime() would apply the
+  // host's local timezone and silently shift every window by the UTC offset.
+  const std::time_t seconds = timegm(&tm);
+  if (seconds == static_cast<std::time_t>(-1)) {
+    return std::nullopt;
+  }
+  return static_cast<int64_t>(seconds);
+}
+
+int64_t nowUnixSeconds() {
+  return std::chrono::duration_cast<std::chrono::seconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
+}
+
+// Returns the error to report for this meeting, or nullopt if a token may be
+// issued for it right now. Covers both the explicit-invalidation path (status)
+// and the ADR-12 scheduled-window path.
+std::optional<ServiceError> meetingUsabilityError(const Meeting &meeting) {
+  if (meeting.status != "active") {
+    return ServiceError::MeetingWindowClosed;
+  }
+
+  auto start = parseIso8601Utc(meeting.scheduledStart);
+  auto end = parseIso8601Utc(meeting.scheduledEnd);
+  if (!start || !end) {
+    // Fail closed: an unparsable window cannot be shown to have opened, and
+    // this is the boundary that bounds an invitation's lifetime.
+    return ServiceError::MeetingWindowClosed;
+  }
+
+  const int64_t now = nowUnixSeconds();
+  if (now < *start - kPreJoinBufferSeconds || now > *end + kGracePeriodSeconds) {
+    return ServiceError::MeetingWindowClosed;
+  }
+  return std::nullopt;
+}
+
+} // namespace
 
 Result<MeetingService::CreateMeetingOutcome>
 MeetingService::createMeeting(const std::string &bearerCredential,
@@ -38,8 +101,8 @@ Result<TokenResult> MeetingService::issueSpecialistToken(const std::string &bear
   if (!meeting || meeting->accountId != *accountId) {
     return {std::nullopt, ServiceError::NotFound};
   }
-  if (meeting->status != "active") {
-    return {std::nullopt, ServiceError::MeetingWindowClosed};
+  if (auto usability = meetingUsabilityError(*meeting)) {
+    return {std::nullopt, *usability};
   }
 
   VideoGrants grants;
@@ -73,17 +136,24 @@ Result<TokenResult> MeetingService::issueClientToken(const std::string &invitati
     return {std::nullopt, ServiceError::TooManyAttempts};
   }
 
+  // The meeting window is checked *before* the passcode so that requests
+  // arriving outside it neither burn a passcode attempt nor pay for an
+  // Argon2id verification. The caller already holds the invitation code, so
+  // learning that the window is shut tells them nothing new.
+  auto meeting = meetings_.findById(invitation->meetingId);
+  if (!meeting) {
+    return {std::nullopt, ServiceError::NotFound};
+  }
+  if (auto usability = meetingUsabilityError(*meeting)) {
+    return {std::nullopt, *usability};
+  }
+
   if (!passcodeMatches(passcode, invitation->passcodeHash)) {
     int attempts = invitations_.recordFailedPasscodeAttempt(invitation->id);
     if (attempts >= 5) {
       return {std::nullopt, ServiceError::TooManyAttempts};
     }
     return {std::nullopt, ServiceError::WrongPasscode};
-  }
-
-  auto meeting = meetings_.findById(invitation->meetingId);
-  if (!meeting || meeting->status != "active") {
-    return {std::nullopt, ServiceError::MeetingWindowClosed};
   }
 
   VideoGrants grants;
