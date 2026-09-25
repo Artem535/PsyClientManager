@@ -1,3 +1,4 @@
+// Throwaway spike for issue #77 — not production quality.
 #include "audio_chunker.h"
 
 namespace pcm::spike {
@@ -18,5 +19,7 @@ std::vector<std::vector<int16_t>> AudioChunker::push(
   }
   return frames;
 }
+
+void AudioChunker::reset() { mBuffer.clear(); }
 
 }  // namespace pcm::spike

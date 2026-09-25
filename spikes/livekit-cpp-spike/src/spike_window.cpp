@@ -1,8 +1,10 @@
+// Throwaway spike for issue #77 — not production quality.
 #include "spike_window.h"
 
 #include <QHBoxLayout>
 #include <QMediaDevices>
 #include <QMetaObject>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -70,6 +72,15 @@ SpikeWindow::SpikeWindow(QWidget *parent) : QMainWindow(parent) {
     if (index < 0) return;
     mAudioCapture.start(mMicCombo->itemData(index).value<QAudioDevice>());
   });
+  connect(mSpeakerCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
+    // Only takes effect if a remote audio track is currently subscribed:
+    // re-attaching it tears down and recreates RemoteAudioPlayer's reader
+    // thread/QAudioSink against the newly selected device. If no track is
+    // attached yet, this just updates which device gets used the next time
+    // one subscribes (attachTrack() in onTrackSubscribed reads the combo).
+    if (index < 0 || !mRemoteAudioTrack) return;
+    mRemoteAudio.attachTrack(mRemoteAudioTrack, mSpeakerCombo->itemData(index).value<QAudioDevice>());
+  });
 
   connect(mJoinButton, &QPushButton::clicked, this, &SpikeWindow::onJoinClicked);
   connect(mLeaveButton, &QPushButton::clicked, this, &SpikeWindow::onLeaveClicked);
@@ -93,10 +104,16 @@ SpikeWindow::SpikeWindow(QWidget *parent) : QMainWindow(parent) {
   connect(mVideoCapture.previewSink(), &QVideoSink::videoFrameChanged,
           mLocalPreview->videoSink(), &QVideoSink::setVideoFrame);
 
-  connect(&mVideoCapture, &VideoCaptureAdapter::frameCaptured, this,
-          &SpikeWindow::updateStatusLabel);
-  connect(&mAudioCapture, &AudioCaptureAdapter::frameCaptured, this,
-          &SpikeWindow::updateStatusLabel);
+  // The adapters increment their own atomic counters on every frame/chunk
+  // (~30/s video, ~100/s audio) regardless of whether anything is connected
+  // to frameCaptured — that part is already cheap. What used to be expensive
+  // was repainting mStatusLabel synchronously on every single signal
+  // (~130 GUI-thread updates/sec). Repaint from a ~1Hz timer instead; the
+  // counters it reads are still the live cumulative totals.
+  mStatusTimer = new QTimer(this);
+  mStatusTimer->setInterval(1000);
+  connect(mStatusTimer, &QTimer::timeout, this, &SpikeWindow::updateStatusLabel);
+  mStatusTimer->start();
 
   const auto cameras = QMediaDevices::videoInputs();
   if (!cameras.isEmpty()) {
@@ -207,6 +224,7 @@ void SpikeWindow::unpublishTracks() {
 void SpikeWindow::onLeaveClicked() {
   mRemoteVideo->detach();
   mRemoteAudio.detach();
+  mRemoteAudioTrack.reset();
 
   if (mRoom) {
     unpublishTracks();
@@ -226,6 +244,10 @@ void SpikeWindow::onParticipantConnected(livekit::Room & /*room*/,
   QMetaObject::invokeMethod(
       this,
       [this, identity]() {
+        // Leave() may have already reset mRoom by the time this queued
+        // lambda runs (it was posted from LiveKit's thread, decoupled from
+        // when the GUI thread actually executes it) — no-op if so.
+        if (!mRoom) return;
         setConnectionState(QStringLiteral("Connected. Participant joined: %1").arg(identity));
       },
       Qt::QueuedConnection);
@@ -242,10 +264,19 @@ void SpikeWindow::onTrackSubscribed(livekit::Room & /*room*/,
   QMetaObject::invokeMethod(
       this,
       [this, track, kind]() {
+        // Leave() may have already reset mRoom by the time this queued
+        // lambda runs (posted from LiveKit's thread, decoupled from when the
+        // GUI thread actually executes it) — no-op if so, otherwise we'd
+        // attach a track onto renderers/players whose Room is already gone.
+        if (!mRoom) return;
         if (kind == livekit::TrackKind::KIND_VIDEO) {
           mRemoteVideo->attachTrack(track);
           setConnectionState("Connected. Receiving remote video.");
         } else if (kind == livekit::TrackKind::KIND_AUDIO) {
+          // Remembered so the speaker combo can re-attach this same track to
+          // a newly selected output device later (see mSpeakerCombo's
+          // currentIndexChanged handler below).
+          mRemoteAudioTrack = track;
           const auto selected = mSpeakerCombo->currentData();
           const auto outputs = QMediaDevices::audioOutputs();
           const auto device = selected.isValid() ? selected.value<QAudioDevice>()

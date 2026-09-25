@@ -1,5 +1,7 @@
 #pragma once
 
+// Throwaway spike for issue #77 — not production quality.
+
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -18,6 +20,11 @@ public:
   // next call.
   [[nodiscard]] std::vector<std::vector<int16_t>> push(
       const std::vector<int16_t> &newSamples);
+
+  // Discards any partial-frame remainder buffered so far. Call this when the
+  // underlying audio stream restarts (e.g. switching capture devices) so a
+  // leftover remainder from the old stream isn't prepended to the new one.
+  void reset();
 
 private:
   std::size_t mFrameSize;  // samplesPerChannel * channels
