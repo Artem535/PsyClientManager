@@ -30,8 +30,14 @@ int main(int argc, char **argv) {
   }
 
   if (argc > 1 && std::string(argv[1]) == "--seed-account") {
-    auto config = pcm::tokenbackend::Config::fromEnv();
-    pcm::tokenbackend::SqliteConnection conn(config.dbPath);
+    // Deliberately does not go through Config::fromEnv(): seeding touches only
+    // the database, and demanding the LiveKit and invitation-URL variables
+    // here would make the one-off bootstrap step fail for reasons that have
+    // nothing to do with it.
+    const char *dbPathEnv = std::getenv("DB_PATH");
+    pcm::tokenbackend::SqliteConnection conn(dbPathEnv && dbPathEnv[0] != '\0'
+                                                  ? dbPathEnv
+                                                  : "token-backend.sqlite3");
     pcm::tokenbackend::runMigrations(conn);
     pcm::tokenbackend::AccountsRepository accounts(conn);
     auto credential = accounts.seedAccount();
@@ -51,21 +57,15 @@ int main(int argc, char **argv) {
     pcm::tokenbackend::MeetingsRepository meetings(conn);
     pcm::tokenbackend::InvitationsRepository invitations(conn);
 
-    const char *endpointEnv = std::getenv("LIVEKIT_WS_ENDPOINT");
-    std::string liveKitEndpoint = endpointEnv ? endpointEnv : "ws://46.173.25.218:7880";
-    const char *invitationBaseEnv = std::getenv("INVITATION_BASE_URL");
-    std::string invitationBase =
-        invitationBaseEnv ? invitationBaseEnv : "https://example.invalid/join/";
-
     pcm::tokenbackend::MeetingService service(authorizer, meetings, invitations, config,
-                                               liveKitEndpoint);
+                                               config.liveKitWsEndpoint);
 
     auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
 
     auto router = oatpp::web::server::HttpRouter::createShared();
     auto healthController = std::make_shared<pcm::tokenbackend::HealthController>();
     auto meetingsController = std::make_shared<pcm::tokenbackend::MeetingsController>(
-        objectMapper, service, invitationBase);
+        objectMapper, service, config.invitationBaseUrl);
     auto invitationsController =
         std::make_shared<pcm::tokenbackend::InvitationsController>(objectMapper, service);
 

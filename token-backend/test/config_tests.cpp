@@ -3,83 +3,66 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <cstdlib>
+#include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+namespace {
+
+// Every environment variable Config::fromEnv() reads. Saved and restored
+// wholesale so adding a variable does not mean adding another save/restore
+// pair — the previous version of this file grew one per variable and silently
+// leaked whichever the author forgot.
+const std::vector<const char *> kConfigEnvVars = {
+    "PORT",
+    "DB_PATH",
+    "LIVEKIT_API_KEY",
+    "LIVEKIT_API_SECRET",
+    "LIVEKIT_WS_ENDPOINT",
+    "INVITATION_BASE_URL",
+    "TOKEN_TTL_SECONDS",
+};
+
+} // namespace
 
 class ConfigTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Save current env vars
-    const char *apiKey = std::getenv("LIVEKIT_API_KEY");
-    savedApiKey_ = apiKey ? apiKey : "";
-    hasApiKey_ = apiKey != nullptr;
-
-    const char *apiSecret = std::getenv("LIVEKIT_API_SECRET");
-    savedApiSecret_ = apiSecret ? apiSecret : "";
-    hasApiSecret_ = apiSecret != nullptr;
-
-    const char *port = std::getenv("PORT");
-    savedPort_ = port ? port : "";
-    hasPort_ = port != nullptr;
-
-    const char *dbPath = std::getenv("DB_PATH");
-    savedDbPath_ = dbPath ? dbPath : "";
-    hasDbPath_ = dbPath != nullptr;
-
-    const char *ttl = std::getenv("TOKEN_TTL_SECONDS");
-    savedTtl_ = ttl ? ttl : "";
-    hasTtl_ = ttl != nullptr;
+    for (const char *name : kConfigEnvVars) {
+      const char *value = std::getenv(name);
+      saved_[name] = value ? std::optional<std::string>(value) : std::nullopt;
+      unsetenv(name);
+    }
   }
 
   void TearDown() override {
-    // Restore env vars to their original state
-    if (hasApiKey_) {
-      setenv("LIVEKIT_API_KEY", savedApiKey_.c_str(), 1);
-    } else {
-      unsetenv("LIVEKIT_API_KEY");
-    }
-
-    if (hasApiSecret_) {
-      setenv("LIVEKIT_API_SECRET", savedApiSecret_.c_str(), 1);
-    } else {
-      unsetenv("LIVEKIT_API_SECRET");
-    }
-
-    if (hasPort_) {
-      setenv("PORT", savedPort_.c_str(), 1);
-    } else {
-      unsetenv("PORT");
-    }
-
-    if (hasDbPath_) {
-      setenv("DB_PATH", savedDbPath_.c_str(), 1);
-    } else {
-      unsetenv("DB_PATH");
-    }
-
-    if (hasTtl_) {
-      setenv("TOKEN_TTL_SECONDS", savedTtl_.c_str(), 1);
-    } else {
-      unsetenv("TOKEN_TTL_SECONDS");
+    for (const char *name : kConfigEnvVars) {
+      const auto &value = saved_[name];
+      if (value) {
+        setenv(name, value->c_str(), 1);
+      } else {
+        unsetenv(name);
+      }
     }
   }
 
+  // Sets every required variable so a test can then unset exactly the one it
+  // is about.
+  static void setAllRequired() {
+    setenv("LIVEKIT_API_KEY", "test-key", 1);
+    setenv("LIVEKIT_API_SECRET", "test-secret", 1);
+    setenv("INVITATION_BASE_URL", "https://join.example.test/j/", 1);
+  }
+
 private:
-  std::string savedApiKey_;
-  bool hasApiKey_ = false;
-  std::string savedApiSecret_;
-  bool hasApiSecret_ = false;
-  std::string savedPort_;
-  bool hasPort_ = false;
-  std::string savedDbPath_;
-  bool hasDbPath_ = false;
-  std::string savedTtl_;
-  bool hasTtl_ = false;
+  std::map<std::string, std::optional<std::string>> saved_;
 };
 
 TEST_F(ConfigTest, ThrowsWhenLiveKitApiKeyMissing) {
+  setAllRequired();
   unsetenv("LIVEKIT_API_KEY");
-  setenv("LIVEKIT_API_SECRET", "test-secret", 1);
 
   EXPECT_THROW(
       {
@@ -95,7 +78,7 @@ TEST_F(ConfigTest, ThrowsWhenLiveKitApiKeyMissing) {
 }
 
 TEST_F(ConfigTest, ThrowsWhenLiveKitApiSecretMissing) {
-  setenv("LIVEKIT_API_KEY", "test-key", 1);
+  setAllRequired();
   unsetenv("LIVEKIT_API_SECRET");
 
   EXPECT_THROW(
@@ -111,25 +94,52 @@ TEST_F(ConfigTest, ThrowsWhenLiveKitApiSecretMissing) {
       std::runtime_error);
 }
 
+// INVITATION_BASE_URL used to default to "https://example.invalid/join/", so a
+// deploy that forgot it came up healthy and handed out dead join links with no
+// error anywhere. Startup failure is the only signal the operator gets.
+TEST_F(ConfigTest, ThrowsWhenInvitationBaseUrlMissing) {
+  setAllRequired();
+  unsetenv("INVITATION_BASE_URL");
+
+  EXPECT_THROW(
+      {
+        try {
+          pcm::tokenbackend::Config::fromEnv();
+          FAIL() << "Expected std::runtime_error";
+        } catch (const std::runtime_error &e) {
+          EXPECT_THAT(std::string(e.what()), ::testing::HasSubstr("INVITATION_BASE_URL"));
+          throw;
+        }
+      },
+      std::runtime_error);
+}
+
+TEST_F(ConfigTest, ThrowsWhenInvitationBaseUrlIsEmpty) {
+  setAllRequired();
+  setenv("INVITATION_BASE_URL", "", 1);
+
+  EXPECT_THROW(pcm::tokenbackend::Config::fromEnv(), std::runtime_error);
+}
+
 TEST_F(ConfigTest, SucceedsWithRequiredVarsAndAppliesDefaults) {
-  setenv("LIVEKIT_API_KEY", "test-key", 1);
-  setenv("LIVEKIT_API_SECRET", "test-secret", 1);
-  unsetenv("PORT");
-  unsetenv("DB_PATH");
-  unsetenv("TOKEN_TTL_SECONDS");
+  setAllRequired();
 
   pcm::tokenbackend::Config config = pcm::tokenbackend::Config::fromEnv();
 
   EXPECT_EQ(config.liveKitApiKey, "test-key");
   EXPECT_EQ(config.liveKitApiSecret, "test-secret");
+  EXPECT_EQ(config.invitationBaseUrl, "https://join.example.test/j/");
   EXPECT_EQ(config.port, 8080);
   EXPECT_EQ(config.dbPath, "token-backend.sqlite3");
   EXPECT_EQ(config.tokenTtlSeconds, 600);
+  EXPECT_EQ(config.liveKitWsEndpoint, "ws://46.173.25.218:7880");
 }
 
 TEST_F(ConfigTest, SucceedsWithAllVarsSet) {
   setenv("LIVEKIT_API_KEY", "my-key", 1);
   setenv("LIVEKIT_API_SECRET", "my-secret", 1);
+  setenv("INVITATION_BASE_URL", "https://psy.example.com/join/", 1);
+  setenv("LIVEKIT_WS_ENDPOINT", "wss://livekit.example.com", 1);
   setenv("PORT", "9000", 1);
   setenv("DB_PATH", "/tmp/custom.db", 1);
   setenv("TOKEN_TTL_SECONDS", "3600", 1);
@@ -138,7 +148,17 @@ TEST_F(ConfigTest, SucceedsWithAllVarsSet) {
 
   EXPECT_EQ(config.liveKitApiKey, "my-key");
   EXPECT_EQ(config.liveKitApiSecret, "my-secret");
+  EXPECT_EQ(config.invitationBaseUrl, "https://psy.example.com/join/");
+  EXPECT_EQ(config.liveKitWsEndpoint, "wss://livekit.example.com");
   EXPECT_EQ(config.port, 9000);
   EXPECT_EQ(config.dbPath, "/tmp/custom.db");
   EXPECT_EQ(config.tokenTtlSeconds, 3600);
+}
+
+TEST_F(ConfigTest, EmptyLiveKitWsEndpointFallsBackToTheDefault) {
+  setAllRequired();
+  setenv("LIVEKIT_WS_ENDPOINT", "", 1);
+
+  pcm::tokenbackend::Config config = pcm::tokenbackend::Config::fromEnv();
+  EXPECT_EQ(config.liveKitWsEndpoint, "ws://46.173.25.218:7880");
 }
