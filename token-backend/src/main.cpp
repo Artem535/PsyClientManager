@@ -1,5 +1,10 @@
 // token-backend/src/main.cpp
+#include "auth/static_token_authorizer.h"
+#include "config.h"
 #include "controller/health_controller.h"
+#include "db/accounts_repository.h"
+#include "db/migrations.h"
+#include "db/sqlite_connection.h"
 
 #include "oatpp/network/Server.hpp"
 #include "oatpp/network/tcp/server/ConnectionProvider.hpp"
@@ -11,6 +16,18 @@
 
 int main(int argc, char **argv) {
   oatpp::base::Environment::init();
+
+  if (argc > 1 && std::string(argv[1]) == "--seed-account") {
+    auto config = pcm::tokenbackend::Config::fromEnv();
+    pcm::tokenbackend::SqliteConnection conn(config.dbPath);
+    pcm::tokenbackend::runMigrations(conn);
+    pcm::tokenbackend::AccountsRepository accounts(conn);
+    auto credential = accounts.seedAccount();
+    std::cout << "Seeded account. Bearer credential (copy this now, it will not be shown again):\n"
+              << credential << std::endl;
+    oatpp::base::Environment::destroy();
+    return 0;
+  }
 
   {
     auto router = oatpp::web::server::HttpRouter::createShared();
