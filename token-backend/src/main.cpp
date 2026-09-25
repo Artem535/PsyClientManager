@@ -14,11 +14,10 @@ int main(int argc, char **argv) {
 
   {
     auto router = oatpp::web::server::HttpRouter::createShared();
-
-    // Note: endpoint registration via codegen macros happens automatically
-    // when the controller is instantiated. Direct registration method
-    // addEndpointsToRouter is not available in this version of oatpp.
     auto healthController = std::make_shared<pcm::tokenbackend::HealthController>();
+
+    // Register controller endpoints on the router
+    router->route(healthController->getEndpoints());
 
     auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
     const char *portEnv = std::getenv("PORT");
