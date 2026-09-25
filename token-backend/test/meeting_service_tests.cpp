@@ -183,6 +183,91 @@ TEST_F(MeetingServiceTest, ClientCanReconnectAfterFirstSuccessfulJoin) {
       << "invitation code must stay valid for reconnects, not be single-use";
 }
 
+// --- Invitation re-issue ----------------------------------------------------
+//
+// ADR-12's 5-attempt lockout is permanent by design. Without a re-issue path
+// the only recovery is a brand-new meeting, which changes meeting_ref and
+// room and orphans client-side state.
+
+TEST_F(MeetingServiceTest, ReissueRejectsBadCredential) {
+  auto created = service->createMeeting(credential, windowStart, windowEnd);
+  ASSERT_TRUE(created.ok());
+
+  auto reissued = service->reissueInvitation("wrong-credential", created.value->meetingRef);
+  EXPECT_FALSE(reissued.ok());
+  EXPECT_EQ(reissued.error, pcm::tokenbackend::ServiceError::Unauthorized);
+}
+
+TEST_F(MeetingServiceTest, ReissueRejectsUnknownMeeting) {
+  auto reissued = service->reissueInvitation(credential, "mtg_does_not_exist");
+  EXPECT_FALSE(reissued.ok());
+  EXPECT_EQ(reissued.error, pcm::tokenbackend::ServiceError::NotFound);
+}
+
+TEST_F(MeetingServiceTest, ReissueKeepsTheSameMeetingRefAndRoom) {
+  auto created = service->createMeeting(credential, windowStart, windowEnd);
+  ASSERT_TRUE(created.ok());
+  auto roomBefore = service->issueSpecialistToken(credential, created.value->meetingRef);
+  ASSERT_TRUE(roomBefore.ok());
+
+  auto reissued = service->reissueInvitation(credential, created.value->meetingRef);
+  ASSERT_TRUE(reissued.ok());
+  EXPECT_EQ(reissued.value->meetingRef, created.value->meetingRef);
+  EXPECT_EQ(reissued.value->scheduledStart, created.value->scheduledStart);
+  EXPECT_EQ(reissued.value->scheduledEnd, created.value->scheduledEnd);
+
+  auto newClientToken =
+      service->issueClientToken(reissued.value->invitationCode, reissued.value->passcode);
+  ASSERT_TRUE(newClientToken.ok());
+  EXPECT_EQ(newClientToken.value->roomName, roomBefore.value->roomName);
+}
+
+TEST_F(MeetingServiceTest, ReissueInvalidatesThePreviousInvitation) {
+  auto created = service->createMeeting(credential, windowStart, windowEnd);
+  ASSERT_TRUE(created.ok());
+
+  auto reissued = service->reissueInvitation(credential, created.value->meetingRef);
+  ASSERT_TRUE(reissued.ok());
+  EXPECT_NE(reissued.value->invitationCode, created.value->invitationCode);
+
+  auto oldCode =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  EXPECT_FALSE(oldCode.ok())
+      << "the superseded invitation code must stop working immediately";
+  EXPECT_EQ(oldCode.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
+TEST_F(MeetingServiceTest, ReissueRecoversFromTheFiveAttemptLockout) {
+  auto created = service->createMeeting(credential, windowStart, windowEnd);
+  ASSERT_TRUE(created.ok());
+
+  for (int i = 0; i < 5; ++i) {
+    service->issueClientToken(created.value->invitationCode, "000000");
+  }
+  auto lockedOut =
+      service->issueClientToken(created.value->invitationCode, created.value->passcode);
+  ASSERT_FALSE(lockedOut.ok());
+  ASSERT_EQ(lockedOut.error, pcm::tokenbackend::ServiceError::TooManyAttempts);
+
+  auto reissued = service->reissueInvitation(credential, created.value->meetingRef);
+  ASSERT_TRUE(reissued.ok());
+
+  auto afterReissue =
+      service->issueClientToken(reissued.value->invitationCode, reissued.value->passcode);
+  EXPECT_TRUE(afterReissue.ok()) << "a fresh invitation must start with a clean attempt budget";
+}
+
+TEST_F(MeetingServiceTest, ReissueRefusedOnAnInvalidatedMeeting) {
+  auto created = service->createMeeting(credential, windowStart, windowEnd);
+  ASSERT_TRUE(created.ok());
+  ASSERT_TRUE(service->invalidateMeeting(credential, created.value->meetingRef).ok());
+
+  auto reissued = service->reissueInvitation(credential, created.value->meetingRef);
+  EXPECT_FALSE(reissued.ok())
+      << "re-issuing must not quietly undo an explicit invalidate";
+  EXPECT_EQ(reissued.error, pcm::tokenbackend::ServiceError::MeetingWindowClosed);
+}
+
 // --- ADR-12 scheduled-window enforcement -----------------------------------
 //
 // The invitation's lifetime is the meeting's scheduled window (start minus a

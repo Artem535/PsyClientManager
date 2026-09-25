@@ -52,6 +52,20 @@ public:
                                               const std::string &scheduledStart,
                                               const std::string &scheduledEnd);
 
+  // Retires every invitation on an existing meeting and mints a fresh one.
+  // The escape hatch from ADR-12's permanent 5-failed-attempt lockout: without
+  // it the only recovery is creating a whole new meeting, which changes the
+  // meeting_ref and room and orphans any client-side state tied to the old one.
+  struct ReissueInvitationOutcome {
+    std::string meetingRef;
+    std::string invitationCode;
+    std::string passcode;
+    std::string scheduledStart;
+    std::string scheduledEnd;
+  };
+  Result<ReissueInvitationOutcome> reissueInvitation(const std::string &bearerCredential,
+                                                      const std::string &meetingRef);
+
   Result<TokenResult> issueSpecialistToken(const std::string &bearerCredential,
                                             const std::string &meetingRef);
 

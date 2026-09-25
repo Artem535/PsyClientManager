@@ -90,6 +90,39 @@ MeetingService::createMeeting(const std::string &bearerCredential,
   return {outcome, std::nullopt};
 }
 
+Result<MeetingService::ReissueInvitationOutcome>
+MeetingService::reissueInvitation(const std::string &bearerCredential,
+                                   const std::string &meetingRef) {
+  auto accountId = authorizer_.authorize(bearerCredential);
+  if (!accountId) {
+    return {std::nullopt, ServiceError::Unauthorized};
+  }
+
+  auto meeting = meetings_.findByRef(meetingRef);
+  if (!meeting || meeting->accountId != *accountId) {
+    return {std::nullopt, ServiceError::NotFound};
+  }
+  if (meeting->status != "active") {
+    // An explicitly invalidated meeting stays dead; re-issuing an invitation
+    // for it would quietly undo the practitioner's invalidate call.
+    return {std::nullopt, ServiceError::MeetingWindowClosed};
+  }
+  // Deliberately does NOT require the scheduled window to be open: the whole
+  // point is to recover a locked-out or leaked invitation, which a
+  // practitioner will usually do while preparing for an upcoming session.
+
+  invitations_.invalidateAllForMeeting(meeting->id);
+  auto invitation = invitations_.create(meeting->id, *accountId);
+
+  ReissueInvitationOutcome outcome;
+  outcome.meetingRef = meeting->meetingRef;
+  outcome.invitationCode = invitation.invitationCode;
+  outcome.passcode = invitation.passcode;
+  outcome.scheduledStart = meeting->scheduledStart;
+  outcome.scheduledEnd = meeting->scheduledEnd;
+  return {outcome, std::nullopt};
+}
+
 Result<TokenResult> MeetingService::issueSpecialistToken(const std::string &bearerCredential,
                                                            const std::string &meetingRef) {
   auto accountId = authorizer_.authorize(bearerCredential);
@@ -129,11 +162,15 @@ Result<TokenResult> MeetingService::issueClientToken(const std::string &invitati
     return {std::nullopt, ServiceError::NotFound};
   }
   if (invitation->status != "active") {
-    // The only way an invitation's status leaves "active" today is via
-    // InvitationsRepository::recordFailedPasscodeAttempt auto-invalidating it
-    // after kMaxPasscodeAttempts wrong guesses, so a non-active invitation
-    // here means the passcode attempt budget is exhausted.
-    return {std::nullopt, ServiceError::TooManyAttempts};
+    // An invitation leaves "active" two ways: the attempt budget ran out
+    // (recordFailedPasscodeAttempt auto-invalidates at 5), or it was
+    // superseded by reissueInvitation. The attempt counter distinguishes
+    // them, so the caller is told which actually happened instead of always
+    // seeing "too many attempts".
+    if (invitation->passcodeAttempts >= 5) {
+      return {std::nullopt, ServiceError::TooManyAttempts};
+    }
+    return {std::nullopt, ServiceError::MeetingWindowClosed};
   }
 
   // The meeting window is checked *before* the passcode so that requests

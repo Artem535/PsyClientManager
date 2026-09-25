@@ -31,6 +31,10 @@ public:
   std::optional<Invitation> findByCode(const std::string &invitationCode);
   int recordFailedPasscodeAttempt(int64_t invitationId);
   void invalidate(int64_t invitationId);
+  // Retires every invitation currently attached to a meeting. Used by the
+  // re-issue path so the superseded code stops working the moment a fresh
+  // one is minted.
+  void invalidateAllForMeeting(int64_t meetingId);
 
 private:
   SqliteConnection &conn_;

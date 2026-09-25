@@ -22,6 +22,17 @@ class CreateMeetingResponseDto : public oatpp::DTO {
   DTO_FIELD(String, scheduledEnd);
 };
 
+// Same shape as CreateMeetingResponseDto: a re-issued invitation is the same
+// meeting with a fresh code and passcode, so callers can reuse one parser.
+class ReissueInvitationResponseDto : public oatpp::DTO {
+  DTO_INIT(ReissueInvitationResponseDto, DTO)
+  DTO_FIELD(String, meetingRef);
+  DTO_FIELD(String, invitationUrl);
+  DTO_FIELD(String, passcode);
+  DTO_FIELD(String, scheduledStart);
+  DTO_FIELD(String, scheduledEnd);
+};
+
 class TokenResponseDto : public oatpp::DTO {
   DTO_INIT(TokenResponseDto, DTO)
   DTO_FIELD(String, endpointUrl);

@@ -19,6 +19,17 @@ public:
 
   ENDPOINT("POST", "/v1/invitations/{code}/client-token", clientToken, PATH(String, code),
             BODY_DTO(Object<ClientTokenRequestDto>, body)) {
+    // A body of `{}` would otherwise arrive at the service as an empty-string
+    // passcode and be scored as a wrong guess, letting anyone holding the
+    // invitation code exhaust ADR-12's 5-attempt budget — permanently
+    // invalidating the invitation — with six empty requests. A malformed
+    // request is a 400 and must never touch the attempt counter.
+    if (!body || !body->passcode || body->passcode->empty()) {
+      auto err = ErrorResponseDto::createShared();
+      err->error = "passcode_required";
+      return createDtoResponse(Status::CODE_400, err);
+    }
+
     auto result =
         service_.issueClientToken(toStdString(code), toStdString(body->passcode));
     if (!result.ok()) {

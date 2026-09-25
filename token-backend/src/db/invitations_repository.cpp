@@ -115,6 +115,21 @@ int InvitationsRepository::recordFailedPasscodeAttempt(int64_t invitationId) {
   return attempts;
 }
 
+void InvitationsRepository::invalidateAllForMeeting(int64_t meetingId) {
+  sqlite3_stmt *stmt = nullptr;
+  const char *sql =
+      "UPDATE invitations SET status = 'invalidated' WHERE meeting_id = ? AND status = 'active';";
+  if (sqlite3_prepare_v2(conn_.raw(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    throw std::runtime_error("failed to prepare meeting-wide invitation invalidate");
+  }
+  sqlite3_bind_int64(stmt, 1, meetingId);
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw std::runtime_error("failed to invalidate invitations for meeting");
+  }
+  sqlite3_finalize(stmt);
+}
+
 void InvitationsRepository::invalidate(int64_t invitationId) {
   sqlite3_stmt *stmt = nullptr;
   const char *sql = "UPDATE invitations SET status = 'invalidated' WHERE id = ?;";

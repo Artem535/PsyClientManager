@@ -55,6 +55,23 @@ public:
     return createDtoResponse(Status::CODE_200, dto);
   }
 
+  ENDPOINT("POST", "/v1/meetings/{meetingRef}/invitation", reissueInvitation,
+            PATH(String, meetingRef), HEADER(String, authHeader, "Authorization")) {
+    auto result = service_.reissueInvitation(toStdString(authHeader), toStdString(meetingRef));
+    if (!result.ok()) {
+      auto err = ErrorResponseDto::createShared();
+      err->error = "request_failed";
+      return createDtoResponse(statusForError(*result.error), err);
+    }
+    auto dto = ReissueInvitationResponseDto::createShared();
+    dto->meetingRef = result.value->meetingRef;
+    dto->invitationUrl = invitationBaseUrl_ + result.value->invitationCode;
+    dto->passcode = result.value->passcode;
+    dto->scheduledStart = result.value->scheduledStart;
+    dto->scheduledEnd = result.value->scheduledEnd;
+    return createDtoResponse(Status::CODE_200, dto);
+  }
+
   ENDPOINT("POST", "/v1/meetings/{meetingRef}/specialist-token", specialistToken,
             PATH(String, meetingRef), HEADER(String, authHeader, "Authorization")) {
     auto result =
