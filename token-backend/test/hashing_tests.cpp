@@ -48,3 +48,17 @@ TEST_F(CryptoTest, PasscodeHashIsRandomizedPerCall) {
   auto second = pcm::tokenbackend::hashPasscode("123456");
   EXPECT_NE(first, second) << "Argon2id must salt each call independently";
 }
+
+// The unauthenticated client-token endpoint verifies a passcode on every
+// request, so the Argon2id memory limit is attacker-controlled allocation.
+// Pin it to INTERACTIVE (64 MiB, m=65536) so a request burst cannot exhaust
+// the shared VPS's RAM. Raising this back to MODERATE (256 MiB) must be a
+// deliberate decision, not an accident.
+TEST_F(CryptoTest, PasscodeHashUsesInteractiveCostParameters) {
+  auto hash = pcm::tokenbackend::hashPasscode("123456");
+  EXPECT_NE(hash.find("$argon2id$"), std::string::npos) << hash;
+  EXPECT_NE(hash.find("m=65536"), std::string::npos)
+      << "expected 64 MiB memory limit (INTERACTIVE), got: " << hash;
+  EXPECT_NE(hash.find("t=2"), std::string::npos)
+      << "expected opslimit 2 (INTERACTIVE), got: " << hash;
+}
