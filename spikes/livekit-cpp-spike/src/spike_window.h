@@ -9,6 +9,8 @@
 
 #include "audio_capture_adapter.h"
 #include "livekit/livekit.h"
+#include "remote_audio_player.h"
+#include "remote_video_renderer.h"
 #include "video_capture_adapter.h"
 
 class SpikeWindow final : public QMainWindow, public livekit::RoomDelegate {
@@ -32,6 +34,8 @@ private:
   VideoCaptureAdapter mVideoCapture;
   AudioCaptureAdapter mAudioCapture;
   QVideoWidget *mLocalPreview{nullptr};
+  RemoteVideoRenderer *mRemoteVideo{nullptr};
+  RemoteAudioPlayer mRemoteAudio;
   QLabel *mStatusLabel{nullptr};
   QLabel *mConnectionLabel{nullptr};
   QPushButton *mJoinButton{nullptr};

@@ -20,6 +20,10 @@ SpikeWindow::SpikeWindow(QWidget *parent) : QMainWindow(parent) {
   mLocalPreview->setMinimumSize(640, 360);
   layout->addWidget(mLocalPreview);
 
+  mRemoteVideo = new RemoteVideoRenderer(central);
+  mRemoteVideo->setMinimumSize(640, 360);
+  layout->addWidget(mRemoteVideo);
+
   mStatusLabel = new QLabel(central);
   layout->addWidget(mStatusLabel);
 
@@ -190,6 +194,25 @@ void SpikeWindow::onParticipantConnected(livekit::Room & /*room*/,
 }
 
 void SpikeWindow::onTrackSubscribed(livekit::Room & /*room*/,
-                                    const livekit::TrackSubscribedEvent & /*ev*/) {
-  // Task 5 attaches the remote video/audio renderer here.
+                                    const livekit::TrackSubscribedEvent &ev) {
+  if (!ev.track) {
+    return;
+  }
+  const auto kind = ev.track->kind();
+  auto track = ev.track;
+
+  QMetaObject::invokeMethod(
+      this,
+      [this, track, kind]() {
+        if (kind == livekit::TrackKind::KIND_VIDEO) {
+          mRemoteVideo->attachTrack(track);
+          setConnectionState("Connected. Receiving remote video.");
+        } else if (kind == livekit::TrackKind::KIND_AUDIO) {
+          const auto outputs = QMediaDevices::audioOutputs();
+          if (!outputs.isEmpty()) {
+            mRemoteAudio.attachTrack(track, outputs.first());
+          }
+        }
+      },
+      Qt::QueuedConnection);
 }
