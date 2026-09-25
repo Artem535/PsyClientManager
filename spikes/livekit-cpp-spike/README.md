@@ -43,6 +43,19 @@ Everything below needs a human on real hardware:
    project — once on a network with direct connectivity, once forcing
    TURN/TLS.
 
+## Known gap: Qt module availability in CI
+
+The CI steps above reuse the job's existing Qt installation rather than
+adding a new install step, to avoid risking the main app's Windows/macOS
+Qt setup with an unverified module list. If `Configure LiveKit spike`
+fails with a `Could not find a package configuration file provided by
+"Qt6Multimedia"` (or `Qt6OpenGLWidgets`) error on some OS, that Qt
+installation is missing the module — extend that OS's existing Qt-install
+step in `cmake-multi-platform.yml` (the `jurplel/install-qt-action` step
+for Windows/macOS takes a `modules:` input; the Linux official-installer
+step needs the matching `.addons.qtmultimedia` component id for Qt
+6.10.2) and re-run CI to confirm.
+
 ## Decision gate
 
 Per `docs/video-roadmap.en.md` §5.3: P1-B (#78, #79, #80) proceeds only if

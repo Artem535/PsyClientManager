@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QComboBox>
 #include <QMainWindow>
 #include <QLabel>
 #include <QPushButton>
@@ -40,6 +41,9 @@ private:
   QLabel *mConnectionLabel{nullptr};
   QPushButton *mJoinButton{nullptr};
   QPushButton *mLeaveButton{nullptr};
+  QComboBox *mCameraCombo{nullptr};
+  QComboBox *mMicCombo{nullptr};
+  QComboBox *mSpeakerCombo{nullptr};
 
   std::unique_ptr<livekit::Room> mRoom;
   std::shared_ptr<livekit::LocalAudioTrack> mAudioTrack;

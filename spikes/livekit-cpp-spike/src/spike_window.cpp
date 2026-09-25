@@ -39,6 +39,38 @@ SpikeWindow::SpikeWindow(QWidget *parent) : QMainWindow(parent) {
   buttonLayout->addWidget(mLeaveButton);
   layout->addWidget(buttonRow);
 
+  auto *deviceRow = new QWidget(central);
+  auto *deviceLayout = new QHBoxLayout(deviceRow);
+
+  mCameraCombo = new QComboBox(deviceRow);
+  for (const auto &device : QMediaDevices::videoInputs()) {
+    mCameraCombo->addItem(device.description(), QVariant::fromValue(device));
+  }
+  deviceLayout->addWidget(mCameraCombo);
+
+  mMicCombo = new QComboBox(deviceRow);
+  for (const auto &device : QMediaDevices::audioInputs()) {
+    mMicCombo->addItem(device.description(), QVariant::fromValue(device));
+  }
+  deviceLayout->addWidget(mMicCombo);
+
+  mSpeakerCombo = new QComboBox(deviceRow);
+  for (const auto &device : QMediaDevices::audioOutputs()) {
+    mSpeakerCombo->addItem(device.description(), QVariant::fromValue(device));
+  }
+  deviceLayout->addWidget(mSpeakerCombo);
+
+  layout->addWidget(deviceRow);
+
+  connect(mCameraCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
+    if (index < 0) return;
+    mVideoCapture.start(mCameraCombo->itemData(index).value<QCameraDevice>());
+  });
+  connect(mMicCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
+    if (index < 0) return;
+    mAudioCapture.start(mMicCombo->itemData(index).value<QAudioDevice>());
+  });
+
   connect(mJoinButton, &QPushButton::clicked, this, &SpikeWindow::onJoinClicked);
   connect(mLeaveButton, &QPushButton::clicked, this, &SpikeWindow::onLeaveClicked);
 
@@ -87,7 +119,11 @@ void SpikeWindow::updateStatusLabel() {
                             .arg(mAudioCapture.framesCaptured()));
 }
 
-SpikeWindow::~SpikeWindow() { onLeaveClicked(); }
+SpikeWindow::~SpikeWindow() {
+  onLeaveClicked();
+  mVideoCapture.stop();
+  mAudioCapture.stop();
+}
 
 void SpikeWindow::setConnectionState(const QString &text) {
   mConnectionLabel->setText(text);
@@ -169,12 +205,14 @@ void SpikeWindow::unpublishTracks() {
 }
 
 void SpikeWindow::onLeaveClicked() {
-  if (!mRoom) {
-    return;
+  mRemoteVideo->detach();
+  mRemoteAudio.detach();
+
+  if (mRoom) {
+    unpublishTracks();
+    mRoom->setDelegate(nullptr);
+    mRoom.reset();
   }
-  unpublishTracks();
-  mRoom->setDelegate(nullptr);
-  mRoom.reset();
 
   mJoinButton->setEnabled(true);
   mLeaveButton->setEnabled(false);
@@ -208,10 +246,11 @@ void SpikeWindow::onTrackSubscribed(livekit::Room & /*room*/,
           mRemoteVideo->attachTrack(track);
           setConnectionState("Connected. Receiving remote video.");
         } else if (kind == livekit::TrackKind::KIND_AUDIO) {
+          const auto selected = mSpeakerCombo->currentData();
           const auto outputs = QMediaDevices::audioOutputs();
-          if (!outputs.isEmpty()) {
-            mRemoteAudio.attachTrack(track, outputs.first());
-          }
+          const auto device = selected.isValid() ? selected.value<QAudioDevice>()
+                                                  : (outputs.isEmpty() ? QAudioDevice() : outputs.first());
+          mRemoteAudio.attachTrack(track, device);
         }
       },
       Qt::QueuedConnection);
