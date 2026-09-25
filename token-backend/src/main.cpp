@@ -13,9 +13,15 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <sodium.h>
 
 int main(int argc, char **argv) {
   oatpp::base::Environment::init();
+
+  if (sodium_init() < 0) {
+    std::cerr << "Fatal: libsodium initialization failed" << std::endl;
+    return 1;
+  }
 
   if (argc > 1 && std::string(argv[1]) == "--seed-account") {
     auto config = pcm::tokenbackend::Config::fromEnv();
