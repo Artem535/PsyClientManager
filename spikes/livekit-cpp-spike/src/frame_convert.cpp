@@ -1,3 +1,4 @@
+// Throwaway spike for issue #77 — not production quality.
 #include "frame_convert.h"
 
 #include <cstdint>

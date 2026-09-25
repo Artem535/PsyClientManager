@@ -1,3 +1,4 @@
+// Throwaway spike for issue #77 — not production quality.
 #include "remote_video_renderer.h"
 
 #include <QMetaObject>

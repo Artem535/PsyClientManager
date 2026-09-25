@@ -1,5 +1,7 @@
 #pragma once
 
+// Throwaway spike for issue #77 — not production quality.
+
 #include <QImage>
 
 #include "livekit/livekit.h"

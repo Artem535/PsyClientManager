@@ -1,5 +1,7 @@
 #pragma once
 
+// Throwaway spike for issue #77 — not production quality.
+
 #include <QAudioDevice>
 #include <QAudioSink>
 #include <QIODevice>
