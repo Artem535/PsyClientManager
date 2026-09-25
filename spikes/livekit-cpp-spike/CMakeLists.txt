@@ -23,6 +23,8 @@ qt_standard_project_setup()
 
 qt_add_executable(livekit_spike
   src/main.cpp
+  src/audio_chunker.cpp
+  src/frame_convert.cpp
 )
 
 target_link_libraries(livekit_spike PRIVATE
