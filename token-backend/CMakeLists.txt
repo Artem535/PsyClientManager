@@ -14,6 +14,9 @@ option(PCM_TB_BUILD_TESTS "Build token backend tests" ON)
 
 add_library(token_backend_lib STATIC
   src/controller/health_controller.h
+  src/config.cpp
+  src/db/sqlite_connection.cpp
+  src/db/migrations.cpp
 )
 set_target_properties(token_backend_lib PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(token_backend_lib PUBLIC src)
