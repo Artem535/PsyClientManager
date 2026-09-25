@@ -19,6 +19,7 @@ add_library(token_backend_lib STATIC
   src/db/migrations.cpp
   src/crypto/random_token.cpp
   src/crypto/hashing.cpp
+  src/crypto/livekit_jwt.cpp
 )
 set_target_properties(token_backend_lib PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(token_backend_lib PUBLIC src)
