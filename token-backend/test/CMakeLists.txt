@@ -11,6 +11,7 @@ add_executable(token_backend_tests
   meetings_repository_tests.cpp
   invitations_repository_tests.cpp
   meeting_service_tests.cpp
+  http_integration_tests.cpp
 )
 target_link_libraries(token_backend_tests PRIVATE
   token_backend_lib
