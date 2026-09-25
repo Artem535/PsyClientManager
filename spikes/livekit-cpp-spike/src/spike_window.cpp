@@ -23,7 +23,17 @@ SpikeWindow::SpikeWindow(QWidget *parent) : QMainWindow(parent) {
   // Show the local capture in this window's own preview, independent of
   // what we push into LiveKit's VideoSource — proves capture works even
   // before Task 4 wires up a room connection.
-  mLocalPreview->videoSink()->disconnect();
+  //
+  // Deliberately NOT calling mLocalPreview->videoSink()->disconnect() here:
+  // QVideoWidget wires its own internal repaint slot to its own videoSink()'s
+  // videoFrameChanged signal in its constructor. A blanket disconnect() (no
+  // args) on that sink severs every outgoing connection from it, including
+  // that internal repaint wiring — frames would still flow into the sink via
+  // setVideoFrame() below, but the widget would never repaint, so the
+  // preview renders blank even while frame counters keep climbing. Qt
+  // signals support multiple listeners, so no disconnect is needed: we just
+  // add our own frame-forwarding connection alongside the widget's existing
+  // internal one.
   connect(mVideoCapture.previewSink(), &QVideoSink::videoFrameChanged,
           mLocalPreview->videoSink(), &QVideoSink::setVideoFrame);
 

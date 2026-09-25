@@ -19,7 +19,7 @@ void AudioCaptureAdapter::start(const QAudioDevice &device) {
   format.setChannelCount(kChannels);
   format.setSampleFormat(QAudioFormat::Int16);
 
-  mSource = std::make_unique<QAudioSource>(device, format, this);
+  mSource = std::make_unique<QAudioSource>(device, format, nullptr);
   mIoDevice = mSource->start();
   if (!mIoDevice) {
     std::cerr << "[audio capture] QAudioSource::start() returned null (error="

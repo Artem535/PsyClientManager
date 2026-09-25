@@ -23,7 +23,7 @@ VideoCaptureAdapter::~VideoCaptureAdapter() { stop(); }
 
 void VideoCaptureAdapter::start(const QCameraDevice &device) {
   stop();
-  mCamera = std::make_unique<QCamera>(device, this);
+  mCamera = std::make_unique<QCamera>(device, nullptr);
   mSession.setCamera(mCamera.get());
   mCamera->start();
 }
