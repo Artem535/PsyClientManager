@@ -25,6 +25,7 @@ add_library(token_backend_lib STATIC
   src/crypto/livekit_jwt.cpp
   src/auth/authorizer.h
   src/auth/static_token_authorizer.h
+  src/service/meeting_service.cpp
 )
 set_target_properties(token_backend_lib PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(token_backend_lib PUBLIC src)
