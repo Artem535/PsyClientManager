@@ -44,7 +44,7 @@ token-backend/
 │   │   └── invitations_repository.h / .cpp
 │   ├── auth/
 │   │   ├── authorizer.h                  — `Authorizer` interface (ADR-11 seam)
-│   │   └── static_token_authorizer.h / .cpp
+│   │   └── static_token_authorizer.h     — header-only
 │   ├── service/
 │   │   └── meeting_service.h / .cpp      — all business logic, no HTTP/oat++ dependency
 │   └── controller/
@@ -1126,7 +1126,7 @@ git commit -m "feat(token-backend): mint and sign LiveKit access tokens"
 **Files:**
 - Create: `token-backend/src/db/accounts_repository.h`, `token-backend/src/db/accounts_repository.cpp`
 - Create: `token-backend/src/auth/authorizer.h`
-- Create: `token-backend/src/auth/static_token_authorizer.h`, `token-backend/src/auth/static_token_authorizer.cpp`
+- Create: `token-backend/src/auth/static_token_authorizer.h` (header-only)
 - Create: `token-backend/test/accounts_repository_tests.cpp`
 - Create: `token-backend/test/static_token_authorizer_tests.cpp`
 - Modify: `token-backend/CMakeLists.txt`, `token-backend/test/CMakeLists.txt`, `token-backend/src/main.cpp`
