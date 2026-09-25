@@ -36,6 +36,10 @@ public:
   // one is minted.
   void invalidateAllForMeeting(int64_t meetingId);
 
+  // Retire-then-mint as one atomic step. Splitting it would leave a window in
+  // which a meeting has no usable invitation at all if the mint fails.
+  CreateResult reissueForMeeting(int64_t meetingId, AccountId accountId);
+
 private:
   SqliteConnection &conn_;
 };

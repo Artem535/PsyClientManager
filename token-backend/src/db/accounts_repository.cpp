@@ -21,6 +21,11 @@ std::string AccountsRepository::seedAccount() {
   auto credential = generateUrlSafeToken(32);
   auto hash = fastHash(credential);
 
+  // DELETE-then-INSERT: without a transaction a failure between the two (or a
+  // concurrent reader landing between them) leaves the service with no account
+  // at all, 401-ing every request with no way back except another seed run.
+  SqliteTransaction tx(conn_);
+
   conn_.exec("DELETE FROM accounts;");
 
   sqlite3_stmt *stmt = nullptr;
@@ -37,6 +42,7 @@ std::string AccountsRepository::seedAccount() {
   }
   sqlite3_finalize(stmt);
 
+  tx.commit();
   return credential;
 }
 

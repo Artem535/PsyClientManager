@@ -86,6 +86,15 @@ std::optional<Invitation> InvitationsRepository::findByCode(const std::string &i
 }
 
 int InvitationsRepository::recordFailedPasscodeAttempt(int64_t invitationId) {
+  // This implements ADR-12's actual security boundary: 6 digits are trivially
+  // brute-forceable, and only the hard 5-attempt cap makes them safe. The
+  // UPDATE, the read-back and the auto-invalidate must therefore be one atomic
+  // step. Serialized threading mode alone does not give that — it makes each
+  // statement safe in isolation, so two concurrent guesses on the same
+  // invitation can interleave, both read the same post-increment count, and
+  // let an attacker run past the cap.
+  SqliteTransaction tx(conn_);
+
   sqlite3_stmt *stmt = nullptr;
   const char *sql = "UPDATE invitations SET passcode_attempts = passcode_attempts + 1 "
                      "WHERE id = ?;";
@@ -112,6 +121,8 @@ int InvitationsRepository::recordFailedPasscodeAttempt(int64_t invitationId) {
   if (attempts >= kMaxPasscodeAttempts) {
     invalidate(invitationId);
   }
+
+  tx.commit();
   return attempts;
 }
 
@@ -128,6 +139,15 @@ void InvitationsRepository::invalidateAllForMeeting(int64_t meetingId) {
     throw std::runtime_error("failed to invalidate invitations for meeting");
   }
   sqlite3_finalize(stmt);
+}
+
+InvitationsRepository::CreateResult
+InvitationsRepository::reissueForMeeting(int64_t meetingId, AccountId accountId) {
+  SqliteTransaction tx(conn_);
+  invalidateAllForMeeting(meetingId);
+  auto created = create(meetingId, accountId);
+  tx.commit();
+  return created;
 }
 
 void InvitationsRepository::invalidate(int64_t invitationId) {

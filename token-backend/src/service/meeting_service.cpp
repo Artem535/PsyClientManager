@@ -111,8 +111,7 @@ MeetingService::reissueInvitation(const std::string &bearerCredential,
   // point is to recover a locked-out or leaked invitation, which a
   // practitioner will usually do while preparing for an upcoming session.
 
-  invitations_.invalidateAllForMeeting(meeting->id);
-  auto invitation = invitations_.create(meeting->id, *accountId);
+  auto invitation = invitations_.reissueForMeeting(meeting->id, *accountId);
 
   ReissueInvitationOutcome outcome;
   outcome.meetingRef = meeting->meetingRef;
