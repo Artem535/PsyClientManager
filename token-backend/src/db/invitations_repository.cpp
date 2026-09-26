@@ -34,6 +34,13 @@ Invitation readRow(sqlite3_stmt *stmt) {
 
 InvitationsRepository::CreateResult InvitationsRepository::create(int64_t meetingId,
                                                                     AccountId accountId) {
+  // Held for the whole body. Without it this INSERT can execute while another
+  // thread's transaction is open, join that transaction, and be undone by its
+  // rollback after this caller has already been handed the invitation code.
+  // reissueForMeeting() also calls this with the lock already held on this
+  // thread, which is why it is recursive. See SqliteConnection::lock().
+  auto guard = conn_.lock();
+
   std::string invitationCode = generateUrlSafeToken(24);
   std::string passcode = generateNumericPasscode();
   std::string invitationCodeHash = fastHash(invitationCode);
@@ -67,6 +74,8 @@ InvitationsRepository::CreateResult InvitationsRepository::create(int64_t meetin
 }
 
 std::optional<Invitation> InvitationsRepository::findByCode(const std::string &invitationCode) {
+  auto guard = conn_.lock();
+
   auto hash = fastHash(invitationCode);
 
   sqlite3_stmt *stmt = nullptr;
@@ -93,6 +102,15 @@ int InvitationsRepository::recordFailedPasscodeAttempt(int64_t invitationId) {
   // statement safe in isolation, so two concurrent guesses on the same
   // invitation can interleave, both read the same post-increment count, and
   // let an attacker run past the cap.
+  //
+  // The lock is what actually delivers that atomicity, and it has to be taken
+  // before the transaction: the whole point is that no other thread can issue
+  // a statement — or a second BEGIN IMMEDIATE, which would fail outright with
+  // SQLITE_ERROR — between this BEGIN and its COMMIT. This is the hottest path
+  // for real concurrency, since POST /v1/invitations/{code}/client-token is
+  // unauthenticated. The invalidate() call at the bottom re-enters the lock on
+  // this same thread.
+  auto guard = conn_.lock();
   SqliteTransaction tx(conn_);
 
   sqlite3_stmt *stmt = nullptr;
@@ -127,6 +145,8 @@ int InvitationsRepository::recordFailedPasscodeAttempt(int64_t invitationId) {
 }
 
 void InvitationsRepository::invalidateAllForMeeting(int64_t meetingId) {
+  auto guard = conn_.lock();
+
   sqlite3_stmt *stmt = nullptr;
   const char *sql =
       "UPDATE invitations SET status = 'invalidated' WHERE meeting_id = ? AND status = 'active';";
@@ -143,6 +163,11 @@ void InvitationsRepository::invalidateAllForMeeting(int64_t meetingId) {
 
 InvitationsRepository::CreateResult
 InvitationsRepository::reissueForMeeting(int64_t meetingId, AccountId accountId) {
+  // Before the transaction, for the same reason as recordFailedPasscodeAttempt:
+  // the lock is what keeps another thread's statement out of this BEGIN/COMMIT
+  // and stops a concurrent BEGIN IMMEDIATE from failing with SQLITE_ERROR. The
+  // two calls below re-enter it on this thread.
+  auto guard = conn_.lock();
   SqliteTransaction tx(conn_);
   invalidateAllForMeeting(meetingId);
   auto created = create(meetingId, accountId);
@@ -151,6 +176,8 @@ InvitationsRepository::reissueForMeeting(int64_t meetingId, AccountId accountId)
 }
 
 void InvitationsRepository::invalidate(int64_t invitationId) {
+  auto guard = conn_.lock();
+
   sqlite3_stmt *stmt = nullptr;
   const char *sql = "UPDATE invitations SET status = 'invalidated' WHERE id = ?;";
   if (sqlite3_prepare_v2(conn_.raw(), sql, -1, &stmt, nullptr) != SQLITE_OK) {

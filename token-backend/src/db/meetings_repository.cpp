@@ -34,6 +34,13 @@ constexpr const char *kSelectColumns =
 
 Meeting MeetingsRepository::create(AccountId accountId, const std::string &scheduledStart,
                                     const std::string &scheduledEnd) {
+  // Held for the whole body. Without it this INSERT can execute while another
+  // thread's transaction is open, join that transaction, and be undone by its
+  // rollback after this caller has already been handed the new meeting. The
+  // findByRef() read-back below re-enters the lock on this same thread, which
+  // is why it is recursive. See SqliteConnection::lock().
+  auto guard = conn_.lock();
+
   std::string meetingRef = "mtg_" + generateUrlSafeToken(9);
   std::string roomName = "rm_" + generateUrlSafeToken(9);
   std::string createdAt = nowIso8601();
@@ -65,6 +72,8 @@ Meeting MeetingsRepository::create(AccountId accountId, const std::string &sched
 }
 
 std::optional<Meeting> MeetingsRepository::findByRef(const std::string &meetingRef) {
+  auto guard = conn_.lock();
+
   sqlite3_stmt *stmt = nullptr;
   std::string sql = std::string("SELECT ") + kSelectColumns + " FROM meetings WHERE meeting_ref = ?;";
   if (sqlite3_prepare_v2(conn_.raw(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
@@ -81,6 +90,8 @@ std::optional<Meeting> MeetingsRepository::findByRef(const std::string &meetingR
 }
 
 std::optional<Meeting> MeetingsRepository::findById(int64_t meetingId) {
+  auto guard = conn_.lock();
+
   sqlite3_stmt *stmt = nullptr;
   std::string sql = std::string("SELECT ") + kSelectColumns + " FROM meetings WHERE id = ?;";
   if (sqlite3_prepare_v2(conn_.raw(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
@@ -97,6 +108,8 @@ std::optional<Meeting> MeetingsRepository::findById(int64_t meetingId) {
 }
 
 void MeetingsRepository::invalidate(int64_t meetingId) {
+  auto guard = conn_.lock();
+
   sqlite3_stmt *stmt = nullptr;
   const char *sql = "UPDATE meetings SET status = 'invalidated' WHERE id = ?;";
   if (sqlite3_prepare_v2(conn_.raw(), sql, -1, &stmt, nullptr) != SQLITE_OK) {

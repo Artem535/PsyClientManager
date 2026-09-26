@@ -18,6 +18,10 @@ std::string nowIso8601() {
 } // namespace
 
 std::string AccountsRepository::seedAccount() {
+  // Held for the whole body, so the transaction below cannot have another
+  // thread's statement land inside it. See SqliteConnection::lock().
+  auto guard = conn_.lock();
+
   auto credential = generateUrlSafeToken(32);
   auto hash = fastHash(credential);
 
@@ -47,6 +51,8 @@ std::string AccountsRepository::seedAccount() {
 }
 
 std::optional<AccountId> AccountsRepository::findByCredential(const std::string &rawCredential) {
+  auto guard = conn_.lock();
+
   auto hash = fastHash(rawCredential);
 
   sqlite3_stmt *stmt = nullptr;

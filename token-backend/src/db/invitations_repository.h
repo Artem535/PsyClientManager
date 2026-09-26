@@ -17,6 +17,11 @@ struct Invitation {
   std::string status;
 };
 
+// Thread safety: every public method below takes SqliteConnection::lock() for
+// its whole body, so calls from oat++'s worker threads are serialized against
+// each other and against the other repositories sharing the same connection.
+// The transactional methods depend on that: it is what stops another thread's
+// statement from landing inside their BEGIN/COMMIT.
 class InvitationsRepository {
 public:
   explicit InvitationsRepository(SqliteConnection &conn) : conn_(conn) {}
