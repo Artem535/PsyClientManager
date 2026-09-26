@@ -2,6 +2,7 @@
 
 #include "database.h"
 #include "day_summary_widget.h"
+#include "meeting_coordinator.h"
 #include "qevent_details_widget.h"
 #include "timeline_widget.h"
 #include "../../widgets/quick_slots_widget.h"
@@ -24,7 +25,8 @@ class QEventInfoPage final : public QWidget {
   Q_OBJECT
 
 public:
-  QEventInfoPage(QTimelineModel *model, QWidget *parent);
+  QEventInfoPage(QTimelineModel *model, pcm::meeting::MeetingCoordinator *meetingCoordinator,
+                QWidget *parent);
   ~QEventInfoPage() override;
 
 signals:
@@ -64,6 +66,7 @@ private:
   std::unique_ptr<Ui::EventInfo> mUi;
   RoundedCalendarWidget *mCalendarWidget = nullptr;
   QTimelineWidget *mTimelineWidget = nullptr;
+  QPointer<pcm::meeting::MeetingCoordinator> mMeetingCoordinator;
   QPushButton *mCreateEventButton = nullptr;
   QuickSlotsWidget *mQuickSlotsWidget = nullptr;
   DaySummaryWidget *mDaySummaryWidget = nullptr;
