@@ -78,6 +78,28 @@ target_link_libraries(Sessio_notification_text_tests PRIVATE
 )
 gtest_discover_tests(Sessio_notification_text_tests)
 
+# Provider kind tests
+add_executable(Sessio_provider_kind_tests provider_kind_tests.cpp)
+target_link_libraries(Sessio_provider_kind_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    Sessio_meeting
+)
+gtest_discover_tests(Sessio_provider_kind_tests)
+
+# External URL meeting provider tests
+add_executable(Sessio_external_url_meeting_provider_tests external_url_meeting_provider_tests.cpp)
+target_link_libraries(Sessio_external_url_meeting_provider_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    Sessio_meeting
+)
+# This test file defines a Q_OBJECT class directly in the .cpp (with a
+# matching #include "....moc" at the bottom) and needs moc run on it, the same
+# way qcustomplot's target needs it set explicitly elsewhere in this project.
+set_target_properties(Sessio_external_url_meeting_provider_tests PROPERTIES AUTOMOC ON)
+gtest_discover_tests(Sessio_external_url_meeting_provider_tests)
+
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
