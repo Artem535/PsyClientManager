@@ -34,6 +34,7 @@ add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_widgets
         ${PROJECT_NAME}_event_view
         ${PROJECT_NAME}_timeline_widget
+        ${PROJECT_NAME}_meeting
 )
 
 # Link Slint to the module
@@ -44,6 +45,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_widgets
         ${PROJECT_NAME}_event_view
         ${PROJECT_NAME}_timeline_widget
+        ${PROJECT_NAME}_meeting
         qlementine
         Qt6::Widgets
         Qt6::Gui
