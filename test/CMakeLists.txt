@@ -100,6 +100,16 @@ target_link_libraries(Sessio_external_url_meeting_provider_tests PRIVATE
 set_target_properties(Sessio_external_url_meeting_provider_tests PROPERTIES AUTOMOC ON)
 gtest_discover_tests(Sessio_external_url_meeting_provider_tests)
 
+# LiveKit meeting provider stub tests
+add_executable(Sessio_livekit_meeting_provider_tests livekit_meeting_provider_tests.cpp)
+target_link_libraries(Sessio_livekit_meeting_provider_tests PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+    Sessio_meeting
+)
+set_target_properties(Sessio_livekit_meeting_provider_tests PROPERTIES AUTOMOC ON)
+gtest_discover_tests(Sessio_livekit_meeting_provider_tests)
+
 # Backup tests
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)

@@ -13,6 +13,8 @@ qt_add_library(${TARGET_NAME} STATIC
         meeting_provider.h
         external_url_meeting_provider.h
         external_url_meeting_provider.cpp
+        livekit_meeting_provider.h
+        livekit_meeting_provider.cpp
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC
