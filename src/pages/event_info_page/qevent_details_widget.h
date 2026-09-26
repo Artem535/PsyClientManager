@@ -1,6 +1,7 @@
 #pragma once
 
 #include "event_item.h"
+#include "meeting_coordinator.h"
 
 #include <QComboBox>
 #include <QDate>
@@ -65,6 +66,7 @@ public:
   void setDialogMode(bool enabled);
   void setConflictChecker(
       std::function<std::optional<DuckEvent>(const DuckEvent &)> checker);
+  void setMeetingCoordinator(pcm::meeting::MeetingCoordinator *coordinator);
 
   /**
    * @brief Checks if the widget is in edit mode.
@@ -132,6 +134,7 @@ private slots:
   void onOnlineSessionToggled(bool checked);
   void onRecurrenceTypeChanged();
   void onMeetingUrlChanged(const QString &url);
+  void onMeetingCreated(pcm::meeting::MeetingDescriptor descriptor);
   void onOpenMeetingClicked();
   void onCopyMeetingUrlClicked();
   void onCopyMeetingInviteClicked();
@@ -156,6 +159,11 @@ private:
   // --- Validation & Data Collection ---
   bool validateInput();
   [[nodiscard]] DuckEvent collectEventData() const;
+  void updateMeetingViaCoordinator();
+  void applyProviderFields(std::optional<pcm::meeting::ProviderKind> kind,
+                           const QString &meetingRef,
+                           const std::optional<QString> &invitationState,
+                           const QString &meetingUrl);
 
   // --- Live conflict warning ---
   void updateConflictWarning();
@@ -193,4 +201,5 @@ private:
   bool mDialogMode = false;
   bool mSaveAccepted = true;
   std::function<std::optional<DuckEvent>(const DuckEvent &)> mConflictChecker;
+  QPointer<pcm::meeting::MeetingCoordinator> mMeetingCoordinator;
 };

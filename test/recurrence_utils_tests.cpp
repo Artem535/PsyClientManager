@@ -240,6 +240,26 @@ TEST(RecurrenceUtilsTest, ResolveNoteLinkRebuildsUnmaterializedVirtualOccurrence
   db_dir.remove(true);
 }
 
+TEST(RecurrenceUtilsTest, BuildVirtualOccurrenceCopiesProviderFieldsFromSeries) {
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Session"};
+  series.start_date = 1730000000000;
+  series.duration = 3600;
+  series.provider_kind = std::string{"ExternalUrl"};
+  series.meeting_ref = std::string{"https://meet.example.invalid/room-3"};
+  series.invitation_state = std::nullopt;
+
+  const auto occurrenceStart =
+      QDateTime::fromMSecsSinceEpoch(*series.start_date, QTimeZone::UTC);
+  const auto occurrence = pcm::recurrence::buildVirtualOccurrence(series, occurrenceStart, -1);
+
+  ASSERT_TRUE(occurrence.provider_kind.has_value());
+  EXPECT_EQ(*occurrence.provider_kind, "ExternalUrl");
+  ASSERT_TRUE(occurrence.meeting_ref.has_value());
+  EXPECT_EQ(*occurrence.meeting_ref, "https://meet.example.invalid/room-3");
+  EXPECT_FALSE(occurrence.invitation_state.has_value());
+}
+
 TEST(RecurrenceUtilsTest, ResolveNoteLinkFindsMaterializedRowForSinceMaterializedOccurrence) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{

@@ -1,5 +1,6 @@
 // src/timeline_widget/timeline_model.cpp
 #include "qtimeline_model.h"
+#include "provider_kind.h"
 #include "recurrence_utils.h"
 #include "schedule_conflict_service.h"
 #include <QDateTime>
@@ -8,8 +9,48 @@
 #include <set>
 
 QTimelineModel::QTimelineModel(
-    const std::shared_ptr<pcm::database::Database> &db, QObject *parent)
-    : QAbstractItemModel(parent), mDb(db) {}
+    const std::shared_ptr<pcm::database::Database> &db,
+    pcm::meeting::MeetingCoordinator *meetingCoordinator, QObject *parent)
+    : QAbstractItemModel(parent), mDb(db), mMeetingCoordinator(meetingCoordinator) {}
+
+namespace {
+
+void applySeriesFieldsFromEvent(DuckEventSeries &series, const DuckEvent &event,
+                                const int64_t clientId, const QString &recurrenceRule,
+                                const std::optional<int64_t> recurrenceUntilMs) {
+  series.name = event.name;
+  series.description = event.description;
+  series.client_id = clientId > 0 ? std::make_optional(clientId) : std::nullopt;
+  series.is_work_event = event.is_work_event;
+  series.event_stat_id = event.event_stat_id;
+  series.payment_stat_id = event.payment_stat_id;
+  series.cancellation_reason = event.cancellation_reason;
+  series.canceled_by = event.canceled_by;
+  series.duration = event.duration;
+  series.cost = event.cost;
+  series.is_online = event.is_online;
+  series.meeting_url = event.meeting_url;
+  series.provider_kind = event.provider_kind;
+  series.meeting_ref = event.meeting_ref;
+  series.invitation_state = event.invitation_state;
+  series.buffer_before_minutes = event.buffer_before_minutes;
+  series.buffer_after_minutes = event.buffer_after_minutes;
+  series.recurrence_rule = recurrenceRule.trimmed().toStdString();
+  series.recurrence_until = recurrenceUntilMs;
+}
+
+void cancelMeetingIfNeeded(pcm::meeting::MeetingCoordinator *coordinator,
+                           const DuckEvent &event) {
+  if (!event.provider_kind.has_value() || !coordinator) {
+    return;
+  }
+  const auto kind = pcm::meeting::providerKindFromString(*event.provider_kind);
+  if (kind.has_value()) {
+    coordinator->cancelMeeting(*kind, QString::fromStdString(event.meeting_ref.value_or("")));
+  }
+}
+
+} // namespace
 
 QModelIndex QTimelineModel::index(int row, int column,
                                   const QModelIndex &parent) const {
@@ -154,24 +195,9 @@ int64_t QTimelineModel::addEventSeries(const DuckEvent &event, const int64_t cli
                                        const QString &recurrenceRule,
                                        const std::optional<int64_t> recurrenceUntilMs) {
   DuckEventSeries series;
-  series.name = event.name;
-  series.description = event.description;
-  series.client_id = clientId > 0 ? std::make_optional(clientId) : std::nullopt;
-  series.is_work_event = event.is_work_event;
-  series.event_stat_id = event.event_stat_id;
-  series.payment_stat_id = event.payment_stat_id;
-  series.cancellation_reason = event.cancellation_reason;
-  series.canceled_by = event.canceled_by;
+  applySeriesFieldsFromEvent(series, event, clientId, recurrenceRule, recurrenceUntilMs);
   series.start_date = event.start_date;
   series.end_date = event.end_date;
-  series.duration = event.duration;
-  series.cost = event.cost;
-  series.is_online = event.is_online;
-  series.meeting_url = event.meeting_url;
-  series.buffer_before_minutes = event.buffer_before_minutes;
-  series.buffer_after_minutes = event.buffer_after_minutes;
-  series.recurrence_rule = recurrenceRule.trimmed().toStdString();
-  series.recurrence_until = recurrenceUntilMs;
 
   return mDb ? mDb->add_event_series(series) : 0;
 }
@@ -191,22 +217,7 @@ bool QTimelineModel::updateEventSeries(const DuckEvent &event, const int64_t ser
     existingSeriesValue = *existingSeries;
   }
   series.id = seriesId;
-  series.name = event.name;
-  series.description = event.description;
-  series.client_id = clientId > 0 ? std::make_optional(clientId) : std::nullopt;
-  series.is_work_event = event.is_work_event;
-  series.event_stat_id = event.event_stat_id;
-  series.payment_stat_id = event.payment_stat_id;
-  series.cancellation_reason = event.cancellation_reason;
-  series.canceled_by = event.canceled_by;
-  series.duration = event.duration;
-  series.cost = event.cost;
-  series.is_online = event.is_online;
-  series.meeting_url = event.meeting_url;
-  series.buffer_before_minutes = event.buffer_before_minutes;
-  series.buffer_after_minutes = event.buffer_after_minutes;
-  series.recurrence_rule = recurrenceRule.trimmed().toStdString();
-  series.recurrence_until = recurrenceUntilMs;
+  applySeriesFieldsFromEvent(series, event, clientId, recurrenceRule, recurrenceUntilMs);
 
   if (existingSeriesValue.has_value() && existingSeriesValue->start_date.has_value() &&
       event.start_date.has_value() && event.end_date.has_value()) {
@@ -275,6 +286,7 @@ void QTimelineModel::removeEvent(int64_t id) {
                      << id;
           return;
         }
+        cancelMeetingIfNeeded(mMeetingCoordinator, mEvents[i]);
         if (!mEvents[i].is_virtual_occurrence && !mDb->remove_event(id)) {
           qWarning() << "QTimelineModel::removeEvent failed for recurring override id="
                      << id;
@@ -285,6 +297,7 @@ void QTimelineModel::removeEvent(int64_t id) {
         endRemoveRows();
         break;
       }
+      cancelMeetingIfNeeded(mMeetingCoordinator, mEvents[i]);
       if (!mDb->remove_event(id)) {
         qWarning() << "QTimelineModel::removeEvent failed for id=" << id;
         return;

@@ -117,8 +117,9 @@ void MainWindow::addClientInfoPage(std::shared_ptr<QClientModel> model) {
 }
 
 
-void MainWindow::addEventInfoPage(QTimelineModel *model) {
-  const auto page = new QEventInfoPage(model, this);
+void MainWindow::addEventInfoPage(QTimelineModel *model,
+                                  pcm::meeting::MeetingCoordinator *meetingCoordinator) {
+  const auto page = new QEventInfoPage(model, meetingCoordinator, this);
   mPages.insertOrAssign(Pages::eventInfo, page);
 
   const int index = mUi->stackedWidget->addWidget(page);

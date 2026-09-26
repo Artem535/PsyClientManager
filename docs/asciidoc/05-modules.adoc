@@ -27,6 +27,25 @@
 - `db_utils.hpp`
 : value conversion helpers between DuckDB and C++ optional types.
 
+=== `src/meeting`
+
+- `ProviderKind` (provider_kind.h)
+: enum identifying which meeting provider backs an `Event`/`EventSeries`
+  (`ExternalUrl`, `LiveKit`), with string round-trip helpers.
+- `MeetingDescriptor` (meeting_descriptor.h)
+: value type describing a created meeting (kind, ref, URL, invitation state).
+- `MeetingProvider` (meeting_provider.h)
+: abstract, signal-based interface (`create`/`cancel`) that every provider
+  implements.
+- `ExternalUrlMeetingProvider`
+: today's behavior — wraps a practitioner-supplied http(s) link, no network
+  I/O.
+- `LiveKitMeetingProvider`
+: non-functional stub for the real LiveKit token-backend integration.
+- `MeetingCoordinator`
+: selects and drives the right `MeetingProvider` by `ProviderKind` on behalf
+  of the event-editing UI.
+
 === `src/backup`
 
 - `BackupService`

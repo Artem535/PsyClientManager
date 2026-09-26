@@ -42,6 +42,7 @@ add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_client_notes_page
         ${PROJECT_NAME}_analytics_page
         ${PROJECT_NAME}_event_page
+        ${PROJECT_NAME}_meeting
         ${PROJECT_NAME}_widgets
 
 )
@@ -56,6 +57,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_client_notes_page
         ${PROJECT_NAME}_analytics_page
         ${PROJECT_NAME}_event_page
+        ${PROJECT_NAME}_meeting
         ${PROJECT_NAME}_widgets
         qlementine
         Qt6::Widgets

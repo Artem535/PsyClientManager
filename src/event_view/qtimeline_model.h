@@ -3,12 +3,14 @@
 
 #include <QAbstractItemModel>
 #include <QDate>
+#include <QPointer>
 #include <QVector>
 #include <memory>
 #include <optional>
 
 #include "database.h"
 #include "event_item.h" // for DuckEvent
+#include "meeting_coordinator.h"
 
 Q_DECLARE_METATYPE(DuckEvent)
 
@@ -28,6 +30,7 @@ public:
   };
 
   explicit QTimelineModel(const std::shared_ptr<pcm::database::Database> &db,
+                          pcm::meeting::MeetingCoordinator *meetingCoordinator,
                           QObject *parent = nullptr);
 
   QModelIndex index(int row, int column,
@@ -64,6 +67,7 @@ signals:
 
 private:
   std::shared_ptr<pcm::database::Database> mDb;
+  QPointer<pcm::meeting::MeetingCoordinator> mMeetingCoordinator;
   QVector<DuckEvent> mEvents;
   QDate mCurrentDate;
 };

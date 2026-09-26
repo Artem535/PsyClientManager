@@ -16,6 +16,18 @@ void setBufferMinutes(const DuckEvent &event, std::int64_t &beforeMinutes,
   beforeMinutes = event.buffer_before_minutes;
   afterMinutes = event.buffer_after_minutes;
 }
+
+void setProviderFields(const DuckEvent &event,
+                       std::optional<pcm::meeting::ProviderKind> &providerKind,
+                       QString &meetingRef, std::optional<QString> &invitationState) {
+  providerKind = event.provider_kind.has_value()
+                     ? pcm::meeting::providerKindFromString(*event.provider_kind)
+                     : std::nullopt;
+  meetingRef = QString::fromStdString(event.meeting_ref.value_or(""));
+  invitationState = event.invitation_state.has_value()
+                         ? std::make_optional(QString::fromStdString(*event.invitation_state))
+                         : std::nullopt;
+}
 } // namespace
 
 namespace {
@@ -100,6 +112,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
+  setProviderFields(event, mProviderKind, mMeetingRef, mInvitationState);
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
@@ -137,6 +150,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
+  setProviderFields(event, mProviderKind, mMeetingRef, mInvitationState);
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
@@ -180,6 +194,14 @@ DuckEvent QEventItem::toEvent() const {
   }
   event.is_online = mIsOnline;
   event.meeting_url = mMeetingUrl.trimmed().toStdString();
+  event.provider_kind = mProviderKind.has_value()
+                             ? std::make_optional(pcm::meeting::providerKindToString(*mProviderKind))
+                             : std::nullopt;
+  event.meeting_ref =
+      mMeetingRef.trimmed().isEmpty() ? std::nullopt : std::make_optional(mMeetingRef.trimmed().toStdString());
+  event.invitation_state = mInvitationState.has_value()
+                                ? std::make_optional(mInvitationState->toStdString())
+                                : std::nullopt;
   event.series_id = mSeriesId;
   event.original_occurrence_start = mOriginalOccurrenceStart;
   event.is_virtual_occurrence = mIsVirtualOccurrence;
@@ -223,6 +245,9 @@ QString QEventItem::cancellationReason() const { return mCancellationReason; }
 QString QEventItem::canceledBy() const { return mCanceledBy; }
 bool QEventItem::isOnline() const { return mIsOnline; }
 QString QEventItem::meetingUrl() const { return mMeetingUrl; }
+std::optional<pcm::meeting::ProviderKind> QEventItem::providerKind() const { return mProviderKind; }
+QString QEventItem::meetingRef() const { return mMeetingRef; }
+std::optional<QString> QEventItem::invitationState() const { return mInvitationState; }
 int64_t QEventItem::getId() const { return mId; }
 bool QEventItem::isWorkItem() const { return mIsWorkItem; };
 
@@ -303,6 +328,28 @@ void QEventItem::setMeetingUrl(const QString &meetingUrl) {
   if (mMeetingUrl == normalizedUrl)
     return;
   mMeetingUrl = normalizedUrl;
+  update();
+}
+
+void QEventItem::setProviderKind(std::optional<pcm::meeting::ProviderKind> kind) {
+  if (mProviderKind == kind)
+    return;
+  mProviderKind = kind;
+  update();
+}
+
+void QEventItem::setMeetingRef(const QString &meetingRef) {
+  const auto normalizedRef = meetingRef.trimmed();
+  if (mMeetingRef == normalizedRef)
+    return;
+  mMeetingRef = normalizedRef;
+  update();
+}
+
+void QEventItem::setInvitationState(std::optional<QString> state) {
+  if (mInvitationState == state)
+    return;
+  mInvitationState = std::move(state);
   update();
 }
 

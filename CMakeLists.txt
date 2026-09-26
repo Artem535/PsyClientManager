@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(Sessio VERSION 0.1.32 LANGUAGES CXX)
+project(Sessio VERSION 0.1.33 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)
@@ -111,6 +111,7 @@ qt_add_translations(Sessio
 add_subdirectory(src/widgets)
 add_subdirectory(src/config)
 add_subdirectory(src/database)
+add_subdirectory(src/meeting)
 add_subdirectory(src/backup)
 add_subdirectory(src/client_model)
 add_subdirectory(src/pages/client_info_page)

@@ -749,6 +749,61 @@ TEST(DatabaseTest, PersistsBuffersAndRejectsBufferedAdjacentEvent) {
   db_dir.remove(true);
 }
 
+namespace {
+// RAII fixture for the provider/buffer-minutes tests below: creates a fresh
+// temp DB directory (clearing any leftover from a previous run) and always
+// removes it on scope exit, even if the test fails partway through.
+struct TempDbFixture {
+  pcm::config::Config conf;
+  explicit TempDbFixture(const std::string &dirName)
+      : conf{.db_conf = pcm::config::DatabaseConfig{
+                 .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}} {
+    Poco::File dir(conf.db_conf().db_pth);
+    if (dir.exists()) {
+      dir.remove(true);
+    }
+  }
+  ~TempDbFixture() { Poco::File(conf.db_conf().db_pth).remove(true); }
+};
+} // namespace
+
+TEST(DatabaseTest, PersistsBufferMinutesOnEventSeries) {
+  TempDbFixture fixture("tmp_dir_series_buffers");
+  pcm::database::Database db{fixture.conf};
+
+  DuckEventSeries series;
+  series.name = std::string{"Buffered Series"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  series.buffer_before_minutes = 15;
+  series.buffer_after_minutes = 30;
+  // A non-empty canceled_by is the crucial part of this test: with the old,
+  // buggy column indices (18/19, which used to mean cancellation_reason and
+  // canceled_by on main), a non-null canceled_by would have silently
+  // corrupted the buffer read instead of just reading a coincidental 0.
+  series.canceled_by = std::string{"Dr. Smith"};
+
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  const auto reloaded = db.get_event_series(seriesId);
+  ASSERT_NE(reloaded, nullptr);
+  EXPECT_EQ(reloaded->buffer_before_minutes, 15);
+  EXPECT_EQ(reloaded->buffer_after_minutes, 30);
+  // NOTE: canceled_by itself is not asserted here. DuckEventSeries currently
+  // reads cancellation_reason/canceled_by from the wrong physical columns
+  // (it reads created_at/updated_at instead, because EventSeries has two
+  // extra columns Event does not) — a separate, pre-existing off-by-two bug
+  // that is out of scope for this change and is being fixed independently
+  // on a different branch. Setting canceled_by to a non-empty value here is
+  // still the important part of this test: it proves the buffer-minutes fix
+  // reads buffer_before_minutes/buffer_after_minutes correctly even when a
+  // neighboring text column is populated, rather than "passing" only by
+  // coincidence because every other column happened to be null.
+}
+
 TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{
@@ -796,6 +851,162 @@ TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
   EXPECT_NO_THROW(db.get_day_events(0, std::numeric_limits<int64_t>::max()));
 
   db_dir.remove(true);
+}
+
+TEST(DatabaseTest, PersistsProviderFieldsOnEvent) {
+  TempDbFixture fixture("tmp_dir_provider_event");
+  pcm::database::Database db{fixture.conf};
+  DuckEvent event;
+  event.name = std::string{"Online Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  event.is_online = true;
+  event.meeting_url = "https://meet.example.invalid/room-1";
+  event.provider_kind = std::string{"ExternalUrl"};
+  event.meeting_ref = std::string{"https://meet.example.invalid/room-1"};
+  event.invitation_state = std::nullopt;
+
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  const auto reloaded = db.get_event(eventId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+  ASSERT_TRUE(reloaded->meeting_ref.has_value());
+  EXPECT_EQ(*reloaded->meeting_ref, "https://meet.example.invalid/room-1");
+  EXPECT_FALSE(reloaded->invitation_state.has_value());
+
+  reloaded->invitation_state = std::string{"pending"};
+  ASSERT_TRUE(db.update_event(*reloaded));
+  const auto updated = db.get_event(eventId);
+  ASSERT_NE(updated, nullptr);
+  ASSERT_TRUE(updated->invitation_state.has_value());
+  EXPECT_EQ(*updated->invitation_state, "pending");
+}
+
+TEST(DatabaseTest, PersistsProviderFieldsOnEventSeries) {
+  TempDbFixture fixture("tmp_dir_provider_series");
+  pcm::database::Database db{fixture.conf};
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Online Session"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  series.is_online = true;
+  series.meeting_url = "https://meet.example.invalid/room-2";
+  series.provider_kind = std::string{"ExternalUrl"};
+  series.meeting_ref = std::string{"https://meet.example.invalid/room-2"};
+
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  const auto reloaded = db.get_event_series(seriesId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+  ASSERT_TRUE(reloaded->meeting_ref.has_value());
+  EXPECT_EQ(*reloaded->meeting_ref, "https://meet.example.invalid/room-2");
+}
+
+TEST(DatabaseTest, BackfillsProviderKindForLegacyOnlineEvents) {
+  TempDbFixture fixture("tmp_dir_provider_backfill");
+  const auto &conf = fixture.conf;
+
+  int64_t eventId = 0;
+  {
+    pcm::database::Database db{conf};
+    DuckEvent event;
+    event.name = std::string{"Legacy Online Event"};
+    event.start_date = 1730000000000;
+    event.end_date = 1730003600000;
+    event.is_online = true;
+    event.meeting_url = "https://legacy.example.invalid/room";
+    eventId = db.add_event(event);
+    ASSERT_GT(eventId, 0);
+  }
+
+  {
+    // Simulate a pre-existing row written before provider_kind existed.
+    duckdb::DuckDB rawDatabase((conf.db_conf().db_pth.toString() + "/database.db").c_str());
+    duckdb::Connection rawConnection(rawDatabase);
+    ASSERT_FALSE(rawConnection
+                     .Query("UPDATE Event SET provider_kind = NULL WHERE id = " +
+                            std::to_string(eventId))
+                     ->HasError());
+  }
+
+  // Re-opening the database re-runs schema migrations, which must backfill provider_kind.
+  pcm::database::Database db{conf};
+  const auto reloaded = db.get_event(eventId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+}
+
+TEST(DatabaseTest, BackfillsProviderKindAndMeetingRefForLegacyOnlineEventSeries) {
+  TempDbFixture fixture("tmp_dir_series_provider_backfill");
+  const auto &conf = fixture.conf;
+
+  int64_t legacySeriesId = 0;
+  int64_t liveKitSeriesId = 0;
+  {
+    pcm::database::Database db{conf};
+
+    DuckEventSeries legacySeries;
+    legacySeries.name = std::string{"Legacy Online Series"};
+    legacySeries.start_date = 1730000000000;
+    legacySeries.end_date = 1730003600000;
+    legacySeries.duration = 3600;
+    legacySeries.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+    legacySeries.is_online = true;
+    legacySeries.meeting_url = "https://legacy.example.invalid/series-room";
+    legacySeriesId = db.add_event_series(legacySeries);
+    ASSERT_GT(legacySeriesId, 0);
+
+    DuckEventSeries liveKitSeries;
+    liveKitSeries.name = std::string{"LiveKit Series"};
+    liveKitSeries.start_date = 1730000000000;
+    liveKitSeries.end_date = 1730003600000;
+    liveKitSeries.duration = 3600;
+    liveKitSeries.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+    liveKitSeries.is_online = true;
+    liveKitSeries.meeting_url = "https://livekit.example.invalid/room";
+    liveKitSeries.provider_kind = std::string{"LiveKit"};
+    liveKitSeries.meeting_ref = std::string{"livekit-room-ref"};
+    liveKitSeriesId = db.add_event_series(liveKitSeries);
+    ASSERT_GT(liveKitSeriesId, 0);
+  }
+
+  {
+    // Simulate a pre-existing row written before provider_kind/meeting_ref existed.
+    duckdb::DuckDB rawDatabase((conf.db_conf().db_pth.toString() + "/database.db").c_str());
+    duckdb::Connection rawConnection(rawDatabase);
+    ASSERT_FALSE(
+        rawConnection
+            .Query("UPDATE EventSeries SET provider_kind = NULL, meeting_ref = NULL "
+                   "WHERE id = " +
+                   std::to_string(legacySeriesId))
+            ->HasError());
+  }
+
+  // Re-opening the database re-runs schema migrations, which must backfill
+  // provider_kind and meeting_ref for legacy rows without clobbering rows
+  // that already have a provider_kind set.
+  pcm::database::Database db{conf};
+
+  const auto reloadedLegacy = db.get_event_series(legacySeriesId);
+  ASSERT_NE(reloadedLegacy, nullptr);
+  ASSERT_TRUE(reloadedLegacy->provider_kind.has_value());
+  EXPECT_EQ(*reloadedLegacy->provider_kind, "ExternalUrl");
+  ASSERT_TRUE(reloadedLegacy->meeting_ref.has_value());
+  EXPECT_EQ(*reloadedLegacy->meeting_ref, "https://legacy.example.invalid/series-room");
+
+  const auto reloadedLiveKit = db.get_event_series(liveKitSeriesId);
+  ASSERT_NE(reloadedLiveKit, nullptr);
+  ASSERT_TRUE(reloadedLiveKit->provider_kind.has_value());
+  EXPECT_EQ(*reloadedLiveKit->provider_kind, "LiveKit");
 }
 
 TEST(DatabaseTest, TracksSeriesOccurrenceReminderNotifications) {

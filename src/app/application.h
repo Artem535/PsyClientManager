@@ -17,6 +17,7 @@
 #include "main_window.h"
 #include "qclient_model.h"
 #include "event_info.h"
+#include "meeting_coordinator.h"
 
 class QAction;
 class QWidget;
@@ -63,6 +64,7 @@ private:
   QWidget *mAppLockOverlay = nullptr;
   bool mAppLockDialogVisible = false;
   std::unique_ptr<pcm::backup::AutoBackupScheduler> mAutoBackupScheduler;
+  std::unique_ptr<pcm::meeting::MeetingCoordinator> mMeetingCoordinator;
   bool mIsQuitting = false;
   bool mTrayCloseHintShown = false;
   config::Config mConf;

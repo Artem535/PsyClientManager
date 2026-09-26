@@ -62,7 +62,10 @@ CREATE TABLE IF NOT EXISTS Event (
     cancellation_reason TEXT,
     canceled_by TEXT,
     buffer_before_minutes INTEGER DEFAULT 0,
-    buffer_after_minutes INTEGER DEFAULT 0
+    buffer_after_minutes INTEGER DEFAULT 0,
+    provider_kind TEXT,
+    meeting_ref TEXT,
+    invitation_state TEXT
 );
 
 CREATE TABLE IF NOT EXISTS EventSeries (
@@ -87,7 +90,10 @@ CREATE TABLE IF NOT EXISTS EventSeries (
     cancellation_reason TEXT,
     canceled_by TEXT,
     buffer_before_minutes INTEGER DEFAULT 0,
-    buffer_after_minutes INTEGER DEFAULT 0
+    buffer_after_minutes INTEGER DEFAULT 0,
+    provider_kind TEXT,
+    meeting_ref TEXT,
+    invitation_state TEXT
 );
 
 CREATE TABLE IF NOT EXISTS EventSeriesException (
@@ -190,6 +196,16 @@ ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS buffer_after_minutes INTEGER DE
 UPDATE EventSeries SET buffer_before_minutes = 0 WHERE buffer_before_minutes IS NULL;
 UPDATE EventSeries SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NULL;
 
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS provider_kind TEXT;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_ref TEXT;
+ALTER TABLE Event ADD COLUMN IF NOT EXISTS invitation_state TEXT;
+UPDATE Event SET provider_kind = 'ExternalUrl', meeting_ref = NULLIF(TRIM(meeting_url), '') WHERE is_online = TRUE AND provider_kind IS NULL;
+
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS provider_kind TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS meeting_ref TEXT;
+ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS invitation_state TEXT;
+UPDATE EventSeries SET provider_kind = 'ExternalUrl', meeting_ref = NULLIF(TRIM(meeting_url), '') WHERE is_online = TRUE AND provider_kind IS NULL;
+
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS reason TEXT;
@@ -206,11 +222,12 @@ INSERT INTO Event (
     event_stat_id, payment_stat_id,
     start_date, end_date, duration, cost,
     is_online, meeting_url, series_id, original_occurrence_start,
-    cancellation_reason, canceled_by, buffer_before_minutes, buffer_after_minutes
+    cancellation_reason, canceled_by, buffer_before_minutes, buffer_after_minutes,
+    provider_kind, meeting_ref, invitation_state
 )
 SELECT
     COALESCE(MAX(id), 0) + 1,
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 FROM Event
 RETURNING id
 )duckdb";
@@ -234,11 +251,14 @@ SET name = $1,
     canceled_by = $15,
     buffer_before_minutes = $16,
     buffer_after_minutes = $17,
+    provider_kind = $18,
+    meeting_ref = $19,
+    invitation_state = $20,
     reminder_notified_at = CASE
         WHEN start_date IS DISTINCT FROM $6 OR end_date IS DISTINCT FROM $7 THEN NULL
         ELSE reminder_notified_at
     END
-WHERE id = $18
+WHERE id = $21
 )duckdb";
 
 constexpr auto kInsertEventSeriesQuery = R"duckdb(
@@ -249,12 +269,13 @@ INSERT INTO EventSeries (
     start_date, end_date, duration, cost,
     is_online, meeting_url, recurrence_rule, recurrence_until,
     active, created_at, updated_at, cancellation_reason, canceled_by,
-    buffer_before_minutes, buffer_after_minutes
+    buffer_before_minutes, buffer_after_minutes,
+    provider_kind, meeting_ref, invitation_state
 )
 SELECT
     COALESCE((SELECT MAX(id) FROM EventSeries), 0) + 1,
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, TRUE, $15, $15, $16, $17, $18, $19
+    $11, $12, $13, $14, TRUE, $15, $15, $16, $17, $18, $19, $20, $21, $22
 RETURNING id
 )duckdb";
 
@@ -299,8 +320,11 @@ SET name = $1,
     cancellation_reason = $16,
     canceled_by = $17,
     buffer_before_minutes = $18,
-    buffer_after_minutes = $19
-WHERE id = $20
+    buffer_after_minutes = $19,
+    provider_kind = $20,
+    meeting_ref = $21,
+    invitation_state = $22
+WHERE id = $23
 )duckdb";
 
 constexpr auto kDeactivateEventSeriesQuery = R"duckdb(

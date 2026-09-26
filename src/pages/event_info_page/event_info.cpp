@@ -76,8 +76,11 @@ RecurringDeleteScope askRecurringDeleteScope(QWidget *parent) {
 
 } // namespace
 
-QEventInfoPage::QEventInfoPage(QTimelineModel *model, QWidget *parent)
-    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()) {
+QEventInfoPage::QEventInfoPage(QTimelineModel *model,
+                               pcm::meeting::MeetingCoordinator *meetingCoordinator,
+                               QWidget *parent)
+    : QWidget(parent), mUi(std::make_unique<Ui::EventInfo>()),
+      mMeetingCoordinator(meetingCoordinator) {
   mUi->setupUi(this);
   mUi->list_view_layout->setColumnStretch(0, 1);
   mUi->list_view_layout->setColumnStretch(1, 0);
@@ -191,6 +194,7 @@ void QEventInfoPage::openQuickEventDialog(const QTime &startTime,
   layout.setContentsMargins(0, 0, 0, 0);
 
   auto *detailsWidget = new QEventDetailsWidget(&dialog);
+  detailsWidget->setMeetingCoordinator(mMeetingCoordinator);
   detailsWidget->setDialogMode(true);
   detailsWidget->setConflictChecker(
       [this](const DuckEvent &event) { return checkEventConflict(event); });
@@ -230,6 +234,7 @@ void QEventInfoPage::openEventDialog(const std::optional<DuckEvent> &event,
   layout.setContentsMargins(0, 0, 0, 0);
 
   auto *detailsWidget = new QEventDetailsWidget(&dialog);
+  detailsWidget->setMeetingCoordinator(mMeetingCoordinator);
   detailsWidget->setDialogMode(true);
   detailsWidget->setConflictChecker(
       [this](const DuckEvent &event) { return checkEventConflict(event); });
