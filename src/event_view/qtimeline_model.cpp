@@ -1,5 +1,6 @@
 // src/timeline_widget/timeline_model.cpp
 #include "qtimeline_model.h"
+#include "provider_kind.h"
 #include "recurrence_utils.h"
 #include "schedule_conflict_service.h"
 #include <QDateTime>
@@ -8,8 +9,9 @@
 #include <set>
 
 QTimelineModel::QTimelineModel(
-    const std::shared_ptr<pcm::database::Database> &db, QObject *parent)
-    : QAbstractItemModel(parent), mDb(db) {}
+    const std::shared_ptr<pcm::database::Database> &db,
+    pcm::meeting::MeetingCoordinator *meetingCoordinator, QObject *parent)
+    : QAbstractItemModel(parent), mDb(db), mMeetingCoordinator(meetingCoordinator) {}
 
 QModelIndex QTimelineModel::index(int row, int column,
                                   const QModelIndex &parent) const {
@@ -281,6 +283,13 @@ void QTimelineModel::removeEvent(int64_t id) {
                      << id;
           return;
         }
+        if (mEvents[i].provider_kind.has_value() && mMeetingCoordinator) {
+          const auto kind = pcm::meeting::providerKindFromString(*mEvents[i].provider_kind);
+          if (kind.has_value()) {
+            mMeetingCoordinator->cancelMeeting(
+                *kind, QString::fromStdString(mEvents[i].meeting_ref.value_or("")));
+          }
+        }
         if (!mEvents[i].is_virtual_occurrence && !mDb->remove_event(id)) {
           qWarning() << "QTimelineModel::removeEvent failed for recurring override id="
                      << id;
@@ -290,6 +299,13 @@ void QTimelineModel::removeEvent(int64_t id) {
         mEvents.removeAt(i);
         endRemoveRows();
         break;
+      }
+      if (mEvents[i].provider_kind.has_value() && mMeetingCoordinator) {
+        const auto kind = pcm::meeting::providerKindFromString(*mEvents[i].provider_kind);
+        if (kind.has_value()) {
+          mMeetingCoordinator->cancelMeeting(
+              *kind, QString::fromStdString(mEvents[i].meeting_ref.value_or("")));
+        }
       }
       if (!mDb->remove_event(id)) {
         qWarning() << "QTimelineModel::removeEvent failed for id=" << id;
