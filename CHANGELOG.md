@@ -8,8 +8,15 @@ All notable changes to this project will be documented in this file.
 
 - Internal groundwork for native LiveKit video calls: `Event`/recurring
   series now carry a provider-agnostic meeting reference behind a new
-  `MeetingProvider` interface. No visible behavior changes — the existing
-  "Online session" link field works exactly as before.
+  `MeetingProvider` interface. The existing "Online session" link field
+  and UI keep their current behavior; the buffer-minutes fix below is the
+  only behavior change in this release.
+
+### Fixed
+
+- Recurring sessions' configured buffer-before/buffer-after minutes are now
+  correctly applied. A schema column-index bug meant these were previously
+  read from the wrong columns and silently treated as zero.
 
 ## [0.1.32] - 2026-09-24
 
