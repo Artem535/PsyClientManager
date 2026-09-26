@@ -199,12 +199,12 @@ UPDATE EventSeries SET buffer_after_minutes = 0 WHERE buffer_after_minutes IS NU
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS provider_kind TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS meeting_ref TEXT;
 ALTER TABLE Event ADD COLUMN IF NOT EXISTS invitation_state TEXT;
-UPDATE Event SET provider_kind = 'ExternalUrl' WHERE is_online = TRUE AND provider_kind IS NULL;
+UPDATE Event SET provider_kind = 'ExternalUrl', meeting_ref = NULLIF(TRIM(meeting_url), '') WHERE is_online = TRUE AND provider_kind IS NULL;
 
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS provider_kind TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS meeting_ref TEXT;
 ALTER TABLE EventSeries ADD COLUMN IF NOT EXISTS invitation_state TEXT;
-UPDATE EventSeries SET provider_kind = 'ExternalUrl' WHERE is_online = TRUE AND provider_kind IS NULL;
+UPDATE EventSeries SET provider_kind = 'ExternalUrl', meeting_ref = NULLIF(TRIM(meeting_url), '') WHERE is_online = TRUE AND provider_kind IS NULL;
 
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS series_id INTEGER;
 ALTER TABLE EventSeriesException ADD COLUMN IF NOT EXISTS occurrence_start TIMESTAMP;
