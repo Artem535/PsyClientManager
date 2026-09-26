@@ -798,6 +798,123 @@ TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
   db_dir.remove(true);
 }
 
+TEST(DatabaseTest, PersistsProviderFieldsOnEvent) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_event")}};
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  DuckEvent event;
+  event.name = std::string{"Online Session"};
+  event.start_date = 1730000000000;
+  event.end_date = 1730003600000;
+  event.is_online = true;
+  event.meeting_url = "https://meet.example.invalid/room-1";
+  event.provider_kind = std::string{"ExternalUrl"};
+  event.meeting_ref = std::string{"https://meet.example.invalid/room-1"};
+  event.invitation_state = std::nullopt;
+
+  const auto eventId = db.add_event(event);
+  ASSERT_GT(eventId, 0);
+
+  const auto reloaded = db.get_event(eventId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+  ASSERT_TRUE(reloaded->meeting_ref.has_value());
+  EXPECT_EQ(*reloaded->meeting_ref, "https://meet.example.invalid/room-1");
+  EXPECT_FALSE(reloaded->invitation_state.has_value());
+
+  reloaded->invitation_state = std::string{"pending"};
+  ASSERT_TRUE(db.update_event(*reloaded));
+  const auto updated = db.get_event(eventId);
+  ASSERT_NE(updated, nullptr);
+  ASSERT_TRUE(updated->invitation_state.has_value());
+  EXPECT_EQ(*updated->invitation_state, "pending");
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, PersistsProviderFieldsOnEventSeries) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_series")}};
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  pcm::database::Database db{conf};
+  DuckEventSeries series;
+  series.name = std::string{"Weekly Online Session"};
+  series.start_date = 1730000000000;
+  series.end_date = 1730003600000;
+  series.duration = 3600;
+  series.recurrence_rule = "FREQ=WEEKLY;INTERVAL=1";
+  series.is_online = true;
+  series.meeting_url = "https://meet.example.invalid/room-2";
+  series.provider_kind = std::string{"ExternalUrl"};
+  series.meeting_ref = std::string{"https://meet.example.invalid/room-2"};
+
+  const auto seriesId = db.add_event_series(series);
+  ASSERT_GT(seriesId, 0);
+
+  const auto reloaded = db.get_event_series(seriesId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+  ASSERT_TRUE(reloaded->meeting_ref.has_value());
+  EXPECT_EQ(*reloaded->meeting_ref, "https://meet.example.invalid/room-2");
+
+  db_dir.remove(true);
+}
+
+TEST(DatabaseTest, BackfillsProviderKindForLegacyOnlineEvents) {
+  pcm::config::Config conf{
+      .db_conf = pcm::config::DatabaseConfig{
+          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_backfill")}};
+  auto db_dir = Poco::File(conf.db_conf().db_pth);
+  if (db_dir.exists()) {
+    db_dir.remove(true);
+  }
+
+  int64_t eventId = 0;
+  {
+    pcm::database::Database db{conf};
+    DuckEvent event;
+    event.name = std::string{"Legacy Online Event"};
+    event.start_date = 1730000000000;
+    event.end_date = 1730003600000;
+    event.is_online = true;
+    event.meeting_url = "https://legacy.example.invalid/room";
+    eventId = db.add_event(event);
+    ASSERT_GT(eventId, 0);
+  }
+
+  {
+    // Simulate a pre-existing row written before provider_kind existed.
+    duckdb::DuckDB rawDatabase((conf.db_conf().db_pth.toString() + "/database.db").c_str());
+    duckdb::Connection rawConnection(rawDatabase);
+    ASSERT_FALSE(rawConnection
+                     .Query("UPDATE Event SET provider_kind = NULL WHERE id = " +
+                            std::to_string(eventId))
+                     ->HasError());
+  }
+
+  // Re-opening the database re-runs schema migrations, which must backfill provider_kind.
+  pcm::database::Database db{conf};
+  const auto reloaded = db.get_event(eventId);
+  ASSERT_NE(reloaded, nullptr);
+  ASSERT_TRUE(reloaded->provider_kind.has_value());
+  EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
+
+  db_dir.remove(true);
+}
+
 TEST(DatabaseTest, TracksSeriesOccurrenceReminderNotifications) {
   pcm::config::Config conf{
       .db_conf = pcm::config::DatabaseConfig{
