@@ -15,6 +15,7 @@
 #include <cmath>
 
 #include "constants.hpp"
+#include "provider_kind.h"
 #include "schema.hpp"
 /**
  * @brief The EventItem class represents a graphical item for displaying an
@@ -99,6 +100,9 @@ public:
   [[nodiscard]] QString canceledBy() const;
   [[nodiscard]] bool isOnline() const;
   [[nodiscard]] QString meetingUrl() const;
+  [[nodiscard]] std::optional<pcm::meeting::ProviderKind> providerKind() const;
+  [[nodiscard]] QString meetingRef() const;
+  [[nodiscard]] std::optional<QString> invitationState() const;
   [[nodiscard]] int64_t bufferBeforeMinutes() const;
   [[nodiscard]] int64_t bufferAfterMinutes() const;
 
@@ -123,6 +127,9 @@ public:
   void setCanceledBy(const QString &canceledBy);
   void setOnline(bool online);
   void setMeetingUrl(const QString &meetingUrl);
+  void setProviderKind(std::optional<pcm::meeting::ProviderKind> kind);
+  void setMeetingRef(const QString &meetingRef);
+  void setInvitationState(std::optional<QString> state);
   void setBufferBeforeMinutes(int64_t minutes);
   void setBufferAfterMinutes(int64_t minutes);
   void setHighlighted(bool highlighted);
@@ -190,6 +197,9 @@ private:
   bool mIsOnline = false;
   bool mIsHighlighted = false;
   QString mMeetingUrl;
+  std::optional<pcm::meeting::ProviderKind> mProviderKind;
+  QString mMeetingRef;
+  std::optional<QString> mInvitationState;
   std::optional<int64_t> mSeriesId;
   std::optional<int64_t> mOriginalOccurrenceStart;
   bool mIsVirtualOccurrence = false;

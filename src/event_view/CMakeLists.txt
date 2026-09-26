@@ -24,6 +24,7 @@ add_dependencies(${TARGET_NAME}
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
         ${PROJECT_NAME}_widgets
+        ${PROJECT_NAME}_meeting
 )
 
 # Link Slint to the module
@@ -31,6 +32,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
         ${PROJECT_NAME}_config
         ${PROJECT_NAME}_database
         ${PROJECT_NAME}_widgets
+        ${PROJECT_NAME}_meeting
         ical
         Qt6::Widgets
         Qt6::Gui
