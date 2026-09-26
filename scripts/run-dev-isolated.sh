@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Run a PsyClientManager dev/test build with an isolated HOME and XDG dirs,
-# so it never reads or writes the real ~/.config/PsyClientManager install
+# Run a Sessio dev/test build with an isolated HOME and XDG dirs,
+# so it never reads or writes the real ~/.config/Sessio install
 # (settings, app-lock state, client database, backups).
 #
-# Usage: scripts/run-dev-isolated.sh <path-to-PsyClientManager-binary> [app args...]
+# Usage: scripts/run-dev-isolated.sh <path-to-Sessio-binary> [app args...]
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <path-to-PsyClientManager-binary> [app args...]" >&2
+  echo "usage: $0 <path-to-Sessio-binary> [app args...]" >&2
   exit 1
 fi
 
@@ -23,6 +23,6 @@ export XDG_STATE_HOME="$iso_home/.local/state"
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
 
 echo "Isolated HOME: $iso_home" >&2
-echo "Real ~/.config/PsyClientManager is NOT touched by this run." >&2
+echo "Real ~/.config/Sessio is NOT touched by this run." >&2
 
 exec "$binary" "$@"

@@ -44,7 +44,7 @@ TEST(NotificationTextTest, FullModeOmitsClientLineWhenNameIsEmpty) {
 TEST(NotificationTextTest, HiddenModeNeverLeaksTitleOrClient) {
   const auto info = makeInfo(QStringLiteral("Very Private Topic"), true, QStringLiteral("Jane Doe"));
   EXPECT_EQ(pcm::notificationTitle(pcm::NotificationPrivacyMode::Hidden),
-            QStringLiteral("PsyClientManager"));
+            QStringLiteral("Sessio"));
   const auto body = pcm::notificationBody(pcm::NotificationPrivacyMode::Hidden, info);
   EXPECT_EQ(body, QStringLiteral("Scheduled session"));
   EXPECT_FALSE(body.contains(QStringLiteral("Jane Doe")));

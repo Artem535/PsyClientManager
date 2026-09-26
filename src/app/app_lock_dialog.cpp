@@ -11,7 +11,7 @@ namespace pcm {
 
 AppLockDialog::AppLockDialog(AppLockService &service, QWidget *parent)
     : QDialog(parent), mService(service) {
-  setWindowTitle(tr("Unlock PsyClientManager"));
+  setWindowTitle(tr("Unlock Sessio"));
   setModal(true);
   setWindowModality(Qt::ApplicationModal);
   setWindowFlag(Qt::WindowCloseButtonHint, false);

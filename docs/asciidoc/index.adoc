@@ -1,9 +1,9 @@
-= PsyClientManager Documentation
+= Sessio Documentation
 :toc: left
 :toclevels: 2
 :sectnums:
 
-This documentation describes the current implementation of `PsyClientManager`.
+This documentation describes the current implementation of `Sessio`.
 
 include::01-overview.adoc[]
 include::02-build-run.adoc[]

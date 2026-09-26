@@ -8,6 +8,9 @@
 namespace pcm::backup {
 namespace {
 
+// Deliberately left as "PsyClientManager" (pre-rename product name): changing
+// it would orphan already-stored workspace master keys in the OS keychain,
+// since lookups are keyed by this exact service string.
 constexpr auto kKeychainService = "PsyClientManager";
 
 QString keychainError() { return QStringLiteral("system keychain unavailable"); }

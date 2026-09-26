@@ -27,18 +27,18 @@ jobs:
         include:
           - os: ubuntu-latest
             qt_version: 6.10.2
-            artifact_name: PsyClientManager-linux-appimage
+            artifact_name: Sessio-linux-appimage
             qt_component: qt.qt6.6102.linux_gcc_64
           - os: macos-latest
             qt_version: 6.10.2
             qt_arch: clang_64
-            artifact_name: PsyClientManager-macos-dmg
+            artifact_name: Sessio-macos-dmg
             qt_host: mac
             qt_target: desktop
           - os: windows-2022
             qt_version: 6.10.2
             qt_arch: win64_msvc2022_64
-            artifact_name: PsyClientManager-windows-installer
+            artifact_name: Sessio-windows-installer
             qt_host: windows
             qt_target: desktop
 
@@ -252,15 +252,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path build-release/packages/PsyClientManager | Out-Null
-          Copy-Item build-release/PsyClientManager.exe build-release/packages/PsyClientManager/
+          New-Item -ItemType Directory -Force -Path build-release/packages/Sessio | Out-Null
+          Copy-Item build-release/Sessio.exe build-release/packages/Sessio/
           $keychainDll = Get-ChildItem build-release/_deps/qtkeychain-build -Recurse -Filter qt6keychain.dll |
             Select-Object -First 1
           if ($null -eq $keychainDll) {
             throw "qt6keychain.dll was not built"
           }
           Copy-Item $keychainDll.FullName (Join-Path $env:QT_ROOT_DIR "bin") -Force
-          Copy-Item $keychainDll.FullName build-release/packages/PsyClientManager/ -Force
+          Copy-Item $keychainDll.FullName build-release/packages/Sessio/ -Force
 
       - name: Run windeployqt
         if: runner.os == 'Windows'
@@ -271,8 +271,8 @@ jobs:
             --release `
             --svg `
             --no-translations `
-            --dir build-release/packages/PsyClientManager `
-            build-release/packages/PsyClientManager/PsyClientManager.exe
+            --dir build-release/packages/Sessio `
+            build-release/packages/Sessio/Sessio.exe
 
       - name: Copy vcpkg runtime DLLs
         if: runner.os == 'Windows'
@@ -280,7 +280,7 @@ jobs:
         run: |
           Copy-Item `
             -Path build-release/vcpkg_installed/x64-windows/bin/*.dll `
-            -Destination build-release/packages/PsyClientManager `
+            -Destination build-release/packages/Sessio `
             -Force
 
       - name: Install Inno Setup
@@ -295,10 +295,10 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "/DMyAppVersion=${{ matrix.qt_version }}" `
-            "/DMySourceDir=${{ github.workspace }}\build-release\packages\PsyClientManager" `
+            "/DMySourceDir=${{ github.workspace }}\build-release\packages\Sessio" `
             "/DMyOutputDir=${{ github.workspace }}\build-release\packages" `
-            "/DMyIconFile=${{ github.workspace }}\resources\icons\PsyClientManager.ico" `
-            "${{ github.workspace }}\packaging\PsyClientManager.iss"
+            "/DMyIconFile=${{ github.workspace }}\resources\icons\Sessio.ico" `
+            "${{ github.workspace }}\packaging\Sessio.iss"
 
       - name: Download linuxdeployqt
         if: runner.os == 'Linux'
@@ -322,9 +322,9 @@ jobs:
           cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" build-release/AppDir/usr/plugins/platforms/ || true
           build-release/tools/linuxdeploy-x86_64.AppImage \
             --appdir build-release/AppDir \
-            --executable build-release/AppDir/usr/bin/PsyClientManager \
-            --desktop-file build-release/AppDir/usr/share/applications/PsyClientManager.desktop \
-            --icon-file build-release/AppDir/usr/share/icons/hicolor/scalable/apps/PsyClientManager.svg \
+            --executable build-release/AppDir/usr/bin/Sessio \
+            --desktop-file build-release/AppDir/usr/share/applications/Sessio.desktop \
+            --icon-file build-release/AppDir/usr/share/icons/hicolor/scalable/apps/Sessio.svg \
             --plugin qt \
             --output appimage
           mkdir -p build-release/packages
@@ -349,7 +349,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p build-release/packages
-          APP_BUNDLE="${{ github.workspace }}/build-release/install/PsyClientManager.app"
+          APP_BUNDLE="${{ github.workspace }}/build-release/install/Sessio.app"
           macdeployqt "$APP_BUNDLE" -always-overwrite
 
           test -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework"
@@ -362,16 +362,16 @@ jobs:
           du -sh "$APP_BUNDLE/Contents/Frameworks"
           find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -mindepth 1 | sort
           find "$APP_BUNDLE/Contents/PlugIns" -maxdepth 2 -type f | sort
-          otool -L "$APP_BUNDLE/Contents/MacOS/PsyClientManager"
+          otool -L "$APP_BUNDLE/Contents/MacOS/Sessio"
 
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
           hdiutil create \
-            -volname "PsyClientManager" \
+            -volname "Sessio" \
             -srcfolder "$APP_BUNDLE" \
             -ov \
             -format UDZO \
-            build-release/packages/PsyClientManager-macos.dmg
+            build-release/packages/Sessio-macos.dmg
 
       - name: Upload macOS package
         if: runner.os == 'macOS'
@@ -386,7 +386,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build-release/packages/PsyClientManager-windows-setup.exe
+          path: build-release/packages/Sessio-windows-setup.exe
           if-no-files-found: error
 
   publish:
@@ -414,28 +414,28 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: PsyClientManager-linux-appimage
+          name: Sessio-linux-appimage
           path: release/linux
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: PsyClientManager-macos-dmg
+          name: Sessio-macos-dmg
           path: release/macos
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: PsyClientManager-windows-installer
+          name: Sessio-windows-installer
           path: release/windows
 
       - name: Normalize release asset names
         run: |
           mkdir -p release/assets
-          find release/linux -type f -name '*.AppImage' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-linux.AppImage" \;
-          find release/linux -type f -name '*.rpm' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-linux.rpm" \;
-          find release/macos -type f -name '*.dmg' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-macos.dmg" \;
-          find release/windows -type f -name '*.exe' -exec cp {} "release/assets/PsyClientManager-${APP_VERSION}-windows-setup.exe" \;
+          find release/linux -type f -name '*.AppImage' -exec cp {} "release/assets/Sessio-${APP_VERSION}-linux.AppImage" \;
+          find release/linux -type f -name '*.rpm' -exec cp {} "release/assets/Sessio-${APP_VERSION}-linux.rpm" \;
+          find release/macos -type f -name '*.dmg' -exec cp {} "release/assets/Sessio-${APP_VERSION}-macos.dmg" \;
+          find release/windows -type f -name '*.exe' -exec cp {} "release/assets/Sessio-${APP_VERSION}-windows-setup.exe" \;
           ls -lah release/assets
 
       - name: Create or update GitHub Release
@@ -445,6 +445,6 @@ jobs:
           gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
             gh release create "$RELEASE_TAG" \
               --target "$GITHUB_SHA" \
-              --title "PsyClientManager $APP_VERSION" \
+              --title "Sessio $APP_VERSION" \
               --generate-notes
           gh release upload "$RELEASE_TAG" release/assets/* --clobber

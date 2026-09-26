@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-PsyClientManager is a C++20 Qt Widgets application.
+Sessio is a C++20 Qt Widgets application.
 
 - `src/`: database, event/timeline, clients, pages, widgets, config, and app code.
 - `ui/`: Qt Designer forms; generated headers stay in the build directory.

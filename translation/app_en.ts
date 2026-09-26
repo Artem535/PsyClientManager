@@ -555,7 +555,7 @@
     <name>MainWindow</name>
     <message>
         <source>: APP_TITLE</source>
-        <translation>PsyClientManager</translation>
+        <translation>Sessio</translation>
     </message>
     <message>
         <source>: NAV_CALENDAR</source>
@@ -633,8 +633,8 @@
 <context>
     <name>Notifications</name>
     <message>
-        <source>PsyClientManager</source>
-        <translation>PsyClientManager</translation>
+        <source>Sessio</source>
+        <translation>Sessio</translation>
     </message>
     <message>
         <source>Upcoming session</source>
@@ -1591,8 +1591,8 @@ See you!</translation>
         <translation>Create Backup</translation>
     </message>
     <message>
-        <source>PsyClientManager Backup (*.psybackup)</source>
-        <translation>PsyClientManager Backup (*.psybackup)</translation>
+        <source>Sessio Backup (*.psybackup)</source>
+        <translation>Sessio Backup (*.psybackup)</translation>
     </message>
     <message>
         <source>Creating backup…</source>
@@ -1699,8 +1699,8 @@ See you!</translation>
         <translation>Restore Staged</translation>
     </message>
     <message>
-        <source>PsyClientManager will now close. Restart it to complete the restore.</source>
-        <translation>PsyClientManager will now close. Restart it to complete the restore.</translation>
+        <source>Sessio will now close. Restart it to complete the restore.</source>
+        <translation>Sessio will now close. Restart it to complete the restore.</translation>
     </message>
     <message>
         <source>Disallow overlapping events</source>
@@ -1770,8 +1770,8 @@ See you!</translation>
 <context>
     <name>pcm::AppLockDialog</name>
     <message>
-        <source>Unlock PsyClientManager</source>
-        <translation>Unlock PsyClientManager</translation>
+        <source>Unlock Sessio</source>
+        <translation>Unlock Sessio</translation>
     </message>
     <message>
         <source>Application is locked</source>
@@ -1831,8 +1831,8 @@ Your previous data was kept.</source>
 Your previous data was kept.</translation>
     </message>
     <message>
-        <source>PsyClientManager</source>
-        <translation>PsyClientManager</translation>
+        <source>Sessio</source>
+        <translation>Sessio</translation>
     </message>
     <message>
         <source>The app is still running in the system tray.</source>

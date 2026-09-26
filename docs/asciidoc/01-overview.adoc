@@ -1,6 +1,6 @@
 == Overview
 
-`PsyClientManager` is a Qt Widgets desktop application for managing:
+`Sessio` is a Qt Widgets desktop application for managing:
 
 - clients,
 - events,

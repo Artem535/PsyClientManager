@@ -4,7 +4,7 @@
 
 `Database` uses embedded DuckDB file:
 
-- `<config>/PsyClientManager/database/database.db`
+- `<config>/Sessio/database/database.db`
 
 On first initialization, it:
 

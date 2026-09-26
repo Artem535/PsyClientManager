@@ -121,7 +121,7 @@ constexpr std::uint32_t kLegacyContainerVersion = 1;
 constexpr std::uint32_t kLegacyChunkSize = 64 * 1024;
 
 TEST(AppLockServiceTest, VerifiesConfiguredPinAndRejectsDifferentPin) {
-  QSettings settings{"PsyClientManagerTest", "AppLockServiceTest"};
+  QSettings settings{"SessioTest", "AppLockServiceTest"};
   settings.clear();
   pcm::AppLockService service{&settings};
 
@@ -291,7 +291,7 @@ QCoreApplication &testApplication() {
     return *application;
   }
   static int argc = 1;
-  static char applicationName[] = "PsyClientManager_backup_tests";
+  static char applicationName[] = "Sessio_backup_tests";
   static char *argv[] = {applicationName, nullptr};
   static QCoreApplication application(argc, argv);
   return application;
@@ -1762,22 +1762,22 @@ TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
   Poco::File(dir).createDirectories();
 
   const std::vector<std::string> autoNames = {
-      "PsyClientManager-auto-20260101-000000.psybackup",
-      "PsyClientManager-auto-20260102-000000.psybackup",
-      "PsyClientManager-auto-20260103-000000.psybackup",
-      "PsyClientManager-auto-20260104-000000.psybackup",
-      "PsyClientManager-auto-20260105-000000.psybackup",
+      "Sessio-auto-20260101-000000.psybackup",
+      "Sessio-auto-20260102-000000.psybackup",
+      "Sessio-auto-20260103-000000.psybackup",
+      "Sessio-auto-20260104-000000.psybackup",
+      "Sessio-auto-20260105-000000.psybackup",
   };
   for (const auto &name : autoNames) {
     std::ofstream(Poco::Path(dir).append(name).toString()) << "x";
   }
   // A manual backup in the same directory must never be touched by rotation.
   const auto manualName =
-      Poco::Path(dir).append("PsyClientManager-20260106-000000.psybackup").toString();
+      Poco::Path(dir).append("Sessio-20260106-000000.psybackup").toString();
   std::ofstream(manualName) << "x";
 
   pcm::backup::BackupRotationService service;
-  const auto result = service.prune(dir, "PsyClientManager-auto-", 3);
+  const auto result = service.prune(dir, "Sessio-auto-", 3);
   ASSERT_TRUE(result.ok) << result.error;
   EXPECT_EQ(result.removed_count, 2);
 
@@ -1794,7 +1794,7 @@ TEST(BackupRotationServiceTest, KeepsNewestAndRemovesOlderMatchingFiles) {
 TEST(BackupRotationServiceTest, NonExistentDirectoryIsNotAnError) {
   pcm::backup::BackupRotationService service;
   const auto result =
-      service.prune("tmp_rotation_dir_missing", "PsyClientManager-auto-", 3);
+      service.prune("tmp_rotation_dir_missing", "Sessio-auto-", 3);
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(result.removed_count, 0);
 }

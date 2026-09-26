@@ -46,7 +46,7 @@ runners have neither. The user will run the manual verification checklist
 Code lives entirely under `spikes/livekit-cpp-spike/`, as its own CMake
 subdirectory with its own executable target (`livekit_spike`). It is not
 `add_subdirectory`'d from the main app's target tree and does not link into
-`PsyClientManager_app`. It does not touch `vcpkg.json` — the LiveKit C++ SDK
+`Sessio_app`. It does not touch `vcpkg.json` — the LiveKit C++ SDK
 is not available via vcpkg.
 
 `spikes/livekit-cpp-spike/cmake/LiveKitSDK.cmake` is copied from

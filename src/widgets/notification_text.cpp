@@ -8,7 +8,7 @@ namespace pcm {
 QString notificationTitle(const NotificationPrivacyMode mode) {
   switch (mode) {
   case NotificationPrivacyMode::Hidden:
-    return QCoreApplication::translate("Notifications", "PsyClientManager");
+    return QCoreApplication::translate("Notifications", "Sessio");
   case NotificationPrivacyMode::Full:
   case NotificationPrivacyMode::Minimal:
   default:

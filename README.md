@@ -1,10 +1,10 @@
-# PsyClientManager
+# Sessio
 
-PsyClientManager is a desktop application for scheduling sessions, managing clients, and tracking lightweight practice analytics.
+Sessio is a desktop application for scheduling sessions, managing clients, and tracking lightweight practice analytics.
 
 It is built as a native Qt Widgets application and targets Linux, Windows, and macOS.
 
-![PsyClientManager Preview](docs/preview.png)
+![Sessio Preview](docs/preview.png)
 
 ## 🧠 Overview
 
@@ -95,7 +95,7 @@ Clone the repository with submodules:
 
 ```bash
 git clone --recursive <repo-url>
-cd PsyClientManager
+cd Sessio
 ```
 
 If the repository is already cloned:

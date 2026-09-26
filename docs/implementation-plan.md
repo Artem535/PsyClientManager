@@ -1,4 +1,4 @@
-# PsyClientManager — implementation plan
+# Sessio — implementation plan
 
 > Рабочий инженерный план для исполнения roadmap. Стратегические цели и границы
 > продукта находятся в [roadmap.md](roadmap.md).

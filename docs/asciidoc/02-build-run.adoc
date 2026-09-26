@@ -36,7 +36,7 @@ cmake --build build
 
 [source,bash]
 ----
-./build/PsyClientManager
+./build/Sessio
 ----
 
 === Tests
@@ -52,5 +52,5 @@ ctest --test-dir build --output-on-failure
 
 === Output Paths
 
-- Binary: `build/PsyClientManager`
+- Binary: `build/Sessio`
 - UI generated headers: under `build/src/**/.qt/.../ui/...`

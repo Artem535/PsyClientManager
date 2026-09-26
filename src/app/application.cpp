@@ -6,7 +6,10 @@
 #include "../widgets/app_settings.h"
 
 #include <Poco/Path.h>
+#include <QDir>
+#include <QFileInfo>
 #include <QLocale>
+#include <QStandardPaths>
 #include <QMessageBox>
 #include <QLibraryInfo>
 #include <QMenu>
@@ -33,6 +36,38 @@ namespace pcm {
 namespace {
 constexpr int kNotificationPollIntervalMs = 30 * 1000;
 
+// Renamed from PsyClientManager to Sessio. Installs that still have their
+// Qt-managed settings/backups directory under the old org/app name get it
+// moved to the new one before anything reads or writes there.
+void migrateLegacyAppConfigDirectory(const QString &legacyName,
+                                     const QString &newName) {
+  const QString originalOrg = QCoreApplication::organizationName();
+  const QString originalApp = QCoreApplication::applicationName();
+
+  QCoreApplication::setOrganizationName(legacyName);
+  QCoreApplication::setApplicationName(legacyName);
+  const QString legacyDir =
+      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+
+  QCoreApplication::setOrganizationName(newName);
+  QCoreApplication::setApplicationName(newName);
+  const QString newDir =
+      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+
+  QCoreApplication::setOrganizationName(originalOrg);
+  QCoreApplication::setApplicationName(originalApp);
+
+  if (newDir.isEmpty() || legacyDir.isEmpty() || newDir == legacyDir) {
+    return;
+  }
+  if (QDir(newDir).exists() || !QDir(legacyDir).exists()) {
+    return;
+  }
+
+  QDir().mkpath(QFileInfo(newDir).absolutePath());
+  QDir().rename(legacyDir, newDir);
+}
+
 void clearSensitiveText(QString *text) {
   text->fill(QChar{});
   text->clear();
@@ -49,9 +84,11 @@ Application::Application() = default;
 int Application::run(int argc, char *argv[]) {
   QApplication app(argc, argv);
   app.setQuitOnLastWindowClosed(false);
-  app.setOrganizationName("PsyClientManager");
-  app.setApplicationName("PsyClientManager");
-  app.setApplicationDisplayName("PsyClientManager");
+  migrateLegacyAppConfigDirectory(QStringLiteral("PsyClientManager"),
+                                  QStringLiteral("Sessio"));
+  app.setOrganizationName("Sessio");
+  app.setApplicationName("Sessio");
+  app.setApplicationDisplayName("Sessio");
   app.setApplicationVersion("0.1.32");
   app.setWindowIcon(QIcon(":/icons/brain-solid-full.svg"));
   auto *style = new oclero::qlementine::QlementineStyle(&app);
@@ -209,7 +246,7 @@ bool Application::eventFilter(QObject *watched, QEvent *event) {
       event->ignore();
       mMainWindow->hide();
       if (!mTrayCloseHintShown && QSystemTrayIcon::supportsMessages()) {
-        mTrayIcon->showMessage(tr("PsyClientManager"),
+        mTrayIcon->showMessage(tr("Sessio"),
                                tr("The app is still running in the system tray."),
                                QSystemTrayIcon::Information, 5000);
         mTrayCloseHintShown = true;
@@ -332,7 +369,7 @@ QString Application::notificationBodyForEvent(const DuckEvent &event) const {
 void Application::initializeNotifications() {
   mTrayIcon =
       std::make_unique<QSystemTrayIcon>(QIcon(":/icons/brain-solid-full.svg"));
-  mTrayIcon->setToolTip(QStringLiteral("PsyClientManager"));
+  mTrayIcon->setToolTip(QStringLiteral("Sessio"));
 
   auto *trayMenu = new QMenu();
   auto *openAction = trayMenu->addAction(tr("Open"));

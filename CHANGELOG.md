@@ -59,7 +59,7 @@ All notable changes to this project will be documented in this file.
   password. The backup key is kept in the operating system keychain, allowing
   later manual and automatic encrypted backups without retaining the password.
 - Encrypted backups are validated with their recovery password before restore
-  is staged. After restart, PsyClientManager requests the password again in
+  is staged. After restart, Sessio requests the password again in
   memory to complete the restore; it is never written to the restore marker.
 
 ## [0.1.25] - 2026-08-04

@@ -34,7 +34,7 @@ RotationResult BackupRotationService::prune(const std::string &directory,
     }
 
     // Auto-backup filenames embed a zero-padded timestamp
-    // (PsyClientManager-auto-yyyyMMdd-HHmmss.psybackup), so descending
+    // (Sessio-auto-yyyyMMdd-HHmmss.psybackup), so descending
     // lexicographic order is descending chronological order.
     std::sort(matching.begin(), matching.end(), std::greater<>());
 

@@ -377,7 +377,7 @@ void MainWindow::openAboutDialog() {
   dialog.setDescription(
       tr("Desktop workspace for calendar scheduling, client management, and session tracking."));
   dialog.setLicense(tr("Built with Qt, DuckDB, and Qlementine."));
-  dialog.setCopyright(QStringLiteral("2026 PsyClientManager"));
+  dialog.setCopyright(QStringLiteral("2026 Sessio"));
   dialog.exec();
 }
 

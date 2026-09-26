@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Code lives entirely under `spikes/livekit-cpp-spike/`. It is never `add_subdirectory`'d from the main project's `CMakeLists.txt` and never links into `PsyClientManager_app`. It does not touch `vcpkg.json`.
+- Code lives entirely under `spikes/livekit-cpp-spike/`. It is never `add_subdirectory`'d from the main project's `CMakeLists.txt` and never links into `Sessio_app`. It does not touch `vcpkg.json`.
 - Capture and render go through Qt Multimedia only (`QCamera`, `QAudioSource`, `QOpenGLWidget`). No platform-native fallback code (V4L2/Media Foundation/AVFoundation) is added anywhere in this plan — if Qt Multimedia cannot do the job on some OS, that is a decision-gate finding for the human to act on, not something to route around.
 - `LIVEKIT_URL`/`LIVEKIT_TOKEN` are read from environment variables at process start. Nothing is hardcoded or committed. The executable must run and be useful (local capture/preview) even when these are unset — it only skips the room-connect step.
 - No `QApplication`-based test harness is introduced (matches the main repo's existing convention). Only pure-function logic (no Qt widgets, no LiveKit network calls) gets a GoogleTest case.
@@ -46,7 +46,7 @@ Expected sha256: `24ffdeaf39b7fb9ae44e379beaaf6c38e00ef647cb99cb8945772c495dc266
 
 ```cmake
 # Throwaway spike for issue #77 — see docs/superpowers/specs/2026-09-25-livekit-cpp-spike-design.md
-# Not part of the main PsyClientManager build; never add_subdirectory'd from the top-level CMakeLists.txt.
+# Not part of the main Sessio build; never add_subdirectory'd from the top-level CMakeLists.txt.
 cmake_minimum_required(VERSION 3.28)
 project(livekit_cpp_spike LANGUAGES CXX)
 
@@ -181,7 +181,7 @@ OK" line, then a clean exit (code 0).
 # LiveKit C++/Qt Capture-and-Render Spike
 
 Throwaway exploratory code for issue #77. Not part of the main
-PsyClientManager build — never wired into the top-level CMakeLists.txt.
+Sessio build — never wired into the top-level CMakeLists.txt.
 
 Design: `docs/superpowers/specs/2026-09-25-livekit-cpp-spike-design.md`
 Plan: `docs/superpowers/plans/2026-09-25-livekit-cpp-spike.md`

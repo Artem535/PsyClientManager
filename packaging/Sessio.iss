@@ -1,6 +1,6 @@
-#define MyAppName "PsyClientManager"
-#define MyAppPublisher "PsyClientManager"
-#define MyAppExeName "PsyClientManager.exe"
+#define MyAppName "Sessio"
+#define MyAppPublisher "Sessio"
+#define MyAppExeName "Sessio.exe"
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.1.1"
@@ -15,7 +15,7 @@
 #endif
 
 #ifndef MyIconFile
-  #define MyIconFile "resources\icons\PsyClientManager.ico"
+  #define MyIconFile "resources\icons\Sessio.ico"
 #endif
 
 [Setup]
@@ -27,7 +27,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir={#MyOutputDir}
-OutputBaseFilename=PsyClientManager-windows-setup
+OutputBaseFilename=Sessio-windows-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

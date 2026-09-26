@@ -40,15 +40,15 @@ main.cpp
 
 Top-level `CMakeLists.txt` composes static libraries by module:
 
-- `PsyClientManager_config`
-- `PsyClientManager_database`
-- `PsyClientManager_client_model`
-- `PsyClientManager_client_page`
-- `PsyClientManager_client_info_card_page`
-- `PsyClientManager_event_view`
-- `PsyClientManager_timeline_widget`
-- `PsyClientManager_event_page`
-- `PsyClientManager_widgets`
-- `PsyClientManager_app`
+- `Sessio_config`
+- `Sessio_database`
+- `Sessio_client_model`
+- `Sessio_client_page`
+- `Sessio_client_info_card_page`
+- `Sessio_event_view`
+- `Sessio_timeline_widget`
+- `Sessio_event_page`
+- `Sessio_widgets`
+- `Sessio_app`
 
-Executable target: `PsyClientManager`.
+Executable target: `Sessio`.

@@ -1,12 +1,12 @@
-# PsyClientManager — technical roadmap: from closing P0 to native video calls
+# Sessio — technical roadmap: from closing P0 to native video calls
 
 **Status:** proposal for placement in `docs/`
 **Horizon:** closing the current P0 → P1 → P2
-**Purpose:** fix the development sequence for the local-first PsyClientManager and the safe addition of embedded video calling via LiveKit Cloud.
+**Purpose:** fix the development sequence for the local-first Sessio and the safe addition of embedded video calling via LiveKit Cloud.
 
 ## 1. Context and decision-making principle
 
-PsyClientManager remains a desktop application for private practice. Scheduling, the client base, records, local backups, and offline work must not depend on a video provider. Video calling adds value but is not a condition for the app's basic operation.
+Sessio remains a desktop application for private practice. Scheduling, the client base, records, local backups, and offline work must not depend on a video provider. Video calling adds value but is not a condition for the app's basic operation.
 
 This roadmap adopts the following rules.
 
@@ -135,7 +135,7 @@ P0 is considered closed only once all four conditions are met:
 
 ### 5.1. Goal of P1-B and MVP boundary
 
-P1-B gives the practitioner an embedded, Qt-native, one-on-one video session tied to a PsyClientManager event. Media transport and TURN are managed by LiveKit Cloud; PsyClientManager does not implement its own WebRTC/SFU.
+P1-B gives the practitioner an embedded, Qt-native, one-on-one video session tied to a Sessio event. Media transport and TURN are managed by LiveKit Cloud; Sessio does not implement its own WebRTC/SFU.
 
 The MVP supports exactly:
 
@@ -145,13 +145,13 @@ The MVP supports exactly:
 - inviting the client via a short-lived link to a minimal participant page;
 - a native Qt interface for the practitioner, without embedding a third-party web-conferencing UI.
 
-The client-facing participant page is a separate, minimal surface of the token backend: it receives only a one-time invitation, checks devices, and connects to the room. It has no access to the client database, notes, calendar, or analytics. If a different client-facing channel is chosen, it must use the same token-issuance protocol; installing PsyClientManager on the client's side is not required.
+The client-facing participant page is a separate, minimal surface of the token backend: it receives only a one-time invitation, checks devices, and connects to the room. It has no access to the client database, notes, calendar, or analytics. If a different client-facing channel is chosen, it must use the same token-issuance protocol; installing Sessio on the client's side is not required.
 
 ### 5.2. Target architecture
 
 ```mermaid
 flowchart LR
-    A[Event in PsyClientManager] --> B[MeetingProvider]
+    A[Event in Sessio] --> B[MeetingProvider]
     B --> C[Meeting token backend]
     C --> D[LiveKit Cloud<br/>or trusted self-hosted endpoint]
     A --> E[VideoProvider]
@@ -171,7 +171,7 @@ Domain objects and persistence do not depend on the SDK.
 | `LiveKitMeetingProvider` | calls the token backend for provisioning/invitation | does not contain the LiveKit API secret |
 | `LiveKitVideoProvider` | adapts the LiveKit C++ SDK to Qt signals, capture, and the renderer | does not decide domain consultation statuses |
 | Token backend | authenticates the role, issues a short-lived JWT, and manages the invitation lifecycle | does not store notes, clients, diagnoses, or media content |
-| Participant page | lets the client check devices and join via a one-time invitation | is not a web version of PsyClientManager |
+| Participant page | lets the client check devices and join via a one-time invitation | is not a web version of Sessio |
 
 `Event` stores only the provider kind, an opaque `meeting_ref`, the invitation state, and the usual external `meeting_url` for `ExternalUrl` mode. Access tokens, refresh material, API key, and API secret are never persisted. Room identifiers must be random and must not contain the client's name, date of birth, or consultation topic.
 
@@ -326,7 +326,7 @@ The following topics are not part of P0, P1-B, or the first P2 cycle:
 - automatic call recording, hidden transcription, permanent storage of raw media;
 - automatic clinical conclusions, diagnoses, risk scoring, sending the summary to the client, or autonomous Agent actions;
 - realtime sync of the entire DuckDB, a central patient database, a mandatory account for the base local-first product;
-- a public web version of PsyClientManager: the participant page is a narrow technical companion, not the start of a web client;
+- a public web version of Sessio: the participant page is a narrow technical companion, not the start of a web client;
 - arbitrary self-hosted endpoints that a user connects with an API secret from settings;
 - replacing the native Qt UI with an embedded web UI without a separate architectural decision.
 
@@ -359,7 +359,7 @@ P1-B.2: MeetingProvider/VideoProvider + LiveKit Cloud 1:1 UI
 P2: consent → transcription → LiveKit Agents → reviewed AI summary draft
 ```
 
-This deliberately places LiveKit ahead of complex sync, a mobile client, and a general AI assistant: an embedded, secure call directly completes an already-existing online-event scenario, while remaining a replaceable integration that does not change PsyClientManager's local-first core.
+This deliberately places LiveKit ahead of complex sync, a mobile client, and a general AI assistant: an embedded, secure call directly completes an already-existing online-event scenario, while remaining a replaceable integration that does not change Sessio's local-first core.
 
 ## 11. Technical sources for the implementation stage
 

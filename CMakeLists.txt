@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Define the project
-project(PsyClientManager VERSION 0.1.32 LANGUAGES CXX)
+project(Sessio VERSION 0.1.32 LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg PrintSupport LinguistTools)
 include(GNUInstallDirs)
 include(FetchContent)
@@ -100,7 +100,7 @@ target_link_libraries(qcustomplot PUBLIC
 
 qt_standard_project_setup()
 
-qt_add_translations(PsyClientManager
+qt_add_translations(Sessio
     TS_FILES
         translation/app_ru.ts
         translation/app_en.ts
@@ -135,7 +135,7 @@ set(PCM_APP_SOURCES
 )
 
 if(WIN32)
-  set(PCM_APP_ICON_PATH "${CMAKE_SOURCE_DIR}/resources/icons/PsyClientManager.ico")
+  set(PCM_APP_ICON_PATH "${CMAKE_SOURCE_DIR}/resources/icons/Sessio.ico")
   configure_file(
       "${CMAKE_SOURCE_DIR}/packaging/windows/app_icon.rc.in"
       "${CMAKE_CURRENT_BINARY_DIR}/app_icon.rc"
@@ -145,8 +145,8 @@ if(WIN32)
 endif()
 
 # Add the main executable
-qt_add_executable(PsyClientManager ${PCM_APP_SOURCES})
-set_target_properties(PsyClientManager PROPERTIES
+qt_add_executable(Sessio ${PCM_APP_SOURCES})
+set_target_properties(Sessio PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
 )
@@ -154,9 +154,9 @@ set_target_properties(PsyClientManager PROPERTIES
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_app)
 
 # Link with libs
-target_link_libraries(PsyClientManager PUBLIC ${PROJECT_NAME}_app Qt6::Widgets)
+target_link_libraries(Sessio PUBLIC ${PROJECT_NAME}_app Qt6::Widgets)
 
-install(TARGETS PsyClientManager
+install(TARGETS Sessio
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
@@ -169,25 +169,25 @@ install(FILES
 
 if(UNIX AND NOT APPLE)
   install(FILES
-      ${CMAKE_SOURCE_DIR}/packaging/PsyClientManager.desktop
+      ${CMAKE_SOURCE_DIR}/packaging/Sessio.desktop
       DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
   )
   install(FILES
       ${CMAKE_SOURCE_DIR}/resources/icons/brain-solid-full.svg
       DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
-      RENAME PsyClientManager.svg
+      RENAME Sessio.svg
   )
 endif()
 
 qt_generate_deploy_app_script(
-    TARGET PsyClientManager
+    TARGET Sessio
     OUTPUT_SCRIPT deploy_runtime_dependencies_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_runtime_dependencies_script})
 
-set(CPACK_PACKAGE_NAME "PsyClientManager")
-set(CPACK_PACKAGE_VENDOR "PsyClientManager")
+set(CPACK_PACKAGE_NAME "Sessio")
+set(CPACK_PACKAGE_VENDOR "Sessio")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_FILE_NAME
     "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}"
@@ -202,7 +202,7 @@ elseif(UNIX AND NOT APPLE)
   set(CPACK_RPM_PACKAGE_RELEASE 1)
   set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-or-later")
   set(CPACK_RPM_PACKAGE_GROUP "Applications/Productivity")
-  set(CPACK_RPM_PACKAGE_URL "https://github.com/Artem535/PsyClientManager")
+  set(CPACK_RPM_PACKAGE_URL "https://github.com/Artem535/Sessio")
   set(CPACK_RPM_PACKAGE_DESCRIPTION
       "Local-first desktop workspace for calendar scheduling, client management, and session tracking.")
 endif()

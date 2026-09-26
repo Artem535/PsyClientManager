@@ -760,13 +760,13 @@ void SettingsDialog::openDatabaseFolder() const {
 
 void SettingsDialog::createBackup() {
   const auto defaultName =
-      QStringLiteral("PsyClientManager-%1.psybackup")
+      QStringLiteral("Sessio-%1.psybackup")
           .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss"));
   const auto defaultDir =
       QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
   const auto destinationPath = QFileDialog::getSaveFileName(
       this, tr("Create Backup"), QDir(defaultDir).filePath(defaultName),
-      tr("PsyClientManager Backup (*.psybackup)"));
+      tr("Sessio Backup (*.psybackup)"));
   if (destinationPath.isEmpty()) {
     return;
   }
@@ -1007,7 +1007,7 @@ void SettingsDialog::validateBackup() {
       QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
   const auto backupPath = QFileDialog::getOpenFileName(
       this, tr("Validate Backup"), defaultDir,
-      tr("PsyClientManager Backup (*.psybackup)"));
+      tr("Sessio Backup (*.psybackup)"));
   if (backupPath.isEmpty()) {
     return;
   }
@@ -1056,7 +1056,7 @@ void SettingsDialog::restoreBackup() {
       QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
   const auto backupPath = QFileDialog::getOpenFileName(
       this, tr("Restore Backup"), defaultDir,
-      tr("PsyClientManager Backup (*.psybackup)"));
+      tr("Sessio Backup (*.psybackup)"));
   if (backupPath.isEmpty()) {
     return;
   }
@@ -1141,7 +1141,7 @@ void SettingsDialog::restoreBackup() {
 
             QMessageBox::information(
                 this, tr("Restore Staged"),
-                tr("PsyClientManager will now close. Restart it to "
+                tr("Sessio will now close. Restart it to "
                    "complete the restore."));
             QApplication::quit();
           });

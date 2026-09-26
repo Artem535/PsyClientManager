@@ -137,7 +137,7 @@ void AutoBackupScheduler::startBackupWorker(std::optional<MasterKey> masterKey) 
   QDir().mkpath(destinationDir);
   const auto destinationPath =
       QDir(destinationDir)
-          .filePath(QStringLiteral("PsyClientManager-auto-%1.psybackup")
+          .filePath(QStringLiteral("Sessio-auto-%1.psybackup")
                         .arg(QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss")));
 
   auto *thread = new QThread(this);
@@ -164,7 +164,7 @@ void AutoBackupScheduler::finishBackup(const bool ok, const QString &error,
     app_settings::setAutoBackupLastRunAtMs(QDateTime::currentMSecsSinceEpoch());
     BackupRotationService rotation;
     const auto rotationResult = rotation.prune(destinationDir.toStdString(),
-                                                "PsyClientManager-auto-",
+                                                "Sessio-auto-",
                                                 app_settings::autoBackupKeepCount());
     if (!rotationResult.ok) {
       qWarning() << "AutoBackupScheduler: rotation failed:"

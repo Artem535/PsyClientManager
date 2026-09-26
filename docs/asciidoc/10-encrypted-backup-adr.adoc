@@ -33,7 +33,7 @@ Use only libsodium primitives:
 
 The implementation calls `sodium_init()` before use and clears password,
 derived-key, and master-key buffers with `sodium_memzero()` on every exit path.
-No cryptographic primitive is implemented by PsyClientManager itself.
+No cryptographic primitive is implemented by Sessio itself.
 
 ==== Container format
 
