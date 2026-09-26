@@ -312,16 +312,16 @@ struct DuckEventSeries {
     if (chunk.ColumnCount() > 17) {
       canceled_by = db_utils::toOptionalString(chunk.GetValue(17, index));
     }
-    readBufferMinutes(chunk, index, 18, 19, buffer_before_minutes,
+    readBufferMinutes(chunk, index, 20, 21, buffer_before_minutes,
                       buffer_after_minutes);
-    if (chunk.ColumnCount() > 20) {
-      provider_kind = db_utils::toOptionalString(chunk.GetValue(20, index));
-    }
-    if (chunk.ColumnCount() > 21) {
-      meeting_ref = db_utils::toOptionalString(chunk.GetValue(21, index));
-    }
     if (chunk.ColumnCount() > 22) {
-      invitation_state = db_utils::toOptionalString(chunk.GetValue(22, index));
+      provider_kind = db_utils::toOptionalString(chunk.GetValue(22, index));
+    }
+    if (chunk.ColumnCount() > 23) {
+      meeting_ref = db_utils::toOptionalString(chunk.GetValue(23, index));
+    }
+    if (chunk.ColumnCount() > 24) {
+      invitation_state = db_utils::toOptionalString(chunk.GetValue(24, index));
     }
   }
 };
