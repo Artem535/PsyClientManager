@@ -175,6 +175,9 @@ struct DuckEvent {
   std::int64_t buffer_before_minutes = 0;
   std::int64_t buffer_after_minutes = 0;
   bool is_virtual_occurrence = false;
+  std::optional<std::string> provider_kind = std::nullopt;
+  std::optional<std::string> meeting_ref = std::nullopt;
+  std::optional<std::string> invitation_state = std::nullopt;
   DuckEvent() = default;
   DuckEvent(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
     id = db_utils::toInt32AsInt64(chunk.GetValue(0, index));
@@ -214,6 +217,15 @@ struct DuckEvent {
     }
     readBufferMinutes(chunk, index, 17, 18, buffer_before_minutes,
                       buffer_after_minutes);
+    if (chunk.ColumnCount() > 19) {
+      provider_kind = db_utils::toOptionalString(chunk.GetValue(19, index));
+    }
+    if (chunk.ColumnCount() > 20) {
+      meeting_ref = db_utils::toOptionalString(chunk.GetValue(20, index));
+    }
+    if (chunk.ColumnCount() > 21) {
+      invitation_state = db_utils::toOptionalString(chunk.GetValue(21, index));
+    }
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const DuckEvent &e) {
@@ -271,6 +283,9 @@ struct DuckEventSeries {
   std::optional<std::string> canceled_by = std::nullopt;
   std::int64_t buffer_before_minutes = 0;
   std::int64_t buffer_after_minutes = 0;
+  std::optional<std::string> provider_kind = std::nullopt;
+  std::optional<std::string> meeting_ref = std::nullopt;
+  std::optional<std::string> invitation_state = std::nullopt;
 
   DuckEventSeries() = default;
   DuckEventSeries(const duckdb::DataChunk &chunk, duckdb::idx_t index) {
@@ -299,6 +314,15 @@ struct DuckEventSeries {
     }
     readBufferMinutes(chunk, index, 18, 19, buffer_before_minutes,
                       buffer_after_minutes);
+    if (chunk.ColumnCount() > 20) {
+      provider_kind = db_utils::toOptionalString(chunk.GetValue(20, index));
+    }
+    if (chunk.ColumnCount() > 21) {
+      meeting_ref = db_utils::toOptionalString(chunk.GetValue(21, index));
+    }
+    if (chunk.ColumnCount() > 22) {
+      invitation_state = db_utils::toOptionalString(chunk.GetValue(22, index));
+    }
   }
 };
 // --- DuckEventClient ---

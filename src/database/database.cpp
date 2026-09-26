@@ -90,7 +90,10 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.cancellation_reason),
        db_utils::toDuckValue(event.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes))});
+       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
+       db_utils::toDuckValue(event.provider_kind),
+       db_utils::toDuckValue(event.meeting_ref),
+       db_utils::toDuckValue(event.invitation_state)});
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -176,6 +179,9 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
        db_utils::toDuckValue(event.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
        duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
+       db_utils::toDuckValue(event.provider_kind),
+       db_utils::toDuckValue(event.meeting_ref),
+       db_utils::toDuckValue(event.invitation_state),
        duckdb::Value::BIGINT(event.id)});
 
   if (!result || result->HasError()) {
@@ -336,7 +342,10 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
        db_utils::toDuckValue(series.cancellation_reason),
        db_utils::toDuckValue(series.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes))});
+       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes)),
+       db_utils::toDuckValue(series.provider_kind),
+       db_utils::toDuckValue(series.meeting_ref),
+       db_utils::toDuckValue(series.invitation_state)});
 
   if (!result) {
     PLOG_ERROR << "Failed to prepare insert event series query";
@@ -387,6 +396,9 @@ bool Database::update_event_series(const DuckEventSeries &series) {
        db_utils::toDuckValue(series.canceled_by),
        duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
        duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes)),
+       db_utils::toDuckValue(series.provider_kind),
+       db_utils::toDuckValue(series.meeting_ref),
+       db_utils::toDuckValue(series.invitation_state),
        duckdb::Value::BIGINT(series.id)});
 
   if (!result) {
