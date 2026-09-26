@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.33] - 2026-09-26
+
+### Added
+
+- Internal groundwork for native LiveKit video calls: `Event`/recurring
+  series now carry a provider-agnostic meeting reference behind a new
+  `MeetingProvider` interface. No visible behavior changes — the existing
+  "Online session" link field works exactly as before.
+
 ## [0.1.32] - 2026-09-24
 
 ### Added
