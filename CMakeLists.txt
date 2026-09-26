@@ -111,6 +111,7 @@ qt_add_translations(Sessio
 add_subdirectory(src/widgets)
 add_subdirectory(src/config)
 add_subdirectory(src/database)
+add_subdirectory(src/meeting)
 add_subdirectory(src/backup)
 add_subdirectory(src/client_model)
 add_subdirectory(src/pages/client_info_page)
