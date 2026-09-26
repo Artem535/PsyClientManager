@@ -696,10 +696,17 @@ void QEventDetailsWidget::onMeetingCreated(const pcm::meeting::MeetingDescriptor
   if (!mCurrentEvent) {
     return;
   }
-  mCurrentEvent->setProviderKind(descriptor.kind);
-  mCurrentEvent->setMeetingRef(descriptor.meetingRef);
-  mCurrentEvent->setInvitationState(descriptor.invitationState);
-  mCurrentEvent->setMeetingUrl(descriptor.meetingUrl.value_or(QString{}));
+  applyProviderFields(descriptor.kind, descriptor.meetingRef, descriptor.invitationState,
+                     descriptor.meetingUrl.value_or(QString{}));
+}
+
+void QEventDetailsWidget::applyProviderFields(
+    const std::optional<pcm::meeting::ProviderKind> kind, const QString &meetingRef,
+    const std::optional<QString> &invitationState, const QString &meetingUrl) {
+  mCurrentEvent->setProviderKind(kind);
+  mCurrentEvent->setMeetingRef(meetingRef);
+  mCurrentEvent->setInvitationState(invitationState);
+  mCurrentEvent->setMeetingUrl(meetingUrl);
 }
 
 QEventItem *QEventDetailsWidget::currentEvent() const {
@@ -1016,10 +1023,7 @@ void QEventDetailsWidget::updateMeetingViaCoordinator() {
       mMeetingCoordinator->cancelMeeting(*mCurrentEvent->providerKind(),
                                          mCurrentEvent->meetingRef());
     }
-    mCurrentEvent->setProviderKind(std::nullopt);
-    mCurrentEvent->setMeetingRef(QString{});
-    mCurrentEvent->setInvitationState(std::nullopt);
-    mCurrentEvent->setMeetingUrl(QString{});
+    applyProviderFields(std::nullopt, QString{}, std::nullopt, QString{});
     return;
   }
 
@@ -1027,9 +1031,9 @@ void QEventDetailsWidget::updateMeetingViaCoordinator() {
     // Defensive fallback (should not happen once Task 7 wires the coordinator
     // everywhere QEventDetailsWidget is constructed): preserve today's
     // behavior instead of silently dropping the link.
-    mCurrentEvent->setProviderKind(pcm::meeting::ProviderKind::ExternalUrl);
-    mCurrentEvent->setMeetingRef(mMeetingUrlEdit->text().trimmed());
-    mCurrentEvent->setMeetingUrl(mMeetingUrlEdit->text().trimmed());
+    const auto trimmedUrl = mMeetingUrlEdit->text().trimmed();
+    applyProviderFields(pcm::meeting::ProviderKind::ExternalUrl, trimmedUrl,
+                       mCurrentEvent->invitationState(), trimmedUrl);
     return;
   }
 

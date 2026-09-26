@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "external_url_meeting_provider.h"
 #include "livekit_meeting_provider.h"
 #include "meeting_provider.h"
@@ -28,8 +30,9 @@ signals:
 private:
   [[nodiscard]] MeetingProvider *providerFor(ProviderKind kind) const;
 
-  ExternalUrlMeetingProvider *mExternalUrlProvider;
-  LiveKitMeetingProvider *mLiveKitProvider;
+  // Indexed by static_cast<size_t>(ProviderKind) — avoids a second switch
+  // over ProviderKind alongside providerKindToString's.
+  std::array<MeetingProvider *, 2> mProviders;
 };
 
 } // namespace pcm::meeting

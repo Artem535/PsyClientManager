@@ -3,10 +3,9 @@
 namespace pcm::meeting {
 
 MeetingCoordinator::MeetingCoordinator(QObject *parent)
-    : QObject(parent), mExternalUrlProvider(new ExternalUrlMeetingProvider(this)),
-      mLiveKitProvider(new LiveKitMeetingProvider(this)) {
-  for (auto *provider : {static_cast<MeetingProvider *>(mExternalUrlProvider),
-                         static_cast<MeetingProvider *>(mLiveKitProvider)}) {
+    : QObject(parent),
+      mProviders{new ExternalUrlMeetingProvider(this), new LiveKitMeetingProvider(this)} {
+  for (auto *provider : mProviders) {
     connect(provider, &MeetingProvider::created, this, &MeetingCoordinator::meetingCreated);
     connect(provider, &MeetingProvider::createFailed, this,
             &MeetingCoordinator::meetingCreateFailed);
@@ -17,13 +16,7 @@ MeetingCoordinator::MeetingCoordinator(QObject *parent)
 }
 
 MeetingProvider *MeetingCoordinator::providerFor(const ProviderKind kind) const {
-  switch (kind) {
-  case ProviderKind::ExternalUrl:
-    return mExternalUrlProvider;
-  case ProviderKind::LiveKit:
-    return mLiveKitProvider;
-  }
-  return mExternalUrlProvider;
+  return mProviders[static_cast<size_t>(kind)];
 }
 
 void MeetingCoordinator::createMeeting(const ProviderKind kind, const MeetingCreateRequest &request) {

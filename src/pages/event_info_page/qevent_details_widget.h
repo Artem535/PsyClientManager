@@ -160,6 +160,10 @@ private:
   bool validateInput();
   [[nodiscard]] DuckEvent collectEventData() const;
   void updateMeetingViaCoordinator();
+  void applyProviderFields(std::optional<pcm::meeting::ProviderKind> kind,
+                           const QString &meetingRef,
+                           const std::optional<QString> &invitationState,
+                           const QString &meetingUrl);
 
   // --- Live conflict warning ---
   void updateConflictWarning();
