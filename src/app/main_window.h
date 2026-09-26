@@ -6,6 +6,7 @@
 #include "event_info.h"
 #include "database.h"
 #include "client_info_card.h"
+#include "meeting_coordinator.h"
 #include "settings_dialog.h"
 #include "tab_button.h"
 
@@ -64,7 +65,8 @@ public:
    * @brief Adds the event information page to the application.
    * @param model Pointer to the timeline model.
    */
-  void addEventInfoPage(QTimelineModel *model);
+  void addEventInfoPage(QTimelineModel *model,
+                        pcm::meeting::MeetingCoordinator *meetingCoordinator);
   void addAnalyticsPage(std::shared_ptr<pcm::database::Database> db);
 
   /**

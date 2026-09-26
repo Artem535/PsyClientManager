@@ -156,10 +156,13 @@ int Application::run(int argc, char *argv[]) {
       std::make_unique<pcm::backup::AutoBackupScheduler>(mDb);
   mAutoBackupScheduler->start();
 
+  mMeetingCoordinator = std::make_unique<pcm::meeting::MeetingCoordinator>(this);
+
   mMainWindow = std::make_unique<MainWindow>();
   mClientModel = std::make_shared<QClientModel>(mDb);
 
-  mMainWindow->addEventInfoPage(new QTimelineModel(mDb, this));
+  mMainWindow->addEventInfoPage(new QTimelineModel(mDb, mMeetingCoordinator.get(), this),
+                                mMeetingCoordinator.get());
   mMainWindow->addClientInfoPage(mClientModel);
   mMainWindow->addAnalyticsPage(mDb);
   mMainWindow->addClientCardPage(mDb);
