@@ -680,6 +680,28 @@ void QEventDetailsWidget::setConflictChecker(
   updateConflictWarning();
 }
 
+void QEventDetailsWidget::setMeetingCoordinator(pcm::meeting::MeetingCoordinator *coordinator) {
+  if (mMeetingCoordinator) {
+    disconnect(mMeetingCoordinator, &pcm::meeting::MeetingCoordinator::meetingCreated, this,
+              &QEventDetailsWidget::onMeetingCreated);
+  }
+  mMeetingCoordinator = coordinator;
+  if (mMeetingCoordinator) {
+    connect(mMeetingCoordinator, &pcm::meeting::MeetingCoordinator::meetingCreated, this,
+            &QEventDetailsWidget::onMeetingCreated);
+  }
+}
+
+void QEventDetailsWidget::onMeetingCreated(const pcm::meeting::MeetingDescriptor descriptor) {
+  if (!mCurrentEvent) {
+    return;
+  }
+  mCurrentEvent->setProviderKind(descriptor.kind);
+  mCurrentEvent->setMeetingRef(descriptor.meetingRef);
+  mCurrentEvent->setInvitationState(descriptor.invitationState);
+  mCurrentEvent->setMeetingUrl(descriptor.meetingUrl.value_or(QString{}));
+}
+
 QEventItem *QEventDetailsWidget::currentEvent() const {
   return mCurrentEvent.data();
 }
@@ -724,9 +746,7 @@ void QEventDetailsWidget::onApplyClicked() {
     mCurrentEvent->setCanceledBy(
         mUI->mCanceledByComboBox->currentData().toString());
     mCurrentEvent->setOnline(mOnlineSessionSwitch->isChecked());
-    mCurrentEvent->setMeetingUrl(mOnlineSessionSwitch->isChecked()
-                                     ? mMeetingUrlEdit->text()
-                                     : QString{});
+    updateMeetingViaCoordinator();
     mCurrentEvent->setBufferBeforeMinutes(mBufferBeforeSpinBox->value());
     mCurrentEvent->setBufferAfterMinutes(mBufferAfterSpinBox->value());
   }
@@ -979,6 +999,45 @@ bool QEventDetailsWidget::validateInput() {
     return false;
   }
   return true;
+}
+
+void QEventDetailsWidget::updateMeetingViaCoordinator() {
+  if (!mCurrentEvent) {
+    return;
+  }
+
+  const bool wasOnline = mCurrentEvent->providerKind().has_value();
+  const bool isOnline = mOnlineSessionSwitch->isChecked();
+
+  if (!isOnline) {
+    if (wasOnline && mMeetingCoordinator) {
+      // Fire-and-forget: ExternalUrl/LiveKit cancel() are both no-ops/errors
+      // that carry no state the UI needs to react to synchronously.
+      mMeetingCoordinator->cancelMeeting(*mCurrentEvent->providerKind(),
+                                         mCurrentEvent->meetingRef());
+    }
+    mCurrentEvent->setProviderKind(std::nullopt);
+    mCurrentEvent->setMeetingRef(QString{});
+    mCurrentEvent->setInvitationState(std::nullopt);
+    mCurrentEvent->setMeetingUrl(QString{});
+    return;
+  }
+
+  if (!mMeetingCoordinator) {
+    // Defensive fallback (should not happen once Task 7 wires the coordinator
+    // everywhere QEventDetailsWidget is constructed): preserve today's
+    // behavior instead of silently dropping the link.
+    mCurrentEvent->setProviderKind(pcm::meeting::ProviderKind::ExternalUrl);
+    mCurrentEvent->setMeetingRef(mMeetingUrlEdit->text().trimmed());
+    mCurrentEvent->setMeetingUrl(mMeetingUrlEdit->text().trimmed());
+    return;
+  }
+
+  // ExternalUrlMeetingProvider::create emits `created` synchronously (Task 2),
+  // and onMeetingCreated (connected once, in setMeetingCoordinator) applies the
+  // descriptor to mCurrentEvent before this call returns.
+  mMeetingCoordinator->createMeeting(pcm::meeting::ProviderKind::ExternalUrl,
+                                     {.rawMeetingUrl = mMeetingUrlEdit->text()});
 }
 
 DuckEvent QEventDetailsWidget::collectEventData() const {
