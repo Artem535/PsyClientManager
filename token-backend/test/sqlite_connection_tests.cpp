@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -43,11 +44,15 @@ TEST(SqliteConnectionTest, LibraryIsThreadsafe) {
          "cannot rescue that and the shared connection is unsafe";
 }
 
+// Each of these takes the connection lock before opening the transaction, the
+// way every repository method does. That is a precondition SqliteTransaction
+// now enforces — before it did, these three tests were quietly violating it.
 TEST(SqliteTransactionTest, CommitPersistsEveryStatementInTheSequence) {
   pcm::tokenbackend::SqliteConnection conn(":memory:");
   conn.exec("CREATE TABLE t (id INTEGER PRIMARY KEY)");
 
   {
+    auto guard = conn.lock();
     pcm::tokenbackend::SqliteTransaction tx(conn);
     conn.exec("INSERT INTO t (id) VALUES (1)");
     conn.exec("INSERT INTO t (id) VALUES (2)");
@@ -63,10 +68,12 @@ TEST(SqliteTransactionTest, RollsBackWhenScopeExitsWithoutCommit) {
   conn.exec("INSERT INTO t (id) VALUES (1)");
 
   {
+    auto guard = conn.lock();
     pcm::tokenbackend::SqliteTransaction tx(conn);
     conn.exec("DELETE FROM t");
     conn.exec("INSERT INTO t (id) VALUES (2)");
-    // No commit() — the destructor must undo both statements.
+    // No commit() — the destructor must undo both statements. It is destroyed
+    // before `guard`, so the ROLLBACK still runs under the lock.
   }
 
   EXPECT_EQ(countRows(conn, "SELECT COUNT(*) FROM t"), 1);
@@ -80,6 +87,7 @@ TEST(SqliteTransactionTest, RollsBackWhenAStatementThrowsMidSequence) {
 
   EXPECT_THROW(
       {
+        auto guard = conn.lock();
         pcm::tokenbackend::SqliteTransaction tx(conn);
         conn.exec("DELETE FROM t");
         conn.exec("INSERT INTO nonexistent_table (id) VALUES (2)"); // throws
@@ -89,6 +97,97 @@ TEST(SqliteTransactionTest, RollsBackWhenAStatementThrowsMidSequence) {
 
   EXPECT_EQ(countRows(conn, "SELECT COUNT(*) FROM t"), 1)
       << "the DELETE must not survive a failure later in the sequence";
+}
+
+// --- the two enforced preconditions -----------------------------------------
+//
+// Both of these used to be comment-only. The recursive lock is what makes their
+// violation silent — it will not deadlock on a re-entrant transaction the way a
+// plain mutex would, so the mistake would compile, run, and only surface in
+// production under concurrency as "cannot start a transaction within a
+// transaction".
+
+TEST(SqliteTransactionTest, RefusesToOpenWithoutTheConnectionLockHeld) {
+  pcm::tokenbackend::SqliteConnection conn(":memory:");
+  conn.exec("CREATE TABLE t (id INTEGER PRIMARY KEY)");
+
+  EXPECT_FALSE(conn.heldByCurrentThread());
+  EXPECT_THROW(pcm::tokenbackend::SqliteTransaction tx(conn), std::logic_error);
+
+  // The failed constructor must leave nothing behind: no open transaction, and
+  // a subsequent well-formed transaction still works.
+  {
+    auto guard = conn.lock();
+    pcm::tokenbackend::SqliteTransaction tx(conn);
+    conn.exec("INSERT INTO t (id) VALUES (1)");
+    tx.commit();
+  }
+  EXPECT_EQ(countRows(conn, "SELECT COUNT(*) FROM t"), 1);
+}
+
+TEST(SqliteTransactionTest, RefusesToNestASecondTransactionOnTheSameConnection) {
+  pcm::tokenbackend::SqliteConnection conn(":memory:");
+  conn.exec("CREATE TABLE t (id INTEGER PRIMARY KEY)");
+
+  auto guard = conn.lock();
+  pcm::tokenbackend::SqliteTransaction outer(conn);
+  conn.exec("INSERT INTO t (id) VALUES (1)");
+
+  // Same thread, lock legitimately held (recursively, as a nested repository
+  // call would hold it) — so only the open-transaction check can catch this.
+  EXPECT_THROW(
+      {
+        auto innerGuard = conn.lock();
+        pcm::tokenbackend::SqliteTransaction inner(conn);
+      },
+      std::logic_error);
+
+  // The refusal must not have disturbed the transaction already in progress.
+  outer.commit();
+  EXPECT_EQ(countRows(conn, "SELECT COUNT(*) FROM t"), 1);
+}
+
+TEST(SqliteTransactionTest, LockOwnershipIsReleasedWhenTheGuardGoesOutOfScope) {
+  pcm::tokenbackend::SqliteConnection conn(":memory:");
+
+  EXPECT_FALSE(conn.heldByCurrentThread());
+  {
+    auto guard = conn.lock();
+    EXPECT_TRUE(conn.heldByCurrentThread());
+    {
+      // Re-entrant acquisition, as a nested repository call performs.
+      auto nested = conn.lock();
+      EXPECT_TRUE(conn.heldByCurrentThread());
+    }
+    EXPECT_TRUE(conn.heldByCurrentThread())
+        << "releasing the inner guard must not drop the outer one's ownership";
+  }
+  EXPECT_FALSE(conn.heldByCurrentThread());
+}
+
+TEST(SqliteTransactionTest, AnotherThreadIsNotSeenAsHoldingTheLock) {
+  pcm::tokenbackend::SqliteConnection conn(":memory:");
+
+  auto guard = conn.lock();
+  ASSERT_TRUE(conn.heldByCurrentThread());
+
+  // The ownership check must be per-thread, not a bare "is it locked" flag:
+  // otherwise a thread that never took the lock could open a transaction
+  // while this one holds it, which is precisely the bug being guarded.
+  bool otherThreadSawItHeld = true;
+  bool otherThreadTransactionThrew = false;
+  std::thread other([&] {
+    otherThreadSawItHeld = conn.heldByCurrentThread();
+    try {
+      pcm::tokenbackend::SqliteTransaction tx(conn);
+    } catch (const std::logic_error &) {
+      otherThreadTransactionThrew = true;
+    }
+  });
+  other.join();
+
+  EXPECT_FALSE(otherThreadSawItHeld);
+  EXPECT_TRUE(otherThreadTransactionThrew);
 }
 
 TEST(MigrationsTest, CreatesAllThreeTables) {

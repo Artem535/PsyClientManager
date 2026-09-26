@@ -1,8 +1,10 @@
 #pragma once
 
 #include <sqlite3.h>
+#include <atomic>
 #include <mutex>
 #include <string>
+#include <thread>
 
 namespace pcm::tokenbackend {
 
@@ -30,7 +32,43 @@ public:
   // from outside, so the same thread re-enters the lock on the nested call. A
   // plain std::mutex would deadlock; duplicating each method as a private
   // already-locked twin would double the repository surface for no gain.
-  using Lock = std::unique_lock<std::recursive_mutex>;
+  //
+  // The recursive mutex has one cost, which is why this is a class rather than
+  // a bare std::unique_lock: it makes a mis-nested transaction *silent*. Under
+  // a plain mutex, wrapping a method that already opens a transaction in
+  // another transaction would deadlock loudly on the first call. Here it
+  // compiles, runs, and only fails in production under real concurrency with
+  // the same SQLITE_ERROR this lock exists to eliminate. So this tracks which
+  // thread holds it and how deep, and SqliteTransaction checks that — see
+  // heldByCurrentThread() and SqliteTransaction's constructor.
+  class Lock {
+  public:
+    explicit Lock(SqliteConnection &conn) : conn_(conn), guard_(conn.mutex_) {
+      // Both writes happen with the mutex held, so the depth count needs no
+      // synchronization of its own. The owner id is atomic only because
+      // heldByCurrentThread() is by definition also called by threads that do
+      // NOT hold the lock — that is the case it exists to catch.
+      conn_.lockOwner_.store(std::this_thread::get_id(), std::memory_order_release);
+      ++conn_.lockDepth_;
+    }
+
+    ~Lock() {
+      // Ordered before guard_'s release, so the state is never observed stale.
+      if (--conn_.lockDepth_ == 0) {
+        conn_.lockOwner_.store(std::thread::id{}, std::memory_order_release);
+      }
+    }
+
+    // Non-copyable and non-movable. lock() can still return one by value:
+    // C++17 guarantees the prvalue is constructed directly in the caller's
+    // storage, so no move is involved.
+    Lock(const Lock &) = delete;
+    Lock &operator=(const Lock &) = delete;
+
+  private:
+    SqliteConnection &conn_;
+    std::unique_lock<std::recursive_mutex> guard_;
+  };
 
   // Serializes ALL database access. Returns a lock that is already held, so a
   // caller writes `auto guard = conn_.lock();` and gets release-on-return,
@@ -58,11 +96,28 @@ public:
   // Code that reaches the connection directly rather than through a repository
   // — runMigrations() is the only case — runs at startup before any request
   // thread exists and does not take this.
-  [[nodiscard]] Lock lock() { return Lock(mutex_); }
+  [[nodiscard]] Lock lock() { return Lock(*this); }
+
+  // True when the calling thread currently holds lock(). Lets a precondition be
+  // checked instead of merely documented — see SqliteTransaction's constructor.
+  [[nodiscard]] bool heldByCurrentThread() const {
+    return lockOwner_.load(std::memory_order_acquire) == std::this_thread::get_id();
+  }
 
 private:
+  friend class Lock;
+  friend class SqliteTransaction;
+
+  // Only ever read or written by a thread that holds the lock, so a plain bool
+  // is sufficient: the one caller that may not hold it (SqliteTransaction's
+  // constructor) checks heldByCurrentThread() first and throws before it gets
+  // here.
+  bool transactionOpen_ = false;
+
   sqlite3 *db_ = nullptr;
   std::recursive_mutex mutex_;
+  std::atomic<std::thread::id> lockOwner_{};
+  int lockDepth_ = 0;
 };
 
 // RAII wrapper over BEGIN IMMEDIATE / COMMIT / ROLLBACK.
@@ -78,9 +133,22 @@ private:
 // upgrade. Rolls back on destruction unless commit() was called, so an
 // exception thrown mid-sequence cannot leave a partial write behind.
 //
-// The caller must already hold SqliteConnection::lock() and must keep holding
-// it until this object is destroyed — otherwise another thread's statement can
-// still land between this transaction's BEGIN and its COMMIT.
+// Two preconditions, both CHECKED by the constructor rather than just
+// documented — it throws std::logic_error naming the one that was violated:
+//
+//  1. The caller already holds SqliteConnection::lock(), and keeps holding it
+//     until this object is destroyed. Otherwise another thread's statement can
+//     land between this transaction's BEGIN and its COMMIT, which is the whole
+//     failure this lock exists to prevent.
+//  2. No transaction is already open on this connection. SQLite has no nested
+//     transactions, and because the lock is recursive it will not stop a method
+//     that opens a transaction from being called inside another one — that
+//     mistake would otherwise compile, run, and only surface in production as
+//     the SQLITE_ERROR this fix eliminated.
+//
+// Checked unconditionally, not behind assert(): asserts vanish in release
+// builds, and a violation is a 500 on a live endpoint. Two comparisons next to
+// a BEGIN IMMEDIATE cost nothing measurable.
 class SqliteTransaction {
 public:
   explicit SqliteTransaction(SqliteConnection &conn);
