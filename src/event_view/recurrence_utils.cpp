@@ -160,6 +160,9 @@ DuckEvent buildVirtualOccurrence(const DuckEventSeries &series,
   event.cost = series.cost;
   event.is_online = series.is_online;
   event.meeting_url = series.meeting_url;
+  event.provider_kind = series.provider_kind;
+  event.meeting_ref = series.meeting_ref;
+  event.invitation_state = series.invitation_state;
   event.buffer_before_minutes = series.buffer_before_minutes;
   event.buffer_after_minutes = series.buffer_after_minutes;
   event.series_id = series.id;
