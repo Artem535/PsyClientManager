@@ -21,6 +21,15 @@ int32_t statusOrDefault(const int64_t id) {
   return static_cast<int32_t>(id > 0 ? id : 1);
 }
 
+void appendProviderValues(duckdb::vector<duckdb::Value> &values,
+                          const std::optional<std::string> &providerKind,
+                          const std::optional<std::string> &meetingRef,
+                          const std::optional<std::string> &invitationState) {
+  values.push_back(db_utils::toDuckValue(providerKind));
+  values.push_back(db_utils::toDuckValue(meetingRef));
+  values.push_back(db_utils::toDuckValue(invitationState));
+}
+
 std::unique_ptr<duckdb::QueryResult> executePrepared(
     duckdb::Connection &conn, const std::string &query,
     duckdb::vector<duckdb::Value> values) {
@@ -72,28 +81,27 @@ int64_t Database::add_event(const DuckEvent &event, const bool allowOverlap) {
   }
 
   duckdb::Connection conn(*mDb);
-  auto result = executePrepared(
-      conn, constance::kInsertEventQuery,
-      {db_utils::toDuckValue(event.name),
-       db_utils::toDuckValue(event.description),
-       duckdb::Value::BOOLEAN(event.is_work_event),
-       duckdb::Value::INTEGER(statusOrDefault(event.event_stat_id)),
-       duckdb::Value::INTEGER(statusOrDefault(event.payment_stat_id)),
-       db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
-       db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-       db_utils::toDuckValue(event.duration),
-       db_utils::toDuckValue(event.cost),
-       duckdb::Value::BOOLEAN(event.is_online),
-       duckdb::Value(event.meeting_url),
-       db_utils::toDuckValue(event.series_id),
-       timestampMsOrNull(event.original_occurrence_start),
-       db_utils::toDuckValue(event.cancellation_reason),
-       db_utils::toDuckValue(event.canceled_by),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
-       db_utils::toDuckValue(event.provider_kind),
-       db_utils::toDuckValue(event.meeting_ref),
-       db_utils::toDuckValue(event.invitation_state)});
+  duckdb::vector<duckdb::Value> values{
+      db_utils::toDuckValue(event.name),
+      db_utils::toDuckValue(event.description),
+      duckdb::Value::BOOLEAN(event.is_work_event),
+      duckdb::Value::INTEGER(statusOrDefault(event.event_stat_id)),
+      duckdb::Value::INTEGER(statusOrDefault(event.payment_stat_id)),
+      db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+      db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
+      db_utils::toDuckValue(event.duration),
+      db_utils::toDuckValue(event.cost),
+      duckdb::Value::BOOLEAN(event.is_online),
+      duckdb::Value(event.meeting_url),
+      db_utils::toDuckValue(event.series_id),
+      timestampMsOrNull(event.original_occurrence_start),
+      db_utils::toDuckValue(event.cancellation_reason),
+      db_utils::toDuckValue(event.canceled_by),
+      duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
+      duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes))};
+  appendProviderValues(values, event.provider_kind, event.meeting_ref,
+                       event.invitation_state);
+  auto result = executePrepared(conn, constance::kInsertEventQuery, values);
 
   if (!result || result->HasError()) {
     PLOG_ERROR << "Failed to insert event: " << result->GetError();
@@ -160,29 +168,28 @@ bool Database::update_event(const DuckEvent &event, const bool allowOverlap) {
     return false;
   }
 
-  auto result = executePrepared(
-      conn, constance::kUpdateEventQuery,
-      {db_utils::toDuckValue(event.name),
-       db_utils::toDuckValue(event.description),
-       duckdb::Value::BOOLEAN(event.is_work_event),
-       fkOrNull(event.event_stat_id),
-       fkOrNull(event.payment_stat_id),
-       db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
-       db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
-       db_utils::toDuckValue(event.duration),
-       db_utils::toDuckValue(event.cost),
-       duckdb::Value::BOOLEAN(event.is_online),
-       duckdb::Value(event.meeting_url),
-       db_utils::toDuckValue(event.series_id),
-       timestampMsOrNull(event.original_occurrence_start),
-       db_utils::toDuckValue(event.cancellation_reason),
-       db_utils::toDuckValue(event.canceled_by),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes)),
-       db_utils::toDuckValue(event.provider_kind),
-       db_utils::toDuckValue(event.meeting_ref),
-       db_utils::toDuckValue(event.invitation_state),
-       duckdb::Value::BIGINT(event.id)});
+  duckdb::vector<duckdb::Value> values{
+      db_utils::toDuckValue(event.name),
+      db_utils::toDuckValue(event.description),
+      duckdb::Value::BOOLEAN(event.is_work_event),
+      fkOrNull(event.event_stat_id),
+      fkOrNull(event.payment_stat_id),
+      db_utils::toDuckTimestamp(event.start_date.value_or(0) * 1000),
+      db_utils::toDuckTimestamp(event.end_date.value_or(0) * 1000),
+      db_utils::toDuckValue(event.duration),
+      db_utils::toDuckValue(event.cost),
+      duckdb::Value::BOOLEAN(event.is_online),
+      duckdb::Value(event.meeting_url),
+      db_utils::toDuckValue(event.series_id),
+      timestampMsOrNull(event.original_occurrence_start),
+      db_utils::toDuckValue(event.cancellation_reason),
+      db_utils::toDuckValue(event.canceled_by),
+      duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_before_minutes)),
+      duckdb::Value::INTEGER(static_cast<int32_t>(event.buffer_after_minutes))};
+  appendProviderValues(values, event.provider_kind, event.meeting_ref,
+                       event.invitation_state);
+  values.push_back(duckdb::Value::BIGINT(event.id));
+  auto result = executePrepared(conn, constance::kUpdateEventQuery, values);
 
   if (!result || result->HasError()) {
     for (const auto clientId : linkedClientIds) {
@@ -322,30 +329,29 @@ int64_t Database::add_event_series(const DuckEventSeries &series) {
 
   duckdb::Connection conn(*mDb);
   const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
-  auto result = executePrepared(
-      conn, constance::kInsertEventSeriesQuery,
-      {db_utils::toDuckValue(series.name),
-       db_utils::toDuckValue(series.description),
-       series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
-       duckdb::Value::BOOLEAN(series.is_work_event),
-       duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
-       duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
-       timestampMsOrNull(series.start_date),
-       timestampMsOrNull(series.end_date),
-       db_utils::toDuckValue(series.duration),
-       db_utils::toDuckValue(series.cost),
-       duckdb::Value::BOOLEAN(series.is_online),
-       duckdb::Value(series.meeting_url),
-       duckdb::Value(series.recurrence_rule),
-       timestampMsOrNull(series.recurrence_until),
-       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
-       db_utils::toDuckValue(series.cancellation_reason),
-       db_utils::toDuckValue(series.canceled_by),
-       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes)),
-       db_utils::toDuckValue(series.provider_kind),
-       db_utils::toDuckValue(series.meeting_ref),
-       db_utils::toDuckValue(series.invitation_state)});
+  duckdb::vector<duckdb::Value> values{
+      db_utils::toDuckValue(series.name),
+      db_utils::toDuckValue(series.description),
+      series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
+      duckdb::Value::BOOLEAN(series.is_work_event),
+      duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
+      duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
+      timestampMsOrNull(series.start_date),
+      timestampMsOrNull(series.end_date),
+      db_utils::toDuckValue(series.duration),
+      db_utils::toDuckValue(series.cost),
+      duckdb::Value::BOOLEAN(series.is_online),
+      duckdb::Value(series.meeting_url),
+      duckdb::Value(series.recurrence_rule),
+      timestampMsOrNull(series.recurrence_until),
+      db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
+      db_utils::toDuckValue(series.cancellation_reason),
+      db_utils::toDuckValue(series.canceled_by),
+      duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
+      duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes))};
+  appendProviderValues(values, series.provider_kind, series.meeting_ref,
+                       series.invitation_state);
+  auto result = executePrepared(conn, constance::kInsertEventSeriesQuery, values);
 
   if (!result) {
     PLOG_ERROR << "Failed to prepare insert event series query";
@@ -375,31 +381,30 @@ bool Database::update_event_series(const DuckEventSeries &series) {
 
   duckdb::Connection conn(*mDb);
   const auto nowMs = Poco::Timestamp().epochMicroseconds() / 1000;
-  auto result = executePrepared(
-      conn, constance::kUpdateEventSeriesQuery,
-      {db_utils::toDuckValue(series.name),
-       db_utils::toDuckValue(series.description),
-       series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
-       duckdb::Value::BOOLEAN(series.is_work_event),
-       duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
-       duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
-       timestampMsOrNull(series.start_date),
-       timestampMsOrNull(series.end_date),
-       db_utils::toDuckValue(series.duration),
-       db_utils::toDuckValue(series.cost),
-       duckdb::Value::BOOLEAN(series.is_online),
-       duckdb::Value(series.meeting_url),
-       duckdb::Value(series.recurrence_rule),
-       timestampMsOrNull(series.recurrence_until),
-       db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
-       db_utils::toDuckValue(series.cancellation_reason),
-       db_utils::toDuckValue(series.canceled_by),
-       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
-       duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes)),
-       db_utils::toDuckValue(series.provider_kind),
-       db_utils::toDuckValue(series.meeting_ref),
-       db_utils::toDuckValue(series.invitation_state),
-       duckdb::Value::BIGINT(series.id)});
+  duckdb::vector<duckdb::Value> values{
+      db_utils::toDuckValue(series.name),
+      db_utils::toDuckValue(series.description),
+      series.client_id.has_value() ? fkOrNull(*series.client_id) : duckdb::Value(),
+      duckdb::Value::BOOLEAN(series.is_work_event),
+      duckdb::Value::INTEGER(statusOrDefault(series.event_stat_id)),
+      duckdb::Value::INTEGER(statusOrDefault(series.payment_stat_id)),
+      timestampMsOrNull(series.start_date),
+      timestampMsOrNull(series.end_date),
+      db_utils::toDuckValue(series.duration),
+      db_utils::toDuckValue(series.cost),
+      duckdb::Value::BOOLEAN(series.is_online),
+      duckdb::Value(series.meeting_url),
+      duckdb::Value(series.recurrence_rule),
+      timestampMsOrNull(series.recurrence_until),
+      db_utils::toDuckTimestamp(std::make_optional(nowMs * 1000)),
+      db_utils::toDuckValue(series.cancellation_reason),
+      db_utils::toDuckValue(series.canceled_by),
+      duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_before_minutes)),
+      duckdb::Value::INTEGER(static_cast<int32_t>(series.buffer_after_minutes))};
+  appendProviderValues(values, series.provider_kind, series.meeting_ref,
+                       series.invitation_state);
+  values.push_back(duckdb::Value::BIGINT(series.id));
+  auto result = executePrepared(conn, constance::kUpdateEventSeriesQuery, values);
 
   if (!result) {
     PLOG_ERROR << "Failed to prepare update event series query";

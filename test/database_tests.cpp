@@ -749,17 +749,27 @@ TEST(DatabaseTest, PersistsBuffersAndRejectsBufferedAdjacentEvent) {
   db_dir.remove(true);
 }
 
-TEST(DatabaseTest, PersistsBufferMinutesOnEventSeries) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_series_buffers")}};
-
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
+namespace {
+// RAII fixture for the provider/buffer-minutes tests below: creates a fresh
+// temp DB directory (clearing any leftover from a previous run) and always
+// removes it on scope exit, even if the test fails partway through.
+struct TempDbFixture {
+  pcm::config::Config conf;
+  explicit TempDbFixture(const std::string &dirName)
+      : conf{.db_conf = pcm::config::DatabaseConfig{
+                 .db_pth = Poco::Path(Poco::Path::current()).append(dirName)}} {
+    Poco::File dir(conf.db_conf().db_pth);
+    if (dir.exists()) {
+      dir.remove(true);
+    }
   }
+  ~TempDbFixture() { Poco::File(conf.db_conf().db_pth).remove(true); }
+};
+} // namespace
 
-  pcm::database::Database db{conf};
+TEST(DatabaseTest, PersistsBufferMinutesOnEventSeries) {
+  TempDbFixture fixture("tmp_dir_series_buffers");
+  pcm::database::Database db{fixture.conf};
 
   DuckEventSeries series;
   series.name = std::string{"Buffered Series"};
@@ -792,8 +802,6 @@ TEST(DatabaseTest, PersistsBufferMinutesOnEventSeries) {
   // reads buffer_before_minutes/buffer_after_minutes correctly even when a
   // neighboring text column is populated, rather than "passing" only by
   // coincidence because every other column happened to be null.
-
-  db_dir.remove(true);
 }
 
 TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
@@ -846,15 +854,8 @@ TEST(DatabaseTest, HandlesNullBufferColumnsFromLegacyDatabase) {
 }
 
 TEST(DatabaseTest, PersistsProviderFieldsOnEvent) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_event")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-
-  pcm::database::Database db{conf};
+  TempDbFixture fixture("tmp_dir_provider_event");
+  pcm::database::Database db{fixture.conf};
   DuckEvent event;
   event.name = std::string{"Online Session"};
   event.start_date = 1730000000000;
@@ -882,20 +883,11 @@ TEST(DatabaseTest, PersistsProviderFieldsOnEvent) {
   ASSERT_NE(updated, nullptr);
   ASSERT_TRUE(updated->invitation_state.has_value());
   EXPECT_EQ(*updated->invitation_state, "pending");
-
-  db_dir.remove(true);
 }
 
 TEST(DatabaseTest, PersistsProviderFieldsOnEventSeries) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_series")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
-
-  pcm::database::Database db{conf};
+  TempDbFixture fixture("tmp_dir_provider_series");
+  pcm::database::Database db{fixture.conf};
   DuckEventSeries series;
   series.name = std::string{"Weekly Online Session"};
   series.start_date = 1730000000000;
@@ -916,18 +908,11 @@ TEST(DatabaseTest, PersistsProviderFieldsOnEventSeries) {
   EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
   ASSERT_TRUE(reloaded->meeting_ref.has_value());
   EXPECT_EQ(*reloaded->meeting_ref, "https://meet.example.invalid/room-2");
-
-  db_dir.remove(true);
 }
 
 TEST(DatabaseTest, BackfillsProviderKindForLegacyOnlineEvents) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current()).append("tmp_dir_provider_backfill")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
+  TempDbFixture fixture("tmp_dir_provider_backfill");
+  const auto &conf = fixture.conf;
 
   int64_t eventId = 0;
   {
@@ -958,19 +943,11 @@ TEST(DatabaseTest, BackfillsProviderKindForLegacyOnlineEvents) {
   ASSERT_NE(reloaded, nullptr);
   ASSERT_TRUE(reloaded->provider_kind.has_value());
   EXPECT_EQ(*reloaded->provider_kind, "ExternalUrl");
-
-  db_dir.remove(true);
 }
 
 TEST(DatabaseTest, BackfillsProviderKindAndMeetingRefForLegacyOnlineEventSeries) {
-  pcm::config::Config conf{
-      .db_conf = pcm::config::DatabaseConfig{
-          .db_pth = Poco::Path(Poco::Path::current())
-                        .append("tmp_dir_series_provider_backfill")}};
-  auto db_dir = Poco::File(conf.db_conf().db_pth);
-  if (db_dir.exists()) {
-    db_dir.remove(true);
-  }
+  TempDbFixture fixture("tmp_dir_series_provider_backfill");
+  const auto &conf = fixture.conf;
 
   int64_t legacySeriesId = 0;
   int64_t liveKitSeriesId = 0;
@@ -1030,8 +1007,6 @@ TEST(DatabaseTest, BackfillsProviderKindAndMeetingRefForLegacyOnlineEventSeries)
   ASSERT_NE(reloadedLiveKit, nullptr);
   ASSERT_TRUE(reloadedLiveKit->provider_kind.has_value());
   EXPECT_EQ(*reloadedLiveKit->provider_kind, "LiveKit");
-
-  db_dir.remove(true);
 }
 
 TEST(DatabaseTest, TracksSeriesOccurrenceReminderNotifications) {

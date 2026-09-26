@@ -16,6 +16,18 @@ void setBufferMinutes(const DuckEvent &event, std::int64_t &beforeMinutes,
   beforeMinutes = event.buffer_before_minutes;
   afterMinutes = event.buffer_after_minutes;
 }
+
+void setProviderFields(const DuckEvent &event,
+                       std::optional<pcm::meeting::ProviderKind> &providerKind,
+                       QString &meetingRef, std::optional<QString> &invitationState) {
+  providerKind = event.provider_kind.has_value()
+                     ? pcm::meeting::providerKindFromString(*event.provider_kind)
+                     : std::nullopt;
+  meetingRef = QString::fromStdString(event.meeting_ref.value_or(""));
+  invitationState = event.invitation_state.has_value()
+                         ? std::make_optional(QString::fromStdString(*event.invitation_state))
+                         : std::nullopt;
+}
 } // namespace
 
 namespace {
@@ -100,13 +112,7 @@ void QEventItem::updateFromEvent(const DuckEvent &event) {
   mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
-  mProviderKind = event.provider_kind.has_value()
-                      ? pcm::meeting::providerKindFromString(*event.provider_kind)
-                      : std::nullopt;
-  mMeetingRef = QString::fromStdString(event.meeting_ref.value_or(""));
-  mInvitationState = event.invitation_state.has_value()
-                          ? std::make_optional(QString::fromStdString(*event.invitation_state))
-                          : std::nullopt;
+  setProviderFields(event, mProviderKind, mMeetingRef, mInvitationState);
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;
@@ -144,13 +150,7 @@ QEventItem::QEventItem(const DuckEvent &event) {
   mCanceledBy = QString::fromStdString(event.canceled_by.value_or(""));
   mIsOnline = event.is_online;
   mMeetingUrl = QString::fromStdString(event.meeting_url);
-  mProviderKind = event.provider_kind.has_value()
-                      ? pcm::meeting::providerKindFromString(*event.provider_kind)
-                      : std::nullopt;
-  mMeetingRef = QString::fromStdString(event.meeting_ref.value_or(""));
-  mInvitationState = event.invitation_state.has_value()
-                          ? std::make_optional(QString::fromStdString(*event.invitation_state))
-                          : std::nullopt;
+  setProviderFields(event, mProviderKind, mMeetingRef, mInvitationState);
   mSeriesId = event.series_id;
   mOriginalOccurrenceStart = event.original_occurrence_start;
   mIsVirtualOccurrence = event.is_virtual_occurrence;

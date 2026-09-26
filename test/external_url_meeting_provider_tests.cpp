@@ -1,33 +1,17 @@
 #include "external_url_meeting_provider.h"
+#include "meeting_provider_test_listener.h"
 
 #include <gtest/gtest.h>
 
-namespace {
-
-class Listener : public QObject {
-  Q_OBJECT
-public:
-  std::optional<pcm::meeting::MeetingDescriptor> lastDescriptor;
-  std::optional<QString> lastCreateError;
-  bool cancelSucceeded = false;
-  std::optional<QString> lastCancelError;
-
-public slots:
-  void onCreated(pcm::meeting::MeetingDescriptor descriptor) { lastDescriptor = descriptor; }
-  void onCreateFailed(QString error) { lastCreateError = error; }
-  void onCanceled() { cancelSucceeded = true; }
-  void onCancelFailed(QString error) { lastCancelError = error; }
-};
-
-} // namespace
+using pcm::meeting::test::MeetingSignalListener;
 
 TEST(ExternalUrlMeetingProviderTest, CreateEmitsDescriptorMatchingTheGivenUrl) {
   pcm::meeting::ExternalUrlMeetingProvider provider;
-  Listener listener;
+  MeetingSignalListener listener;
   QObject::connect(&provider, &pcm::meeting::MeetingProvider::created, &listener,
-                    &Listener::onCreated);
+                    &MeetingSignalListener::onCreated);
   QObject::connect(&provider, &pcm::meeting::MeetingProvider::createFailed, &listener,
-                    &Listener::onCreateFailed);
+                    &MeetingSignalListener::onCreateFailed);
 
   provider.create({.rawMeetingUrl = "https://meet.example.invalid/room-1"});
 
@@ -42,9 +26,9 @@ TEST(ExternalUrlMeetingProviderTest, CreateEmitsDescriptorMatchingTheGivenUrl) {
 
 TEST(ExternalUrlMeetingProviderTest, CreateWithEmptyUrlStillEmitsADescriptor) {
   pcm::meeting::ExternalUrlMeetingProvider provider;
-  Listener listener;
+  MeetingSignalListener listener;
   QObject::connect(&provider, &pcm::meeting::MeetingProvider::created, &listener,
-                    &Listener::onCreated);
+                    &MeetingSignalListener::onCreated);
 
   provider.create({.rawMeetingUrl = "   "});
 
@@ -56,13 +40,12 @@ TEST(ExternalUrlMeetingProviderTest, CreateWithEmptyUrlStillEmitsADescriptor) {
 
 TEST(ExternalUrlMeetingProviderTest, CancelAlwaysSucceeds) {
   pcm::meeting::ExternalUrlMeetingProvider provider;
-  Listener listener;
+  MeetingSignalListener listener;
   QObject::connect(&provider, &pcm::meeting::MeetingProvider::canceled, &listener,
-                    &Listener::onCanceled);
+                    &MeetingSignalListener::onCanceled);
 
   provider.cancel("https://meet.example.invalid/room-1");
 
   EXPECT_TRUE(listener.cancelSucceeded);
 }
 
-#include "external_url_meeting_provider_tests.moc"

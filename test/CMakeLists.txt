@@ -88,15 +88,19 @@ target_link_libraries(Sessio_provider_kind_tests PRIVATE
 gtest_discover_tests(Sessio_provider_kind_tests)
 
 # External URL meeting provider tests
-add_executable(Sessio_external_url_meeting_provider_tests external_url_meeting_provider_tests.cpp)
+add_executable(Sessio_external_url_meeting_provider_tests
+    external_url_meeting_provider_tests.cpp
+    meeting_provider_test_listener.h
+)
 target_link_libraries(Sessio_external_url_meeting_provider_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     Sessio_meeting
 )
-# This test file defines a Q_OBJECT class directly in the .cpp (with a
-# matching #include "....moc" at the bottom) and needs moc run on it, the same
-# way qcustomplot's target needs it set explicitly elsewhere in this project.
+# meeting_provider_test_listener.h defines a Q_OBJECT class shared with
+# Sessio_meeting_coordinator_tests; listing it as a source (rather than only
+# #include-ing it) is what makes AUTOMOC generate its moc, the same way
+# qcustomplot's target needs AUTOMOC set explicitly elsewhere in this project.
 set_target_properties(Sessio_external_url_meeting_provider_tests PROPERTIES AUTOMOC ON)
 gtest_discover_tests(Sessio_external_url_meeting_provider_tests)
 
@@ -111,7 +115,10 @@ set_target_properties(Sessio_livekit_meeting_provider_tests PROPERTIES AUTOMOC O
 gtest_discover_tests(Sessio_livekit_meeting_provider_tests)
 
 # Meeting coordinator tests
-add_executable(Sessio_meeting_coordinator_tests meeting_coordinator_tests.cpp)
+add_executable(Sessio_meeting_coordinator_tests
+    meeting_coordinator_tests.cpp
+    meeting_provider_test_listener.h
+)
 target_link_libraries(Sessio_meeting_coordinator_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
