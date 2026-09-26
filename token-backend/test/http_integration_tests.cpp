@@ -35,11 +35,15 @@
 #include <gtest/gtest.h>
 #include <sodium.h>
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <latch>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -95,6 +99,75 @@ struct HttpResponse {
   int status = 0;
   std::string body;
 };
+
+struct ConcurrentOutcome {
+  std::vector<HttpResponse> responses;
+  // Anything that should never happen: a 5xx, or a request that threw.
+  std::vector<std::string> failures;
+
+  int count(int status) const {
+    return static_cast<int>(
+        std::count_if(responses.begin(), responses.end(),
+                       [status](const HttpResponse &r) { return r.status == status; }));
+  }
+};
+
+// Fires `threadCount` identical requests as close to simultaneously as the
+// platform allows: every thread builds its client first, then waits on a latch,
+// so the requests overlap instead of each racing only whichever threads have
+// already started.
+//
+// A client provider per thread on purpose. Sharing one would queue the requests
+// onto a single keep-alive connection, which oat++ serves from a single worker
+// thread — precisely the concurrency these tests need to create.
+ConcurrentOutcome fireConcurrently(int threadCount, const char *method, const std::string &path,
+                                    const oatpp::web::client::RequestExecutor::Headers &headers,
+                                    const std::string &payload) {
+  ConcurrentOutcome outcome;
+  std::mutex outcomeMutex;
+  std::latch start(1);
+
+  std::vector<std::thread> threads;
+  threads.reserve(static_cast<size_t>(threadCount));
+  for (int i = 0; i < threadCount; ++i) {
+    threads.emplace_back([&] {
+      auto provider = oatpp::network::tcp::client::ConnectionProvider::createShared(
+          {"127.0.0.1", kTestPort});
+      auto executor = oatpp::web::client::HttpRequestExecutor::createShared(provider);
+      std::shared_ptr<oatpp::web::protocol::http::outgoing::Body> body;
+      if (!payload.empty()) {
+        body = oatpp::web::protocol::http::outgoing::BufferBody::createShared(
+            oatpp::String(payload.c_str()), "application/json");
+      }
+      auto ownHeaders = headers;
+
+      start.wait();
+      try {
+        auto response = executor->execute(method, path.c_str(), ownHeaders, body, nullptr);
+        HttpResponse result;
+        result.status = response->getStatusCode();
+        auto text = response->readBodyToString();
+        result.body = text ? *text : std::string();
+
+        std::lock_guard<std::mutex> lk(outcomeMutex);
+        if (result.status >= 500) {
+          outcome.failures.emplace_back("HTTP " + std::to_string(result.status) + ": " +
+                                         result.body);
+        }
+        outcome.responses.push_back(std::move(result));
+      } catch (const std::exception &e) {
+        std::lock_guard<std::mutex> lk(outcomeMutex);
+        outcome.failures.emplace_back(std::string("request threw: ") + e.what());
+      }
+    });
+  }
+
+  start.count_down();
+  for (auto &t : threads) {
+    t.join();
+  }
+  return outcome;
+}
 
 } // namespace
 
@@ -543,4 +616,104 @@ TEST_F(HttpIntegrationTest, InvalidateWithoutCredentialIs401AndUnknownMeetingIs4
   auto meeting = createMeeting();
   EXPECT_EQ(request("POST", "/v1/meetings/" + meeting.meetingRef + "/invalidate").status, 401);
   EXPECT_EQ(request("POST", "/v1/meetings/mtg_does_not_exist/invalidate", bearer()).status, 404);
+}
+
+// --- concurrency ------------------------------------------------------------
+
+// These two are the end-to-end counterpart to repository_concurrency_tests.cpp:
+// real HTTP requests arriving at the same time on separate connections, so
+// oat++ really does dispatch them onto different worker threads sharing the one
+// SqliteConnection. That is the arrangement in which the connection's lock has
+// to hold.
+//
+// Worth knowing which of the two actually pins the bug. Verified by making
+// SqliteConnection::lock() a no-op: the reissue test below fails immediately
+// (500s, "cannot start a transaction within a transaction"), because
+// reissueForMeeting hashes the new passcode *inside* its transaction, holding
+// the transaction open for the ~60ms an Argon2id hash takes and making an
+// overlap near-certain. The wrong-passcode test keeps passing without the lock,
+// because there the Argon2id verify happens *before* the transaction and
+// incidentally staggers the threads past each other. It is kept for the
+// end-to-end cap assertion it makes, not as a race detector.
+//
+// The target below is still the worst case in the API by exposure: POST
+// /v1/invitations/{code}/client-token is unauthenticated, so anyone can drive
+// it concurrently, and a wrong passcode there runs the transactional
+// read-modify-write enforcing ADR-12's 5-attempt cap.
+//
+// The expected outcome is exact rather than approximate. Each successful
+// increment returns a distinct count, so the values 1..4 each go to exactly one
+// request and those four get 401; every other request either sees a count of 5
+// or more, or arrives after the auto-invalidate and is turned away on the
+// invitation's status. So: exactly four 401s and the rest 429, whatever order
+// the threads happen to run in — and no 500 at all.
+TEST_F(HttpIntegrationTest, ConcurrentWrongPasscodesNeverError500AndKeepTheAttemptCapExact) {
+  auto meeting = createMeeting();
+  const std::string path = clientTokenPath(meeting.invitationCode);
+  // Guard against the 1-in-a-million case where the generated passcode is the
+  // one this test guesses with; a match would make every assertion below wrong.
+  const std::string wrongPasscode = meeting.passcode == "000000" ? "111111" : "000000";
+  const std::string payload = "{\"passcode\":\"" + wrongPasscode + "\"}";
+
+  constexpr int kThreads = 10;
+  auto outcome = fireConcurrently(kThreads, "POST", path, {}, payload);
+
+  EXPECT_TRUE(outcome.failures.empty())
+      << "first failure: " << (outcome.failures.empty() ? "" : outcome.failures.front());
+  ASSERT_EQ(outcome.responses.size(), static_cast<size_t>(kThreads));
+
+  EXPECT_EQ(outcome.count(401), 4) << "exactly four requests may burn attempts 1-4";
+  EXPECT_EQ(outcome.count(429), kThreads - 4)
+      << "every other request must be refused, not served";
+
+  // The cap actually closed the invitation, and the good passcode no longer
+  // works either.
+  EXPECT_EQ(request("POST", path, {}, "{\"passcode\":\"" + meeting.passcode + "\"}").status, 429);
+}
+
+// This is the one that catches the bug end-to-end. reissueForMeeting retires
+// every active invitation for a meeting and mints a replacement as one
+// transaction, and the mint hashes the new passcode with Argon2id *inside* that
+// transaction — so the transaction stays open for tens of milliseconds and
+// concurrent reissues are all but guaranteed to overlap. Without the lock the
+// second BEGIN IMMEDIATE to arrive fails with SQLITE_ERROR ("cannot start a
+// transaction within a transaction"), which no busy timeout can retry, and the
+// endpoint 500s.
+//
+// The end state matters as much as the status codes: whichever order the
+// reissues ran in, the practitioner must be left with exactly one invitation
+// that works. Several would mean a superseded code still lets a client in;
+// none would mean a retire landed after the last mint and locked everybody out.
+TEST_F(HttpIntegrationTest, ConcurrentReissuesNeverError500AndLeaveOneWorkingInvitation) {
+  auto meeting = createMeeting();
+
+  constexpr int kThreads = 6;
+  auto outcome = fireConcurrently(kThreads, "POST",
+                                   "/v1/meetings/" + meeting.meetingRef + "/invitation", bearer(),
+                                   "");
+
+  EXPECT_TRUE(outcome.failures.empty())
+      << "first failure: " << (outcome.failures.empty() ? "" : outcome.failures.front());
+  ASSERT_EQ(outcome.responses.size(), static_cast<size_t>(kThreads));
+  EXPECT_EQ(outcome.count(200), kThreads) << "every reissue must succeed";
+
+  // Exactly one of the issued invitations may still mint a client token — plus
+  // the original, which every reissue should have retired.
+  int working = 0;
+  for (const auto &response : outcome.responses) {
+    auto url = jsonString(response.body, "invitationUrl");
+    ASSERT_FALSE(url.empty()) << response.body;
+    auto code = url.substr(url.rfind('/') + 1);
+    auto passcode = jsonString(response.body, "passcode");
+    if (request("POST", clientTokenPath(code), {}, "{\"passcode\":\"" + passcode + "\"}").status ==
+        200) {
+      ++working;
+    }
+  }
+  EXPECT_EQ(working, 1) << "a reissue must leave exactly one usable invitation";
+  EXPECT_EQ(request("POST", clientTokenPath(meeting.invitationCode), {},
+                     "{\"passcode\":\"" + meeting.passcode + "\"}")
+                .status,
+            410)
+      << "the original invitation must have been retired";
 }
